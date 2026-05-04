@@ -15,6 +15,7 @@ import { MonitorAlertConfigRepository } from "./repositories/monitorAlertConfig.
 import { SubscriptionSystemRepository } from "./repositories/subscriptionSystem.js";
 import { EmailTemplateConfigRepository } from "./repositories/emailTemplateConfig.js";
 import { GroupsRepository } from "./repositories/groups.js";
+import { ResourceAccessRepository } from "./repositories/resource-access.js";
 
 // Re-export types from base
 export type { MonitorFilter, TriggerFilter, IncidentFilter, CountResult } from "./repositories/base.js";
@@ -45,6 +46,7 @@ class DbImpl {
   private subscriptionSystem!: SubscriptionSystemRepository;
   private emailTemplateConfig!: EmailTemplateConfigRepository;
   private groups!: GroupsRepository;
+  private resourceAccess!: ResourceAccessRepository;
 
   // Method bindings - declared with definite assignment assertion
   // ============ Monitoring Data ============
@@ -396,6 +398,14 @@ class DbImpl {
   // ============ Groups Lookup ============
   getGroupsForUser!: GroupsRepository["getGroupsForUser"];
 
+  // ============ Resource Access ============
+  getRolePages!: ResourceAccessRepository["getRolePages"];
+  setRolePages!: ResourceAccessRepository["setRolePages"];
+  getRoleMonitors!: ResourceAccessRepository["getRoleMonitors"];
+  setRoleMonitors!: ResourceAccessRepository["setRoleMonitors"];
+  getEffectiveAccess!: ResourceAccessRepository["getEffectiveAccess"];
+  getAccessibleResources!: ResourceAccessRepository["getAccessibleResources"];
+
   constructor(opts: KnexType.Config) {
     this.knex = Knex(opts);
 
@@ -413,6 +423,7 @@ class DbImpl {
     this.subscriptionSystem = new SubscriptionSystemRepository(this.knex);
     this.emailTemplateConfig = new EmailTemplateConfigRepository(this.knex);
     this.groups = new GroupsRepository(this.knex);
+    this.resourceAccess = new ResourceAccessRepository(this.knex);
 
     // Bind methods after repositories are initialized
     this.bindMonitoringMethods();
@@ -428,6 +439,7 @@ class DbImpl {
     this.bindSubscriptionSystemMethods();
     this.bindEmailTemplateConfigMethods();
     this.bindGroupsMethods();
+    this.bindResourceAccessMethods();
 
     this.init();
   }
@@ -882,6 +894,20 @@ class DbImpl {
 
     // Groups Lookup
     this.getGroupsForUser = this.groups.getGroupsForUser.bind(this.groups);
+  }
+
+  private bindResourceAccessMethods(): void {
+    // roles_pages
+    this.getRolePages = this.resourceAccess.getRolePages.bind(this.resourceAccess);
+    this.setRolePages = this.resourceAccess.setRolePages.bind(this.resourceAccess);
+
+    // roles_monitors
+    this.getRoleMonitors = this.resourceAccess.getRoleMonitors.bind(this.resourceAccess);
+    this.setRoleMonitors = this.resourceAccess.setRoleMonitors.bind(this.resourceAccess);
+
+    // Effective access and access check
+    this.getEffectiveAccess = this.resourceAccess.getEffectiveAccess.bind(this.resourceAccess);
+    this.getAccessibleResources = this.resourceAccess.getAccessibleResources.bind(this.resourceAccess);
   }
 
   async init(): Promise<void> {}
