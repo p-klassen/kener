@@ -20,6 +20,7 @@ export async function up(knex: Knex): Promise<void> {
       table.timestamp("created_at").defaultTo(knex.fn.now());
       table.timestamp("updated_at").defaultTo(knex.fn.now());
       table.primary(["users_id", "groups_id"]);
+      table.index("users_id", "idx_users_groups_users_id");
     });
   }
 
@@ -43,6 +44,7 @@ export async function up(knex: Knex): Promise<void> {
       table.timestamp("created_at").defaultTo(knex.fn.now());
       table.timestamp("updated_at").defaultTo(knex.fn.now());
       table.primary(["roles_id", "pages_id"]);
+      table.index("pages_id", "idx_roles_pages_pages_id");
     });
   }
 
@@ -50,7 +52,7 @@ export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable("roles_monitors"))) {
     await knex.schema.createTable("roles_monitors", (table) => {
       table.string("roles_id", 100).notNullable().references("id").inTable("roles").onDelete("CASCADE");
-      table.string("monitor_tag", 100).notNullable();
+      table.string("monitor_tag", 255).notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now());
       table.timestamp("updated_at").defaultTo(knex.fn.now());
       table.primary(["roles_id", "monitor_tag"]);
@@ -86,4 +88,17 @@ export async function down(knex: Knex): Promise<void> {
   await knex.schema.dropTableIfExists("groups_roles");
   await knex.schema.dropTableIfExists("users_groups");
   await knex.schema.dropTableIfExists("groups");
+
+  const hasIsPublicPage = await knex.schema.hasColumn("pages", "is_public");
+  if (hasIsPublicPage) {
+    await knex.schema.alterTable("pages", (table) => { table.dropColumn("is_public"); });
+  }
+  const hasVisibilityMode = await knex.schema.hasColumn("pages", "visibility_mode");
+  if (hasVisibilityMode) {
+    await knex.schema.alterTable("pages", (table) => { table.dropColumn("visibility_mode"); });
+  }
+  const hasIsPublicMonitor = await knex.schema.hasColumn("monitors", "is_public");
+  if (hasIsPublicMonitor) {
+    await knex.schema.alterTable("monitors", (table) => { table.dropColumn("is_public"); });
+  }
 }
