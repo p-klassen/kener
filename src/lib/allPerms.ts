@@ -94,6 +94,10 @@ export const permissions: Array<{ id: string; permission_name: string }> = [
   { id: "roles.write", permission_name: "Create, update, and delete roles" },
   { id: "roles.assign_permissions", permission_name: "Add and remove permissions from roles" },
   { id: "roles.assign_users", permission_name: "Add and remove users to and from roles" },
+
+  // Groups
+  { id: "groups.read", permission_name: "View groups and their members/roles" },
+  { id: "groups.write", permission_name: "Create, update, and delete groups; manage members and role assignments" },
 ];
 
 export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
@@ -220,6 +224,28 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   updateRolePermissions: "roles.assign_permissions",
   addUserToRole: "roles.assign_users",
   removeUserFromRole: "roles.assign_users",
+
+  // Groups
+  getGroups: "groups.read",
+  getGroup: "groups.read",
+  getGroupMembers: "groups.read",
+  getGroupRoles: "groups.read",
+  createGroup: "groups.write",
+  updateGroup: "groups.write",
+  deleteGroup: "groups.write",
+  addGroupMember: "groups.write",
+  removeGroupMember: "groups.write",
+  addGroupRole: "groups.write",
+  removeGroupRole: "groups.write",
+
+  // Resource access (role ↔ pages/monitors)
+  getRolePages: "roles.read",
+  getRoleMonitors: "roles.read",
+  setRolePages: "roles.assign_permissions",
+  setRoleMonitors: "roles.assign_permissions",
+
+  // User effective access
+  getUserEffectiveAccess: "users.read",
 };
 
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
@@ -271,4 +297,8 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
 
   // Roles
   "/(manage)/manage/app/roles": "roles.read",
+
+  // Groups
+  "/(manage)/manage/app/groups": "groups.read",
+  "/(manage)/manage/app/groups/[group_id]": "groups.read",
 };
