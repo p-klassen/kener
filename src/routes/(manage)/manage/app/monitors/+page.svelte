@@ -25,6 +25,7 @@
   let error = $state<string | null>(null);
   let showFilters = $state(false);
   let statusFilter = $state("ALL");
+  let typeFilter = $state("ALL");
   let searchQuery = $state("");
   let pageNo = $state(1);
   const limit = 10;
@@ -33,6 +34,21 @@
     { value: "ALL", label: "All Status" },
     { value: "ACTIVE", label: "Active" },
     { value: "INACTIVE", label: "Inactive" }
+  ];
+
+  const typeOptions = [
+    { value: "ALL", label: "All Types" },
+    { value: "API", label: "API" },
+    { value: "PING", label: "Ping" },
+    { value: "TCP", label: "TCP" },
+    { value: "DNS", label: "DNS" },
+    { value: "SSL", label: "SSL" },
+    { value: "SQL", label: "SQL" },
+    { value: "HEARTBEAT", label: "Heartbeat" },
+    { value: "GAMEDIG", label: "GameDig" },
+    { value: "GROUP", label: "Group" },
+    { value: "GRPC", label: "gRPC" },
+    { value: "NONE", label: "None" },
   ];
 
   const totalCount = $derived(monitors.length);
@@ -44,7 +60,7 @@
     return monitors.slice(start, start + limit);
   });
 
-  const hasActiveFilters = $derived(statusFilter !== "ALL" || searchQuery.trim() !== "");
+  const hasActiveFilters = $derived(statusFilter !== "ALL" || typeFilter !== "ALL" || searchQuery.trim() !== "");
 
   function goToPage(page: number) {
     if (page < 1 || page > totalPages) return;
@@ -58,6 +74,7 @@
 
   function clearFilters() {
     statusFilter = "ALL";
+    typeFilter = "ALL";
     searchQuery = "";
     pageNo = 1;
     fetchMonitors();
@@ -70,6 +87,9 @@
       const data: Record<string, string> = {};
       if (statusFilter !== "ALL") {
         data.status = statusFilter;
+      }
+      if (typeFilter !== "ALL") {
+        data.monitor_type = typeFilter;
       }
       const trimmed = searchQuery.trim();
       if (trimmed) {
@@ -139,6 +159,25 @@
             </Select.Trigger>
             <Select.Content>
               {#each statusOptions as option (option.value)}
+                <Select.Item value={option.value}>{option.label}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-muted-foreground text-xs font-medium">Type</span>
+          <Select.Root
+            type="single"
+            value={typeFilter}
+            onValueChange={(v) => {
+              if (v) typeFilter = v;
+            }}
+          >
+            <Select.Trigger class="w-40">
+              {typeOptions.find((o) => o.value === typeFilter)?.label || "All Types"}
+            </Select.Trigger>
+            <Select.Content>
+              {#each typeOptions as option (option.value)}
                 <Select.Item value={option.value}>{option.label}</Select.Item>
               {/each}
             </Select.Content>
