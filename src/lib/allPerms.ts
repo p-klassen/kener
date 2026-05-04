@@ -301,4 +301,8 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
 
   // Roles
   "/(manage)/manage/app/roles": "roles.read",
+
+  // Groups
+  "/(manage)/manage/app/groups": "groups.read",
+  "/(manage)/manage/app/groups/[group_id]": "groups.read",
 };
