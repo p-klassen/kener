@@ -101,7 +101,7 @@ export async function up(knex: Knex): Promise<void> {
   if (!(await knex.schema.hasTable("roles_monitors"))) {
     await knex.schema.createTable("roles_monitors", (table) => {
       table.string("roles_id", 100).notNullable().references("id").inTable("roles").onDelete("CASCADE");
-      // Use monitor_tag (text) as FK, consistent with page_monitors table
+      // Use monitor_tag (text) as FK, consistent with pages_monitors table
       table.string("monitor_tag", 100).notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now());
       table.timestamp("updated_at").defaultTo(knex.fn.now());
@@ -597,9 +597,9 @@ export class ResourceAccessRepository extends BaseRepository {
         rolePages.map(async (rp) => {
           let monitors: Array<{ monitor_tag: string; monitor_name: string }> = [];
           if (rp.inherit_monitors) {
-            const pm = await this.knex("page_monitors")
-              .join("monitors", "page_monitors.monitor_tag", "monitors.tag")
-              .where("page_monitors.page_id", rp.page_id)
+            const pm = await this.knex("pages_monitors")
+              .join("monitors", "pages_monitors.monitor_tag", "monitors.tag")
+              .where("pages_monitors.page_id", rp.page_id)
               .select("monitors.tag as monitor_tag", "monitors.name as monitor_name");
             monitors = pm;
           }
@@ -678,7 +678,7 @@ export class ResourceAccessRepository extends BaseRepository {
     for (const rp of rolePageRows) {
       pageIds.add(rp.pages_id);
       if (rp.inherit_monitors) {
-        const pm: Array<{ monitor_tag: string }> = await this.knex("page_monitors")
+        const pm: Array<{ monitor_tag: string }> = await this.knex("pages_monitors")
           .where("page_id", rp.pages_id)
           .select("monitor_tag");
         pm.forEach((r) => monitorTags.add(r.monitor_tag));
