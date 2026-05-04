@@ -94,6 +94,16 @@ export const permissions: Array<{ id: string; permission_name: string }> = [
   { id: "roles.write", permission_name: "Create, update, and delete roles" },
   { id: "roles.assign_permissions", permission_name: "Add and remove permissions from roles" },
   { id: "roles.assign_users", permission_name: "Add and remove users to and from roles" },
+
+  // Groups
+  { id: "groups.read", permission_name: "View groups, members, and role assignments" },
+  { id: "groups.write", permission_name: "Create, update, and delete groups" },
+  { id: "groups.assign_members", permission_name: "Add and remove users to and from groups" },
+  { id: "groups.assign_roles", permission_name: "Add and remove roles to and from groups" },
+
+  // Resource Access (role → pages/monitors)
+  { id: "resource_access.read", permission_name: "View role page and monitor assignments" },
+  { id: "resource_access.write", permission_name: "Set role page and monitor assignments" },
 ];
 
 export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
@@ -220,6 +230,26 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   updateRolePermissions: "roles.assign_permissions",
   addUserToRole: "roles.assign_users",
   removeUserFromRole: "roles.assign_users",
+
+  // Groups
+  getGroups: "groups.read",
+  getGroup: "groups.read",
+  createGroup: "groups.write",
+  updateGroup: "groups.write",
+  deleteGroup: "groups.write",
+  getGroupMembers: "groups.read",
+  addGroupMember: "groups.assign_members",
+  removeGroupMember: "groups.assign_members",
+  getGroupRoles: "groups.read",
+  addGroupRole: "groups.assign_roles",
+  removeGroupRole: "groups.assign_roles",
+
+  // Resource Access
+  getRolePages: "resource_access.read",
+  setRolePages: "resource_access.write",
+  getRoleMonitors: "resource_access.read",
+  setRoleMonitors: "resource_access.write",
+  getUserEffectiveAccess: "resource_access.read",
 };
 
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {

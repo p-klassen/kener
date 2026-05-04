@@ -125,6 +125,26 @@ import {
   GetUserPermissions,
   RequirePermission,
 } from "$lib/server/controllers/userController.js";
+import {
+  GetAllGroups,
+  GetGroupById,
+  CreateGroup,
+  UpdateGroup,
+  DeleteGroup,
+  GetGroupMembers,
+  AddGroupMember,
+  RemoveGroupMember,
+  GetGroupRoles,
+  AddGroupRole,
+  RemoveGroupRole,
+} from "$lib/server/controllers/groupsController.js";
+import {
+  GetRolePages,
+  SetRolePages,
+  GetRoleMonitors,
+  SetRoleMonitors,
+  GetUserEffectiveAccess,
+} from "$lib/server/controllers/resourceAccessController.js";
 import type { SiteDataForNotification } from "$lib/server/notification/types";
 import { alertToVariables, siteDataToVariables } from "$lib/server/notification/notification_utils";
 import type { TriggerMeta } from "$lib/server/types/db.js";
@@ -656,6 +676,46 @@ export async function POST({ request, cookies }) {
       resp = await UpdateRole(data.roleId, { name: data.name, status: data.status });
     } else if (action == "deleteRole") {
       resp = await DeleteRole(data.roleId, data.options);
+    } else if (action == "getGroups") {
+      resp = await GetAllGroups();
+    } else if (action == "getGroup") {
+      resp = await GetGroupById(data.id);
+    } else if (action == "createGroup") {
+      resp = await CreateGroup(data);
+    } else if (action == "updateGroup") {
+      const { id, ...updateData } = data;
+      resp = await UpdateGroup(id, updateData);
+    } else if (action == "deleteGroup") {
+      await DeleteGroup(data.id);
+      resp = { success: true };
+    } else if (action == "getGroupMembers") {
+      resp = await GetGroupMembers(data.groupId);
+    } else if (action == "addGroupMember") {
+      await AddGroupMember(data.groupId, data.userId);
+      resp = { success: true };
+    } else if (action == "removeGroupMember") {
+      await RemoveGroupMember(data.groupId, data.userId);
+      resp = { success: true };
+    } else if (action == "getGroupRoles") {
+      resp = await GetGroupRoles(data.groupId);
+    } else if (action == "addGroupRole") {
+      await AddGroupRole(data.groupId, data.roleId);
+      resp = { success: true };
+    } else if (action == "removeGroupRole") {
+      await RemoveGroupRole(data.groupId, data.roleId);
+      resp = { success: true };
+    } else if (action == "getRolePages") {
+      resp = await GetRolePages(data.roleId);
+    } else if (action == "setRolePages") {
+      await SetRolePages(data.roleId, data.assignments);
+      resp = { success: true };
+    } else if (action == "getRoleMonitors") {
+      resp = await GetRoleMonitors(data.roleId);
+    } else if (action == "setRoleMonitors") {
+      await SetRoleMonitors(data.roleId, data.monitorTags);
+      resp = { success: true };
+    } else if (action == "getUserEffectiveAccess") {
+      resp = await GetUserEffectiveAccess(data.userId);
     }
   } catch (error: unknown) {
     console.log(error);
