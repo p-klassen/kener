@@ -92,6 +92,18 @@
   let addingUserId = $state<number | null>(null);
   let removingUserId = $state<number | null>(null);
 
+  // Visibility sheet
+  type RolePage = { roles_id: string; pages_id: number; inherit_monitors: number };
+  type RoleMonitor = { roles_id: string; monitor_tag: string };
+  type PageWithMonitors = { id: number; page_title: string; page_path: string; monitors: Array<{ monitor_tag: string; name: string }> };
+
+  let visibilityRoleId = $state<string | null>(null);
+  let visRolePages = $state<RolePage[]>([]);
+  let visRoleMonitors = $state<RoleMonitor[]>([]);
+  let allPagesForVis = $state<PageWithMonitors[]>([]);
+  let visLoading = $state(false);
+  let visSaving = $state(false);
+
   const apiUrl = clientResolver(resolve, "/manage/api");
 
   async function apiCall(action: string, data: Record<string, unknown> = {}) {
@@ -347,6 +359,86 @@
     }
   }
 
+  async function openVisibility(roleId: string) {
+    visibilityRoleId = roleId;
+    visLoading = true;
+    const [pages, monitors, allPages] = await Promise.all([
+      apiCall("getRolePages", { roleId }),
+      apiCall("getRoleMonitors", { roleId }),
+      apiCall("getPages"),
+    ]);
+    visRolePages = pages;
+    visRoleMonitors = monitors;
+    allPagesForVis = allPages;
+    visLoading = false;
+  }
+
+  function isPageAssigned(pageId: number): boolean {
+    return visRolePages.some((rp) => rp.pages_id === pageId);
+  }
+
+  function getPageInherit(pageId: number): boolean {
+    return visRolePages.find((rp) => rp.pages_id === pageId)?.inherit_monitors === 1;
+  }
+
+  function togglePage(pageId: number) {
+    if (isPageAssigned(pageId)) {
+      visRolePages = visRolePages.filter((rp) => rp.pages_id !== pageId);
+    } else {
+      visRolePages = [...visRolePages, { roles_id: visibilityRoleId!, pages_id: pageId, inherit_monitors: 1 }];
+    }
+  }
+
+  function toggleInherit(pageId: number) {
+    visRolePages = visRolePages.map((rp) =>
+      rp.pages_id === pageId ? { ...rp, inherit_monitors: rp.inherit_monitors ? 0 : 1 } : rp,
+    );
+  }
+
+  function isMonitorDirectlyAssigned(tag: string): boolean {
+    return visRoleMonitors.some((rm) => rm.monitor_tag === tag);
+  }
+
+  function isMonitorCoveredByPage(tag: string): boolean {
+    return visRolePages
+      .filter((rp) => rp.inherit_monitors)
+      .some((rp) => {
+        const p = allPagesForVis.find((p) => p.id === rp.pages_id);
+        return p?.monitors.some((m) => m.monitor_tag === tag);
+      });
+  }
+
+  function toggleMonitor(tag: string) {
+    if (isMonitorDirectlyAssigned(tag)) {
+      visRoleMonitors = visRoleMonitors.filter((rm) => rm.monitor_tag !== tag);
+    } else {
+      visRoleMonitors = [...visRoleMonitors, { roles_id: visibilityRoleId!, monitor_tag: tag }];
+    }
+  }
+
+  async function saveVisibility() {
+    if (!visibilityRoleId) return;
+    visSaving = true;
+    try {
+      await Promise.all([
+        apiCall("setRolePages", {
+          roleId: visibilityRoleId,
+          assignments: visRolePages.map((rp) => ({
+            pages_id: rp.pages_id,
+            inherit_monitors: rp.inherit_monitors === 1,
+          })),
+        }),
+        apiCall("setRoleMonitors", {
+          roleId: visibilityRoleId,
+          monitorTags: visRoleMonitors.map((rm) => rm.monitor_tag),
+        }),
+      ]);
+      visibilityRoleId = null;
+    } finally {
+      visSaving = false;
+    }
+  }
+
   let groupedPermissions = $derived.by(() => {
     const groups: Array<{ group: string; label: string; permissions: Permission[] }> = [];
     const groupMap = new Map<string, Permission[]>();
@@ -438,6 +530,9 @@
                     <Button variant="ghost" size="sm" onclick={() => openUsers(role)}>
                       <UsersIcon class="mr-1 h-4 w-4" />
                       Users
+                    </Button>
+                    <Button variant="outline" size="sm" onclick={() => openVisibility(role.id)}>
+                      Visibility
                     </Button>
                     {#if hasPermission("roles.write")}
                       <Button
@@ -819,3 +914,88 @@
     {/if}
   </Sheet.Content>
 </Sheet.Root>
+
+<!-- Visibility Sheet -->
+{#if visibilityRoleId !== null}
+  <Sheet.Root open={true} onOpenChange={(v) => { if (!v) visibilityRoleId = null; }}>
+    <Sheet.Content class="w-[600px] overflow-y-auto sm:max-w-[600px]">
+      <Sheet.Header>
+        <Sheet.Title>Resource Visibility</Sheet.Title>
+        <Sheet.Description>
+          Assign Pages and Monitors this role can access.
+        </Sheet.Description>
+      </Sheet.Header>
+
+      {#if visLoading}
+        <p class="mt-4 text-muted-foreground">Loading…</p>
+      {:else}
+        <div class="mt-4 grid grid-cols-2 gap-6">
+          <!-- Pages panel -->
+          <div>
+            <h3 class="mb-2 text-sm font-semibold">Pages</h3>
+            <div class="space-y-2">
+              {#each allPagesForVis as p (p.id)}
+                <div class="rounded border p-2">
+                  <label class="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isPageAssigned(p.id)}
+                      onchange={() => togglePage(p.id)}
+                    />
+                    <span class="text-sm font-medium">{p.page_title}</span>
+                    <span class="text-muted-foreground text-xs">/{p.page_path}</span>
+                  </label>
+                  {#if isPageAssigned(p.id)}
+                    <label class="ml-5 mt-1 flex cursor-pointer items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={getPageInherit(p.id)}
+                        onchange={() => toggleInherit(p.id)}
+                      />
+                      Inherit monitors ({p.monitors.length})
+                    </label>
+                  {/if}
+                </div>
+              {/each}
+              {#if allPagesForVis.length === 0}
+                <p class="text-muted-foreground text-xs">No pages.</p>
+              {/if}
+            </div>
+          </div>
+
+          <!-- Monitors panel -->
+          <div>
+            <h3 class="mb-2 text-sm font-semibold">Direct Monitors</h3>
+            <p class="text-muted-foreground mb-2 text-xs">Monitors covered via page inheritance are shown as covered.</p>
+            <div class="space-y-1">
+              {#each allPagesForVis.flatMap((p) => p.monitors) as m (m.monitor_tag)}
+                {#if !isMonitorCoveredByPage(m.monitor_tag)}
+                  <label class="flex cursor-pointer items-center gap-2 rounded border px-2 py-1">
+                    <input
+                      type="checkbox"
+                      checked={isMonitorDirectlyAssigned(m.monitor_tag)}
+                      onchange={() => toggleMonitor(m.monitor_tag)}
+                    />
+                    <span class="text-sm">{m.name ?? m.monitor_tag}</span>
+                  </label>
+                {:else}
+                  <div class="text-muted-foreground flex items-center gap-2 rounded border border-dashed px-2 py-1 opacity-50">
+                    <span class="text-xs">✓ {m.name ?? m.monitor_tag}</span>
+                    <span class="text-xs">(via page)</span>
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onclick={() => (visibilityRoleId = null)}>Cancel</Button>
+          <Button onclick={saveVisibility} disabled={visSaving}>
+            {visSaving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      {/if}
+    </Sheet.Content>
+  </Sheet.Root>
+{/if}
