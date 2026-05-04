@@ -137,6 +137,7 @@ export interface MonitorRecordTyped {
   day_down_minimum_count?: number | null;
   include_degraded_in_downtime?: string;
   is_hidden: string;
+  is_public: number;
   monitor_settings_json: MonitorSettings | null;
   created_at?: Date;
   updated_at?: Date;
@@ -160,6 +161,7 @@ export interface MonitorRecordInsert {
   day_down_minimum_count?: number | null;
   include_degraded_in_downtime?: string;
   is_hidden?: string;
+  is_public?: number;
   monitor_settings_json?: string | null;
   external_url?: string | null;
 }
@@ -452,7 +454,7 @@ export interface PageRecord {
   page_logo: string | null;
   page_settings_json: string | null;
   is_public: number;          // 0 | 1
-  visibility_mode: string;    // 'hidden' | 'teaser' | 'locked'
+  visibility_mode: "hidden" | "teaser" | "locked";
   created_at: Date;
   updated_at: Date;
 }
@@ -465,7 +467,7 @@ export interface PageRecordInsert {
   page_logo?: string | null;
   page_settings_json?: string | null;
   is_public?: number;         // 0 | 1
-  visibility_mode?: string;   // 'hidden' | 'teaser' | 'locked'
+  visibility_mode?: "hidden" | "teaser" | "locked";
 }
 
 export interface PageSettingsType {
@@ -488,7 +490,7 @@ export interface PageRecordTyped {
   page_logo: string | null;
   page_settings: PageSettingsType | null;
   is_public: number;          // 0 | 1
-  visibility_mode: string;    // 'hidden' | 'teaser' | 'locked'
+  visibility_mode: "hidden" | "teaser" | "locked";
   created_at: Date;
   updated_at: Date;
 }
