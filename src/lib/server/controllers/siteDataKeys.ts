@@ -133,6 +133,11 @@ export const siteDataKeys: SiteDataKey[] = [
     data_type: "string",
   },
   {
+    key: "manualTimezone",
+    isValid: (value) => value === "" || Intl.supportedValuesOf("timeZone").includes(value as string),
+    data_type: "string",
+  },
+  {
     key: "showSiteStatus",
     //boolean
     isValid: (value) => typeof value === "string",

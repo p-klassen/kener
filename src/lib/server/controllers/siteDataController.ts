@@ -40,6 +40,7 @@ export interface SiteDataTransformed {
   theme?: string;
   themeToggle?: string;
   tzToggle?: string;
+  manualTimezone?: string;
   barStyle: string;
   barRoundness?: string;
   summaryStyle?: string;

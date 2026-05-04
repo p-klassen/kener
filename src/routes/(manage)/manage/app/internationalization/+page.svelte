@@ -363,7 +363,7 @@
           </p>
           <Popover.Root bind:open={tzOpen}>
             <Popover.Trigger>
-              <Button variant="outline" role="combobox" class="w-72 justify-between font-normal">
+              <Button variant="outline" role="combobox" aria-expanded={tzOpen} class="w-72 justify-between font-normal">
                 {manualTimezone || "System default"}
                 <ChevronsUpDownIcon class="text-muted-foreground size-4 shrink-0" />
               </Button>
