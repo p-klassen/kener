@@ -362,15 +362,21 @@
   async function openVisibility(roleId: string) {
     visibilityRoleId = roleId;
     visLoading = true;
-    const [pages, monitors, allPages] = await Promise.all([
-      apiCall("getRolePages", { roleId }),
-      apiCall("getRoleMonitors", { roleId }),
-      apiCall("getPages"),
-    ]);
-    visRolePages = pages;
-    visRoleMonitors = monitors;
-    allPagesForVis = allPages;
-    visLoading = false;
+    try {
+      const [pages, monitors, allPages] = await Promise.all([
+        apiCall("getRolePages", { roleId }),
+        apiCall("getRoleMonitors", { roleId }),
+        apiCall("getPages"),
+      ]);
+      visRolePages = pages;
+      visRoleMonitors = monitors;
+      allPagesForVis = allPages;
+    } catch (e) {
+      toast.error("Failed to load visibility settings");
+      visibilityRoleId = null;
+    } finally {
+      visLoading = false;
+    }
   }
 
   function isPageAssigned(pageId: number): boolean {

@@ -506,7 +506,7 @@
                     <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => openSettingsSheet(user)}>
                       <SettingsIcon class="h-4 w-4" />
                     </Button>
-                  {:else if currentUser.id === user.id && !!!currentUser.is_verified}
+                  {:else if currentUser.id === user.id && !currentUser.is_verified}
                     <Button
                       variant="outline"
                       size="sm"
