@@ -18,6 +18,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 nodemon.json
 .okgit/
+.worktrees/
 config/static/*
 !config/static/.kener
 db/*
