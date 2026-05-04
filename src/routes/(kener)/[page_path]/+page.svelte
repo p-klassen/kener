@@ -147,7 +147,7 @@
     <span class="text-5xl">🔒</span>
     <h2 class="text-xl font-semibold">This page is private</h2>
     <p class="text-muted-foreground text-sm">Sign in to view this status page.</p>
-    <a href="/account/signin" class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
+    <a href={clientResolver(resolve, "/account/signin")} class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
       Sign in
     </a>
   </div>
@@ -181,7 +181,7 @@
     <div class="flex items-center gap-2 rounded-2xl border border-dashed px-4 py-3 opacity-70">
       <span>🔒</span>
       <span class="text-muted-foreground text-sm">Sign in to view monitor status</span>
-      <a href="/account/signin" class="text-primary ml-auto text-xs underline">Sign in</a>
+      <a href={clientResolver(resolve, "/account/signin")} class="text-primary ml-auto text-xs underline">Sign in</a>
     </div>
   </div>
 {:else}
