@@ -318,7 +318,74 @@ export const GetPageDashboardData = async (
   }
 
   const { page: pageDetails, monitors: pageMonitors } = pageData;
-  const monitorTags = pageMonitors.map((pm) => pm.monitor_tag);
+
+  // --- Resource-scoped visibility enforcement ---
+  const user = layoutData.loggedInUser;
+  if (!pageDetails.is_public) {
+    const hasAccess = user
+      ? (await db.getAccessibleResources(user.id)).pageIds.has(pageDetails.id)
+      : false;
+    if (!hasAccess) {
+      const mode = (pageDetails.visibility_mode ?? "hidden") as "hidden" | "teaser" | "locked";
+      if (mode === "hidden") return null;
+      // Return minimal locked/teaser state — component checks locked=true before rendering
+      const nowTs = GetMinuteStartNowTimestampUTC();
+      const settings: PageSettingsType = defaultPageSettings;
+      return {
+        locked: true,
+        lockedMode: mode,
+        pageDetails: {
+          id: pageDetails.id,
+          page_path: pageDetails.page_path,
+          page_title: pageDetails.page_title,
+          page_header: pageDetails.page_header,
+          page_subheader: pageDetails.page_subheader,
+          page_logo: pageDetails.page_logo,
+          page_settings: settings,
+          is_public: pageDetails.is_public ?? 1,
+          visibility_mode: mode,
+          created_at: pageDetails.created_at,
+          updated_at: pageDetails.updated_at,
+        },
+        pageStatus: BuildPageStatus([], nowTs),
+        ongoingIncidents: [],
+        ongoingMaintenances: [],
+        upcomingMaintenances: [],
+        monitorTags: [],
+        monitorGroupMembersByTag: {},
+        socialPagePreviewImage: layoutData.socialPreviewImage,
+        metaPageTitle: layoutData.metaSiteTitle,
+        metaPageDescription: layoutData.metaSiteDescription,
+      };
+    }
+  }
+
+  // Filter monitors to only those the user can see
+  let visibleMonitorTags: string[];
+  if (pageMonitors.length === 0) {
+    visibleMonitorTags = [];
+  } else {
+    const allTags = pageMonitors.map((pm) => pm.monitor_tag);
+    const monitorRecords = await db.getMonitorsByTags(allTags);
+    const isPublicByTag = new Map(monitorRecords.map((m) => [m.tag, m.is_public]));
+
+    if (user) {
+      const { monitorTags: accessibleMonitorTags } = await db.getAccessibleResources(user.id);
+      visibleMonitorTags = pageMonitors
+        .filter((pm) => {
+          const isPublic = isPublicByTag.get(pm.monitor_tag) ?? 1;
+          if (isPublic) return true;
+          return accessibleMonitorTags.has(pm.monitor_tag);
+        })
+        .map((pm) => pm.monitor_tag);
+    } else {
+      // No user: only show monitors that are public
+      visibleMonitorTags = pageMonitors
+        .filter((pm) => (isPublicByTag.get(pm.monitor_tag) ?? 1) === 1)
+        .map((pm) => pm.monitor_tag);
+    }
+  }
+  const monitorTags = visibleMonitorTags;
 
   // Parse page settings with defaults
   let settings: PageSettingsType = defaultPageSettings;
