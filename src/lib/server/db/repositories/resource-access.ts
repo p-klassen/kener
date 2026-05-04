@@ -12,17 +12,19 @@ export class ResourceAccessRepository extends BaseRepository {
     roleId: string,
     assignments: Array<{ pages_id: number; inherit_monitors: boolean }>,
   ): Promise<void> {
-    await this.knex("roles_pages").where("roles_id", roleId).delete();
-    if (assignments.length === 0) return;
-    await this.knex("roles_pages").insert(
-      assignments.map((a) => ({
-        roles_id: roleId,
-        pages_id: a.pages_id,
-        inherit_monitors: a.inherit_monitors ? 1 : 0,
-        created_at: this.knex.fn.now(),
-        updated_at: this.knex.fn.now(),
-      })),
-    );
+    await this.knex.transaction(async (trx) => {
+      await trx("roles_pages").where("roles_id", roleId).delete();
+      if (assignments.length === 0) return;
+      await trx("roles_pages").insert(
+        assignments.map((a) => ({
+          roles_id: roleId,
+          pages_id: a.pages_id,
+          inherit_monitors: a.inherit_monitors ? 1 : 0,
+          created_at: this.knex.fn.now(),
+          updated_at: this.knex.fn.now(),
+        })),
+      );
+    });
   }
 
   // ============ roles_monitors ============
@@ -32,16 +34,18 @@ export class ResourceAccessRepository extends BaseRepository {
   }
 
   async setRoleMonitors(roleId: string, monitorTags: string[]): Promise<void> {
-    await this.knex("roles_monitors").where("roles_id", roleId).delete();
-    if (monitorTags.length === 0) return;
-    await this.knex("roles_monitors").insert(
-      monitorTags.map((tag) => ({
-        roles_id: roleId,
-        monitor_tag: tag,
-        created_at: this.knex.fn.now(),
-        updated_at: this.knex.fn.now(),
-      })),
-    );
+    await this.knex.transaction(async (trx) => {
+      await trx("roles_monitors").where("roles_id", roleId).delete();
+      if (monitorTags.length === 0) return;
+      await trx("roles_monitors").insert(
+        monitorTags.map((tag) => ({
+          roles_id: roleId,
+          monitor_tag: tag,
+          created_at: this.knex.fn.now(),
+          updated_at: this.knex.fn.now(),
+        })),
+      );
+    });
   }
 
   // ============ Effective access for a user ============
@@ -126,14 +130,13 @@ export class ResourceAccessRepository extends BaseRepository {
       };
     };
 
-    for (const r of directRoleRows) {
-      entries.push(await buildEntry("direct", r.role_id, r.role_name));
-    }
-    for (const r of groupRoleRows) {
-      entries.push(await buildEntry("group", r.role_id, r.role_name, r.group_name));
-    }
-
-    return entries;
+    const directEntries = await Promise.all(
+      directRoleRows.map((r) => buildEntry("direct", r.role_id, r.role_name)),
+    );
+    const groupEntries = await Promise.all(
+      groupRoleRows.map((r) => buildEntry("group", r.role_id, r.role_name, r.group_name)),
+    );
+    return [...directEntries, ...groupEntries];
   }
 
   // ============ Access check — returns accessible page IDs and monitor tags ============
@@ -172,12 +175,17 @@ export class ResourceAccessRepository extends BaseRepository {
 
     for (const rp of rolePageRows) {
       pageIds.add(rp.pages_id);
-      if (rp.inherit_monitors) {
-        const pm: Array<{ monitor_tag: string }> = await this.knex("pages_monitors")
-          .where("page_id", rp.pages_id)
-          .select("monitor_tag");
-        pm.forEach((r) => monitorTags.add(r.monitor_tag));
-      }
+    }
+
+    const inheritPageIds = rolePageRows
+      .filter((rp) => rp.inherit_monitors)
+      .map((rp) => rp.pages_id);
+
+    if (inheritPageIds.length > 0) {
+      const pm: Array<{ monitor_tag: string }> = await this.knex("pages_monitors")
+        .whereIn("page_id", inheritPageIds)
+        .select("monitor_tag");
+      pm.forEach((r) => monitorTags.add(r.monitor_tag));
     }
 
     // Direct monitors via roles_monitors
