@@ -14,6 +14,8 @@
   import XIcon from "@lucide/svelte/icons/x";
   import ImageIcon from "@lucide/svelte/icons/image";
   import Plus from "@lucide/svelte/icons/plus";
+  import ChevronUpIcon from "@lucide/svelte/icons/chevron-up";
+  import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
   import CopyButton from "$lib/components/CopyButton.svelte";
   import CopyIcon from "@lucide/svelte/icons/copy";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
@@ -740,6 +742,14 @@
     nav = nav.filter((_, i) => i !== index);
   }
 
+  function moveNavItem(index: number, direction: "up" | "down") {
+    const newNav = [...nav];
+    const swapWith = direction === "up" ? index - 1 : index + 1;
+    if (swapWith < 0 || swapWith >= newNav.length) return;
+    [newNav[index], newNav[swapWith]] = [newNav[swapWith], newNav[index]];
+    nav = newNav;
+  }
+
   onMount(() => {
     currentOrigin = window.location.origin;
     void fetchSiteData();
@@ -1082,6 +1092,12 @@
                 </div>
               </div>
             </div>
+            <Button variant="ghost" size="icon" disabled={index === 0} onclick={() => moveNavItem(index, "up")}>
+              <ChevronUpIcon class="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" disabled={index === nav.length - 1} onclick={() => moveNavItem(index, "down")}>
+              <ChevronDownIcon class="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" onclick={() => removeNavItem(index)}>
               <XIcon class="h-4 w-4" />
             </Button>
