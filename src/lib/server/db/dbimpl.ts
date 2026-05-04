@@ -14,6 +14,7 @@ import { MaintenancesRepository } from "./repositories/maintenances.js";
 import { MonitorAlertConfigRepository } from "./repositories/monitorAlertConfig.js";
 import { SubscriptionSystemRepository } from "./repositories/subscriptionSystem.js";
 import { EmailTemplateConfigRepository } from "./repositories/emailTemplateConfig.js";
+import { GroupsRepository } from "./repositories/groups.js";
 
 // Re-export types from base
 export type { MonitorFilter, TriggerFilter, IncidentFilter, CountResult } from "./repositories/base.js";
@@ -43,6 +44,7 @@ class DbImpl {
   private monitorAlertConfig!: MonitorAlertConfigRepository;
   private subscriptionSystem!: SubscriptionSystemRepository;
   private emailTemplateConfig!: EmailTemplateConfigRepository;
+  private groupsRepo!: GroupsRepository;
 
   // Method bindings - declared with definite assignment assertion
   // ============ Monitoring Data ============
@@ -371,6 +373,29 @@ class DbImpl {
   deleteEmailTemplate!: EmailTemplateConfigRepository["deleteEmailTemplate"];
   upsertEmailTemplate!: EmailTemplateConfigRepository["upsertEmailTemplate"];
 
+  // ============ Groups ============
+  getAllGroups!: GroupsRepository["getAllGroups"];
+  getGroupById!: GroupsRepository["getGroupById"];
+  createGroup!: GroupsRepository["createGroup"];
+  updateGroup!: GroupsRepository["updateGroup"];
+  deleteGroup!: GroupsRepository["deleteGroup"];
+  getGroupsCount!: GroupsRepository["getGroupsCount"];
+
+  // ============ Group Members ============
+  getGroupMembers!: GroupsRepository["getGroupMembers"];
+  addGroupMember!: GroupsRepository["addGroupMember"];
+  removeGroupMember!: GroupsRepository["removeGroupMember"];
+  getMemberCount!: GroupsRepository["getMemberCount"];
+
+  // ============ Group Roles ============
+  getGroupRoles!: GroupsRepository["getGroupRoles"];
+  addGroupRole!: GroupsRepository["addGroupRole"];
+  removeGroupRole!: GroupsRepository["removeGroupRole"];
+  getRoleCount!: GroupsRepository["getRoleCount"];
+
+  // ============ Groups Lookup ============
+  getGroupsForUser!: GroupsRepository["getGroupsForUser"];
+
   constructor(opts: KnexType.Config) {
     this.knex = Knex(opts);
 
@@ -387,6 +412,7 @@ class DbImpl {
     this.monitorAlertConfig = new MonitorAlertConfigRepository(this.knex);
     this.subscriptionSystem = new SubscriptionSystemRepository(this.knex);
     this.emailTemplateConfig = new EmailTemplateConfigRepository(this.knex);
+    this.groupsRepo = new GroupsRepository(this.knex);
 
     // Bind methods after repositories are initialized
     this.bindMonitoringMethods();
@@ -401,6 +427,7 @@ class DbImpl {
     this.bindMonitorAlertConfigMethods();
     this.bindSubscriptionSystemMethods();
     this.bindEmailTemplateConfigMethods();
+    this.bindGroupsMethods();
 
     this.init();
   }
@@ -830,6 +857,31 @@ class DbImpl {
     this.getEmailTemplateById = this.emailTemplateConfig.getEmailTemplateById.bind(this.emailTemplateConfig);
     this.deleteEmailTemplate = this.emailTemplateConfig.deleteEmailTemplate.bind(this.emailTemplateConfig);
     this.upsertEmailTemplate = this.emailTemplateConfig.upsertEmailTemplate.bind(this.emailTemplateConfig);
+  }
+
+  private bindGroupsMethods(): void {
+    // Groups CRUD
+    this.getAllGroups = this.groupsRepo.getAllGroups.bind(this.groupsRepo);
+    this.getGroupById = this.groupsRepo.getGroupById.bind(this.groupsRepo);
+    this.createGroup = this.groupsRepo.createGroup.bind(this.groupsRepo);
+    this.updateGroup = this.groupsRepo.updateGroup.bind(this.groupsRepo);
+    this.deleteGroup = this.groupsRepo.deleteGroup.bind(this.groupsRepo);
+    this.getGroupsCount = this.groupsRepo.getGroupsCount.bind(this.groupsRepo);
+
+    // Group Members
+    this.getGroupMembers = this.groupsRepo.getGroupMembers.bind(this.groupsRepo);
+    this.addGroupMember = this.groupsRepo.addGroupMember.bind(this.groupsRepo);
+    this.removeGroupMember = this.groupsRepo.removeGroupMember.bind(this.groupsRepo);
+    this.getMemberCount = this.groupsRepo.getMemberCount.bind(this.groupsRepo);
+
+    // Group Roles
+    this.getGroupRoles = this.groupsRepo.getGroupRoles.bind(this.groupsRepo);
+    this.addGroupRole = this.groupsRepo.addGroupRole.bind(this.groupsRepo);
+    this.removeGroupRole = this.groupsRepo.removeGroupRole.bind(this.groupsRepo);
+    this.getRoleCount = this.groupsRepo.getRoleCount.bind(this.groupsRepo);
+
+    // Groups Lookup
+    this.getGroupsForUser = this.groupsRepo.getGroupsForUser.bind(this.groupsRepo);
   }
 
   async init(): Promise<void> {}
