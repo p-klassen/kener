@@ -1,4 +1,5 @@
 import db from "../db/db.js";
+import { getPageVisibility } from "../utils/canSeeResource.js";
 import { GetMinuteStartNowTimestampUTC, BeginningOfMinute, BeginningOfDay } from "../tool.js";
 import { GetPageByPathWithMonitors, GetLatestMonitoringDataAllActive } from "./controller.js";
 import { GetMonitorsParsed } from "./monitorsController.js";
@@ -321,12 +322,21 @@ export const GetPageDashboardData = async (
 
   // --- Resource-scoped visibility enforcement ---
   const user = layoutData.loggedInUser;
+
+  // Cache accessible resources once (only fetched if user is logged in)
+  let accessibleResources: { pageIds: Set<number>; monitorTags: Set<string> } | null = null;
+  const getAccessible = async () => {
+    if (!accessibleResources && user) {
+      accessibleResources = await db.getAccessibleResources(user.id);
+    }
+    return accessibleResources;
+  };
+
   if (!pageDetails.is_public) {
-    const hasAccess = user
-      ? (await db.getAccessibleResources(user.id)).pageIds.has(pageDetails.id)
-      : false;
+    const accessible = await getAccessible();
+    const hasAccess = accessible ? accessible.pageIds.has(pageDetails.id) : false;
     if (!hasAccess) {
-      const mode = (pageDetails.visibility_mode ?? "hidden") as "hidden" | "teaser" | "locked";
+      const mode = getPageVisibility(pageDetails.visibility_mode ?? "hidden");
       if (mode === "hidden") return null;
       // Return minimal locked/teaser state — component checks locked=true before rendering
       const nowTs = GetMinuteStartNowTimestampUTC();
@@ -362,28 +372,20 @@ export const GetPageDashboardData = async (
 
   // Filter monitors to only those the user can see
   let visibleMonitorTags: string[];
-  if (pageMonitors.length === 0) {
+  const allTags = pageMonitors.map((pm) => pm.monitor_tag);
+  if (allTags.length === 0) {
     visibleMonitorTags = [];
   } else {
-    const allTags = pageMonitors.map((pm) => pm.monitor_tag);
     const monitorRecords = await db.getMonitorsByTags(allTags);
     const isPublicByTag = new Map(monitorRecords.map((m) => [m.tag, m.is_public]));
-
-    if (user) {
-      const { monitorTags: accessibleMonitorTags } = await db.getAccessibleResources(user.id);
-      visibleMonitorTags = pageMonitors
-        .filter((pm) => {
-          const isPublic = isPublicByTag.get(pm.monitor_tag) ?? 1;
-          if (isPublic) return true;
-          return accessibleMonitorTags.has(pm.monitor_tag);
-        })
-        .map((pm) => pm.monitor_tag);
-    } else {
-      // No user: only show monitors that are public
-      visibleMonitorTags = pageMonitors
-        .filter((pm) => (isPublicByTag.get(pm.monitor_tag) ?? 1) === 1)
-        .map((pm) => pm.monitor_tag);
-    }
+    const accessible = await getAccessible();
+    visibleMonitorTags = pageMonitors
+      .filter((pm) => {
+        const isPublic = isPublicByTag.get(pm.monitor_tag) ?? 1;
+        if (isPublic) return true;
+        return accessible ? accessible.monitorTags.has(pm.monitor_tag) : false;
+      })
+      .map((pm) => pm.monitor_tag);
   }
   const monitorTags = visibleMonitorTags;
 
