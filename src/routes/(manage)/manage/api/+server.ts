@@ -680,6 +680,7 @@ export async function POST({ request, cookies }) {
       resp = await GetAllGroups();
     } else if (action == "getGroup") {
       resp = await GetGroupById(data.id);
+      if (!resp) throw new Error("Group not found");
     } else if (action == "createGroup") {
       resp = await CreateGroup(data);
     } else if (action == "updateGroup") {

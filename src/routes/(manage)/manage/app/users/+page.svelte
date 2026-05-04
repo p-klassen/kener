@@ -801,7 +801,7 @@
         <p class="mt-4 text-muted-foreground text-sm">This user has no resource-scoped access yet.</p>
       {:else}
         <div class="mt-4 space-y-4">
-          {#each effectiveAccess as entry (entry.role_id + (entry.group_id ?? "direct"))}
+          {#each effectiveAccess as entry (entry.role_id + (entry.group_name ?? "direct"))}
             <div class="rounded border p-3">
               <div class="mb-2 flex items-center gap-2">
                 {#if entry.source === "direct"}

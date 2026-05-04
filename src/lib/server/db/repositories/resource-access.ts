@@ -48,6 +48,10 @@ export class ResourceAccessRepository extends BaseRepository {
     });
   }
 
+  async deleteRolesMonitorsByTag(monitorTag: string): Promise<void> {
+    await this.knex("roles_monitors").where("monitor_tag", monitorTag).delete();
+  }
+
   // ============ Effective access for a user ============
 
   async getEffectiveAccess(userId: number): Promise<EffectiveAccessEntry[]> {

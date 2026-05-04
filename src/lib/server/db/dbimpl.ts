@@ -403,6 +403,7 @@ class DbImpl {
   setRolePages!: ResourceAccessRepository["setRolePages"];
   getRoleMonitors!: ResourceAccessRepository["getRoleMonitors"];
   setRoleMonitors!: ResourceAccessRepository["setRoleMonitors"];
+  deleteRolesMonitorsByTag!: ResourceAccessRepository["deleteRolesMonitorsByTag"];
   getEffectiveAccess!: ResourceAccessRepository["getEffectiveAccess"];
   getAccessibleResources!: ResourceAccessRepository["getAccessibleResources"];
 
@@ -904,6 +905,7 @@ class DbImpl {
     // roles_monitors
     this.getRoleMonitors = this.resourceAccess.getRoleMonitors.bind(this.resourceAccess);
     this.setRoleMonitors = this.resourceAccess.setRoleMonitors.bind(this.resourceAccess);
+    this.deleteRolesMonitorsByTag = this.resourceAccess.deleteRolesMonitorsByTag.bind(this.resourceAccess);
 
     // Effective access and access check
     this.getEffectiveAccess = this.resourceAccess.getEffectiveAccess.bind(this.resourceAccess);
