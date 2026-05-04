@@ -166,6 +166,8 @@ export interface PageDashboardData {
   socialPagePreviewImage?: string;
   metaPageTitle?: string;
   metaPageDescription?: string;
+  locked?: boolean;
+  lockedMode?: "teaser" | "locked";
 }
 
 const BuildPageStatus = (latestData: Array<{ status?: string | null; latency?: number | null }>, nowTs: number) => {
@@ -342,6 +344,8 @@ export const GetPageDashboardData = async (
     page_subheader: pageDetails.page_subheader,
     page_logo: pageDetails.page_logo,
     page_settings: settings,
+    is_public: pageDetails.is_public ?? 1,
+    visibility_mode: pageDetails.visibility_mode ?? "hidden",
     created_at: pageDetails.created_at,
     updated_at: pageDetails.updated_at,
   };

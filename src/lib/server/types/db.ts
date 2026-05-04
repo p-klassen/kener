@@ -79,6 +79,7 @@ export interface MonitorRecord {
   day_down_minimum_count?: number | null;
   include_degraded_in_downtime?: string;
   is_hidden: string;
+  is_public: number;    // 0 | 1
   monitor_settings_json: string | null;
   created_at?: Date;
   updated_at?: Date;
@@ -450,6 +451,8 @@ export interface PageRecord {
   page_subheader: string | null;
   page_logo: string | null;
   page_settings_json: string | null;
+  is_public: number;          // 0 | 1
+  visibility_mode: string;    // 'hidden' | 'teaser' | 'locked'
   created_at: Date;
   updated_at: Date;
 }
@@ -461,6 +464,8 @@ export interface PageRecordInsert {
   page_subheader?: string | null;
   page_logo?: string | null;
   page_settings_json?: string | null;
+  is_public?: number;         // 0 | 1
+  visibility_mode?: string;   // 'hidden' | 'teaser' | 'locked'
 }
 
 export interface PageSettingsType {
@@ -482,6 +487,8 @@ export interface PageRecordTyped {
   page_subheader: string | null;
   page_logo: string | null;
   page_settings: PageSettingsType | null;
+  is_public: number;          // 0 | 1
+  visibility_mode: string;    // 'hidden' | 'teaser' | 'locked'
   created_at: Date;
   updated_at: Date;
 }
@@ -989,4 +996,67 @@ export interface SubscriptionsConfig {
       maintenances: boolean;
     };
   };
+}
+
+// ============ groups table ============
+export interface GroupRecord {
+  id: number;
+  name: string;
+  description: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface GroupRecordInsert {
+  name: string;
+  description?: string | null;
+}
+
+// ============ users_groups table ============
+export interface UserGroupRecord {
+  users_id: number;
+  groups_id: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ============ groups_roles table ============
+export interface GroupRoleRecord {
+  groups_id: number;
+  roles_id: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ============ roles_pages table ============
+export interface RolePageRecord {
+  roles_id: string;
+  pages_id: number;
+  inherit_monitors: number;  // 0 | 1
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ============ roles_monitors table ============
+export interface RoleMonitorRecord {
+  roles_id: string;
+  monitor_tag: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// ============ effective access (computed, not a DB table) ============
+export interface EffectiveAccessEntry {
+  source: "direct" | "group";
+  group_name?: string;    // set when source === 'group'
+  role_id: string;
+  role_name: string;
+  pages: Array<{
+    page_id: number;
+    page_title: string;
+    page_path: string;
+    inherit_monitors: boolean;
+    monitors: Array<{ monitor_tag: string; monitor_name: string }>;
+  }>;
+  direct_monitors: Array<{ monitor_tag: string; monitor_name: string }>;
 }
