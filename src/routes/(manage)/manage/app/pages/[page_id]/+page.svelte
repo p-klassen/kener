@@ -64,7 +64,9 @@
     page_title: "",
     page_header: "",
     page_subheader: "",
-    page_logo: ""
+    page_logo: "",
+    is_public: 1,
+    visibility_mode: "hidden" as "hidden" | "teaser" | "locked"
   });
 
   // Monitor selection
@@ -120,7 +122,9 @@
           page_title: foundPage.page_title,
           page_header: foundPage.page_header,
           page_subheader: foundPage.page_subheader || "",
-          page_logo: foundPage.page_logo || ""
+          page_logo: foundPage.page_logo || "",
+          is_public: foundPage.is_public ?? 1,
+          visibility_mode: (foundPage.visibility_mode ?? "hidden") as "hidden" | "teaser" | "locked"
         };
         selectedMonitors = foundPage.monitors?.map((m: { monitor_tag: string }) => m.monitor_tag) || [];
         // Load page settings with defaults
@@ -182,7 +186,9 @@
         page_title: formData.page_title,
         page_header: formData.page_header,
         page_subheader: formData.page_subheader || null,
-        page_logo: formData.page_logo || null
+        page_logo: formData.page_logo || null,
+        is_public: formData.is_public,
+        visibility_mode: formData.visibility_mode
       };
 
       if (!isNew && currentPage) {
@@ -660,6 +666,45 @@
               <p class="text-muted-foreground text-xs">Optional logo for this page (max 256x256px)</p>
             </div>
           </div>
+        </div>
+
+        <!-- Visibility -->
+        <div class="space-y-3">
+          <Label>Visibility</Label>
+          <div class="flex items-center gap-2">
+            <Switch
+              id="is_public"
+              checked={!!formData.is_public}
+              onCheckedChange={(v) => (formData.is_public = v ? 1 : 0)}
+            />
+            <Label for="is_public" class="font-normal">Public (visible to everyone)</Label>
+          </div>
+
+          {#if !formData.is_public}
+            <div class="ml-6 space-y-2">
+              <p class="text-muted-foreground text-xs">How should unauthorized users see this page?</p>
+              {#each [
+                { value: 'hidden', label: 'Hidden', desc: 'Does not appear at all' },
+                { value: 'teaser', label: 'Login teaser', desc: 'Shows name, hides status' },
+                { value: 'locked', label: 'Locked page', desc: 'Full-screen login prompt' },
+              ] as opt (opt.value)}
+                <label class="flex cursor-pointer items-start gap-2">
+                  <input
+                    type="radio"
+                    name="visibility_mode"
+                    value={opt.value}
+                    checked={formData.visibility_mode === opt.value}
+                    onchange={() => (formData.visibility_mode = opt.value as "hidden" | "teaser" | "locked")}
+                    class="mt-0.5"
+                  />
+                  <span>
+                    <span class="text-sm font-medium">{opt.label}</span>
+                    <span class="text-muted-foreground ml-1 text-xs">— {opt.desc}</span>
+                  </span>
+                </label>
+              {/each}
+            </div>
+          {/if}
         </div>
       </Card.Content>
       <Card.Footer class="flex justify-end">

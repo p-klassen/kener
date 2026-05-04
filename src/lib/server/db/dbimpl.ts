@@ -14,6 +14,8 @@ import { MaintenancesRepository } from "./repositories/maintenances.js";
 import { MonitorAlertConfigRepository } from "./repositories/monitorAlertConfig.js";
 import { SubscriptionSystemRepository } from "./repositories/subscriptionSystem.js";
 import { EmailTemplateConfigRepository } from "./repositories/emailTemplateConfig.js";
+import { GroupsRepository } from "./repositories/groups.js";
+import { ResourceAccessRepository } from "./repositories/resource-access.js";
 
 // Re-export types from base
 export type { MonitorFilter, TriggerFilter, IncidentFilter, CountResult } from "./repositories/base.js";
@@ -43,6 +45,8 @@ class DbImpl {
   private monitorAlertConfig!: MonitorAlertConfigRepository;
   private subscriptionSystem!: SubscriptionSystemRepository;
   private emailTemplateConfig!: EmailTemplateConfigRepository;
+  private groups!: GroupsRepository;
+  private resourceAccess!: ResourceAccessRepository;
 
   // Method bindings - declared with definite assignment assertion
   // ============ Monitoring Data ============
@@ -371,6 +375,38 @@ class DbImpl {
   deleteEmailTemplate!: EmailTemplateConfigRepository["deleteEmailTemplate"];
   upsertEmailTemplate!: EmailTemplateConfigRepository["upsertEmailTemplate"];
 
+  // ============ Groups ============
+  getAllGroups!: GroupsRepository["getAllGroups"];
+  getGroupById!: GroupsRepository["getGroupById"];
+  createGroup!: GroupsRepository["createGroup"];
+  updateGroup!: GroupsRepository["updateGroup"];
+  deleteGroup!: GroupsRepository["deleteGroup"];
+  getGroupsCount!: GroupsRepository["getGroupsCount"];
+
+  // ============ Group Members ============
+  getGroupMembers!: GroupsRepository["getGroupMembers"];
+  addGroupMember!: GroupsRepository["addGroupMember"];
+  removeGroupMember!: GroupsRepository["removeGroupMember"];
+  getMemberCount!: GroupsRepository["getMemberCount"];
+
+  // ============ Group Roles ============
+  getGroupRoles!: GroupsRepository["getGroupRoles"];
+  addGroupRole!: GroupsRepository["addGroupRole"];
+  removeGroupRole!: GroupsRepository["removeGroupRole"];
+  getRoleCount!: GroupsRepository["getRoleCount"];
+
+  // ============ Groups Lookup ============
+  getGroupsForUser!: GroupsRepository["getGroupsForUser"];
+
+  // ============ Resource Access ============
+  getRolePages!: ResourceAccessRepository["getRolePages"];
+  setRolePages!: ResourceAccessRepository["setRolePages"];
+  getRoleMonitors!: ResourceAccessRepository["getRoleMonitors"];
+  setRoleMonitors!: ResourceAccessRepository["setRoleMonitors"];
+  deleteRolesMonitorsByTag!: ResourceAccessRepository["deleteRolesMonitorsByTag"];
+  getEffectiveAccess!: ResourceAccessRepository["getEffectiveAccess"];
+  getAccessibleResources!: ResourceAccessRepository["getAccessibleResources"];
+
   constructor(opts: KnexType.Config) {
     this.knex = Knex(opts);
 
@@ -387,6 +423,8 @@ class DbImpl {
     this.monitorAlertConfig = new MonitorAlertConfigRepository(this.knex);
     this.subscriptionSystem = new SubscriptionSystemRepository(this.knex);
     this.emailTemplateConfig = new EmailTemplateConfigRepository(this.knex);
+    this.groups = new GroupsRepository(this.knex);
+    this.resourceAccess = new ResourceAccessRepository(this.knex);
 
     // Bind methods after repositories are initialized
     this.bindMonitoringMethods();
@@ -401,6 +439,8 @@ class DbImpl {
     this.bindMonitorAlertConfigMethods();
     this.bindSubscriptionSystemMethods();
     this.bindEmailTemplateConfigMethods();
+    this.bindGroupsMethods();
+    this.bindResourceAccessMethods();
 
     this.init();
   }
@@ -830,6 +870,46 @@ class DbImpl {
     this.getEmailTemplateById = this.emailTemplateConfig.getEmailTemplateById.bind(this.emailTemplateConfig);
     this.deleteEmailTemplate = this.emailTemplateConfig.deleteEmailTemplate.bind(this.emailTemplateConfig);
     this.upsertEmailTemplate = this.emailTemplateConfig.upsertEmailTemplate.bind(this.emailTemplateConfig);
+  }
+
+  private bindGroupsMethods(): void {
+    // Groups CRUD
+    this.getAllGroups = this.groups.getAllGroups.bind(this.groups);
+    this.getGroupById = this.groups.getGroupById.bind(this.groups);
+    this.createGroup = this.groups.createGroup.bind(this.groups);
+    this.updateGroup = this.groups.updateGroup.bind(this.groups);
+    this.deleteGroup = this.groups.deleteGroup.bind(this.groups);
+    this.getGroupsCount = this.groups.getGroupsCount.bind(this.groups);
+
+    // Group Members
+    this.getGroupMembers = this.groups.getGroupMembers.bind(this.groups);
+    this.addGroupMember = this.groups.addGroupMember.bind(this.groups);
+    this.removeGroupMember = this.groups.removeGroupMember.bind(this.groups);
+    this.getMemberCount = this.groups.getMemberCount.bind(this.groups);
+
+    // Group Roles
+    this.getGroupRoles = this.groups.getGroupRoles.bind(this.groups);
+    this.addGroupRole = this.groups.addGroupRole.bind(this.groups);
+    this.removeGroupRole = this.groups.removeGroupRole.bind(this.groups);
+    this.getRoleCount = this.groups.getRoleCount.bind(this.groups);
+
+    // Groups Lookup
+    this.getGroupsForUser = this.groups.getGroupsForUser.bind(this.groups);
+  }
+
+  private bindResourceAccessMethods(): void {
+    // roles_pages
+    this.getRolePages = this.resourceAccess.getRolePages.bind(this.resourceAccess);
+    this.setRolePages = this.resourceAccess.setRolePages.bind(this.resourceAccess);
+
+    // roles_monitors
+    this.getRoleMonitors = this.resourceAccess.getRoleMonitors.bind(this.resourceAccess);
+    this.setRoleMonitors = this.resourceAccess.setRoleMonitors.bind(this.resourceAccess);
+    this.deleteRolesMonitorsByTag = this.resourceAccess.deleteRolesMonitorsByTag.bind(this.resourceAccess);
+
+    // Effective access and access check
+    this.getEffectiveAccess = this.resourceAccess.getEffectiveAccess.bind(this.resourceAccess);
+    this.getAccessibleResources = this.resourceAccess.getAccessibleResources.bind(this.resourceAccess);
   }
 
   async init(): Promise<void> {}

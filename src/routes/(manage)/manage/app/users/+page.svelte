@@ -92,6 +92,49 @@
   let manualSuccess = $state("");
   let sendingSelfVerification = $state(false);
 
+  // Effective access sheet state
+  type EffectivePageEntry = {
+    page_id: number;
+    page_title: string;
+    inherit_monitors: number;
+    monitors: Array<{ monitor_tag: string; monitor_name: string }>;
+  };
+
+  type EffectiveAccessEntry = {
+    source: "direct" | "group";
+    role_id: string;
+    role_name: string;
+    group_id: number | null;
+    group_name: string | null;
+    pages: EffectivePageEntry[];
+    direct_monitors: Array<{ monitor_tag: string; monitor_name: string }>;
+  };
+
+  let effectiveAccessUserId = $state<number | null>(null);
+  let effectiveAccess = $state<EffectiveAccessEntry[]>([]);
+  let accessLoading = $state(false);
+
+  async function apiCall(action: string, data: Record<string, unknown> = {}) {
+    const res = await fetch(clientResolver(resolve, "/manage/api"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, data }),
+    });
+    const result = await res.json();
+    if (result.error) throw new Error(result.error);
+    return result;
+  }
+
+  async function openEffectiveAccess(userId: number) {
+    effectiveAccessUserId = userId;
+    accessLoading = true;
+    try {
+      effectiveAccess = await apiCall("getUserEffectiveAccess", { userId });
+    } finally {
+      accessLoading = false;
+    }
+  }
+
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   function normalizeEmail(email: string): string {
@@ -458,23 +501,28 @@
                 {/if}
               </Table.Cell>
               <Table.Cell class="text-center">
-                {#if hasPermission("users.write") && currentUser.id !== user.id}
-                  <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => openSettingsSheet(user)}>
-                    <SettingsIcon class="h-4 w-4" />
+                <div class="flex items-center justify-center gap-1">
+                  {#if hasPermission("users.write") && currentUser.id !== user.id}
+                    <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => openSettingsSheet(user)}>
+                      <SettingsIcon class="h-4 w-4" />
+                    </Button>
+                  {:else if currentUser.id === user.id && !currentUser.is_verified}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={sendingSelfVerification}
+                      onclick={() => sendVerificationEmail(user.id)}
+                    >
+                      {#if sendingSelfVerification}
+                        <Spinner class="size-4" />
+                      {/if}
+                      Verify Email
+                    </Button>
+                  {/if}
+                  <Button variant="outline" size="sm" onclick={() => openEffectiveAccess(user.id)}>
+                    Access
                   </Button>
-                {:else if currentUser.id === user.id && !!!currentUser.is_verified}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={sendingSelfVerification}
-                    onclick={() => sendVerificationEmail(user.id)}
-                  >
-                    {#if sendingSelfVerification}
-                      <Spinner class="size-4" />
-                    {/if}
-                    Verify Email
-                  </Button>
-                {/if}
+                </div>
               </Table.Cell>
             </Table.Row>
           {/each}
@@ -737,3 +785,66 @@
     </div>
   </Sheet.Content>
 </Sheet.Root>
+
+<!-- Effective Access Sheet -->
+{#if effectiveAccessUserId !== null}
+  <Sheet.Root open={true} onOpenChange={(v) => { if (!v) effectiveAccessUserId = null; }}>
+    <Sheet.Content class="w-[560px] overflow-y-auto sm:max-w-[560px]">
+      <Sheet.Header>
+        <Sheet.Title>Effective Access</Sheet.Title>
+        <Sheet.Description>Resources this user can access, grouped by source.</Sheet.Description>
+      </Sheet.Header>
+
+      {#if accessLoading}
+        <p class="mt-4 text-muted-foreground">Loading…</p>
+      {:else if effectiveAccess.length === 0}
+        <p class="mt-4 text-muted-foreground text-sm">This user has no resource-scoped access yet.</p>
+      {:else}
+        <div class="mt-4 space-y-4">
+          {#each effectiveAccess as entry (entry.role_id + (entry.group_name ?? "direct"))}
+            <div class="rounded border p-3">
+              <div class="mb-2 flex items-center gap-2">
+                {#if entry.source === "direct"}
+                  <span class="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">Direct</span>
+                {:else}
+                  <span class="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">Group: {entry.group_name}</span>
+                {/if}
+                <span class="text-muted-foreground text-xs">Role: {entry.role_name}</span>
+              </div>
+
+              {#each entry.pages as p (p.page_id)}
+                <div class="ml-2 mt-1">
+                  <div class="flex items-center gap-1 text-sm font-medium">
+                    <span>🗂</span> {p.page_title}
+                  </div>
+                  {#if p.inherit_monitors && p.monitors.length > 0}
+                    <div class="ml-4 mt-0.5 flex flex-wrap gap-1">
+                      {#each p.monitors as m (m.monitor_tag)}
+                        <span class="rounded bg-muted px-1.5 py-0.5 text-xs">{m.monitor_name} <span class="text-muted-foreground">(inherited)</span></span>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              {/each}
+
+              {#if entry.direct_monitors.length > 0}
+                <div class="ml-2 mt-1">
+                  <span class="text-muted-foreground text-xs">Direct monitors:</span>
+                  <div class="mt-0.5 flex flex-wrap gap-1">
+                    {#each entry.direct_monitors as m (m.monitor_tag)}
+                      <span class="rounded bg-muted px-1.5 py-0.5 text-xs">📡 {m.monitor_name}</span>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
+              {#if entry.pages.length === 0 && entry.direct_monitors.length === 0}
+                <p class="text-muted-foreground ml-2 text-xs">No resources assigned to this role yet.</p>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </Sheet.Content>
+  </Sheet.Root>
+{/if}

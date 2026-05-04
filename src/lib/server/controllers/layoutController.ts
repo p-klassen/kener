@@ -50,6 +50,7 @@ export interface LayoutServerData {
     showShareEmbedMonitor: boolean;
   };
   isTimezoneEnabled: boolean;
+  manualTimezone: string;
   isThemeToggleEnabled: boolean;
   defaultSiteTheme: string;
   font: {
@@ -131,6 +132,7 @@ export async function GetLayoutServerData(cookies: Cookies, request: Request): P
     languageSetting,
     subMenuOptions: siteData.subMenuOptions || seedSiteData.subMenuOptions,
     isTimezoneEnabled,
+    manualTimezone: siteData.manualTimezone || "",
     isThemeToggleEnabled,
     defaultSiteTheme,
     font,

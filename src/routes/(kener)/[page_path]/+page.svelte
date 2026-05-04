@@ -142,85 +142,129 @@
 </svelte:head>
 
 <!-- page title -->
-<div class="flex flex-col gap-3 sm:gap-4">
-  <ThemePlus monitor_tags={data.monitorTags} />
-  <div class="flex flex-col gap-2 px-3 py-2 sm:px-4">
-    {#if data.pageDetails?.page_logo}
-      <img
-        src={clientResolver(resolve, data.pageDetails.page_logo)}
-        alt="Page Logo"
-        class="aspect-auto w-12 rounded object-cover"
-      />
-    {/if}
-    <Item.Root class="px-0 py-0">
-      <Item.Content>
-        {#if data.pageDetails?.page_header}
-          <h1>
-            <Item.Title class="text-2xl sm:text-3xl">{data.pageDetails.page_header}</Item.Title>
-          </h1>
-        {/if}
-        {#if data.pageDetails?.page_subheader}
-          <h2 class="">
-            <div class="prose prose-sm dark:prose-invert max-w-none">
-              <SveltePurify html={mdToHTML(data.pageDetails.page_subheader)} />
-            </div>
-          </h2>
-        {/if}
-      </Item.Content>
-    </Item.Root>
+{#if data.locked && data.lockedMode === 'locked'}
+  <div class="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+    <span class="text-5xl">🔒</span>
+    <h2 class="text-xl font-semibold">This page is private</h2>
+    <p class="text-muted-foreground text-sm">Sign in to view this status page.</p>
+    <a href={clientResolver(resolve, "/account/signin")} class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
+      Sign in
+    </a>
   </div>
-  {#if !!data.monitorTags.length}
-    <EventsCard statusClass={data.pageStatus.statusClass} statusText={data.pageStatus.statusSummary} />
-    {#if data.ongoingIncidents && data.ongoingIncidents.length > 0}
-      <div class="flex flex-col gap-3">
-        {#each data.ongoingIncidents as incident, i (incident.id ?? i)}
-          <div class=" rounded-3xl border p-3 sm:p-4">
-            <IncidentItem {incident} />
-          </div>
-        {/each}
-      </div>
-    {/if}
-    {#if data.ongoingMaintenances && data.ongoingMaintenances.length > 0}
-      <div class="flex flex-col gap-3">
-        {#each data.ongoingMaintenances as maintenance, i (maintenance.id ?? i)}
-          <div class="rounded-3xl border p-3 sm:p-4">
-            <MaintenanceItem {maintenance} />
-          </div>
-        {/each}
-      </div>
-    {/if}
-    {#if data.upcomingMaintenances && data.upcomingMaintenances.length > 0}
-      <div class="flex flex-col gap-3">
-        {#each data.upcomingMaintenances as maintenance, i (maintenance.id ?? i)}
-          <div class="rounded-3xl border p-3 sm:p-4">
-            <MaintenanceItem {maintenance} />
-          </div>
-        {/each}
-      </div>
-    {/if}
-    <div class="overflow-hidden rounded-3xl border">
-      <div class={`grid grid-cols-1 ${getGridContainerClass(viewType)}`}>
-        {#each data.monitorTags as tag, i (tag)}
-          <div
-            class="{viewType === 'compact-grid' || viewType === 'default-grid'
-              ? `${getGridItemSpanClass(i, data.monitorTags.length, viewType)} bg-background`
-              : i < data.monitorTags.length - 1
-                ? 'border-b'
-                : ''} px-2 py-2 sm:px-0"
-          >
-            <MonitorBar
-              {tag}
-              prefetchedData={monitorBarDataByTag[tag]}
-              prefetchedError={monitorBarErrorByTag[tag]}
-              days={barCount}
-              {endOfDayTodayAtTz}
-              groupChildTags={data.monitorGroupMembersByTag?.[tag] || []}
-              compact={isCompact}
-              grid={viewType === "compact-grid" || viewType === "default-grid"}
-            />
-          </div>
-        {/each}
-      </div>
+{:else if data.locked && data.lockedMode === 'teaser'}
+  <div class="flex flex-col gap-3 sm:gap-4">
+    <div class="flex flex-col gap-2 px-3 py-2 sm:px-4">
+      {#if data.pageDetails?.page_logo}
+        <img
+          src={clientResolver(resolve, data.pageDetails.page_logo)}
+          alt="Page Logo"
+          class="aspect-auto w-12 rounded object-cover"
+        />
+      {/if}
+      <Item.Root class="px-0 py-0">
+        <Item.Content>
+          {#if data.pageDetails?.page_header}
+            <h1>
+              <Item.Title class="text-2xl sm:text-3xl">{data.pageDetails.page_header}</Item.Title>
+            </h1>
+          {/if}
+          {#if data.pageDetails?.page_subheader}
+            <h2 class="">
+              <div class="prose prose-sm dark:prose-invert max-w-none">
+                <SveltePurify html={mdToHTML(data.pageDetails.page_subheader)} />
+              </div>
+            </h2>
+          {/if}
+        </Item.Content>
+      </Item.Root>
     </div>
-  {/if}
-</div>
+    <div class="flex items-center gap-2 rounded-2xl border border-dashed px-4 py-3 opacity-70">
+      <span>🔒</span>
+      <span class="text-muted-foreground text-sm">Sign in to view monitor status</span>
+      <a href={clientResolver(resolve, "/account/signin")} class="text-primary ml-auto text-xs underline">Sign in</a>
+    </div>
+  </div>
+{:else}
+  <div class="flex flex-col gap-3 sm:gap-4">
+    <ThemePlus monitor_tags={data.monitorTags} />
+    <div class="flex flex-col gap-2 px-3 py-2 sm:px-4">
+      {#if data.pageDetails?.page_logo}
+        <img
+          src={clientResolver(resolve, data.pageDetails.page_logo)}
+          alt="Page Logo"
+          class="aspect-auto w-12 rounded object-cover"
+        />
+      {/if}
+      <Item.Root class="px-0 py-0">
+        <Item.Content>
+          {#if data.pageDetails?.page_header}
+            <h1>
+              <Item.Title class="text-2xl sm:text-3xl">{data.pageDetails.page_header}</Item.Title>
+            </h1>
+          {/if}
+          {#if data.pageDetails?.page_subheader}
+            <h2 class="">
+              <div class="prose prose-sm dark:prose-invert max-w-none">
+                <SveltePurify html={mdToHTML(data.pageDetails.page_subheader)} />
+              </div>
+            </h2>
+          {/if}
+        </Item.Content>
+      </Item.Root>
+    </div>
+    {#if !!data.monitorTags.length}
+      <EventsCard statusClass={data.pageStatus.statusClass} statusText={data.pageStatus.statusSummary} />
+      {#if data.ongoingIncidents && data.ongoingIncidents.length > 0}
+        <div class="flex flex-col gap-3">
+          {#each data.ongoingIncidents as incident, i (incident.id ?? i)}
+            <div class=" rounded-3xl border p-3 sm:p-4">
+              <IncidentItem {incident} />
+            </div>
+          {/each}
+        </div>
+      {/if}
+      {#if data.ongoingMaintenances && data.ongoingMaintenances.length > 0}
+        <div class="flex flex-col gap-3">
+          {#each data.ongoingMaintenances as maintenance, i (maintenance.id ?? i)}
+            <div class="rounded-3xl border p-3 sm:p-4">
+              <MaintenanceItem {maintenance} />
+            </div>
+          {/each}
+        </div>
+      {/if}
+      {#if data.upcomingMaintenances && data.upcomingMaintenances.length > 0}
+        <div class="flex flex-col gap-3">
+          {#each data.upcomingMaintenances as maintenance, i (maintenance.id ?? i)}
+            <div class="rounded-3xl border p-3 sm:p-4">
+              <MaintenanceItem {maintenance} />
+            </div>
+          {/each}
+        </div>
+      {/if}
+      <div class="overflow-hidden rounded-3xl border">
+        <div class={`grid grid-cols-1 ${getGridContainerClass(viewType)}`}>
+          {#each data.monitorTags as tag, i (tag)}
+            <div
+              class="{viewType === 'compact-grid' || viewType === 'default-grid'
+                ? `${getGridItemSpanClass(i, data.monitorTags.length, viewType)} bg-background`
+                : i < data.monitorTags.length - 1
+                  ? 'border-b'
+                  : ''} px-2 py-2 sm:px-0"
+            >
+              <MonitorBar
+                {tag}
+                prefetchedData={monitorBarDataByTag[tag]}
+                prefetchedError={monitorBarErrorByTag[tag]}
+                days={barCount}
+                {endOfDayTodayAtTz}
+                groupChildTags={data.monitorGroupMembersByTag?.[tag] || []}
+                compact={isCompact}
+                grid={viewType === "compact-grid" || viewType === "default-grid"}
+              />
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
+{/if}

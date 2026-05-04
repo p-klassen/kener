@@ -21,8 +21,9 @@
   import ClockAlertIcon from "@lucide/svelte/icons/clock-alert";
   import BookOpenIcon from "@lucide/svelte/icons/book-open";
   import KeyIcon from "@lucide/svelte/icons/key";
-  import UsersIcon from "@lucide/svelte/icons/users";
+  import UserIcon from "@lucide/svelte/icons/user";
   import ShieldIcon from "@lucide/svelte/icons/shield";
+  import UsersRoundIcon from "@lucide/svelte/icons/users-round";
   import Columns3CogIcon from "@lucide/svelte/icons/columns-3-cog";
   import SiteHeader from "./manage/site-header.svelte";
   import TemplateIcon from "@lucide/svelte/icons/layout-template";
@@ -48,7 +49,8 @@
     { title: "Maintenances", url: "/manage/app/maintenances", icon: ClockAlertIcon },
     { title: "Alerts", url: "/manage/app/alerts", icon: SirenIcon },
     { title: "Subscriptions", url: "/manage/app/subscriptions", icon: BellIcon },
-    { title: "Users", url: "/manage/app/users", icon: UsersIcon },
+    { title: "Users", url: "/manage/app/users", icon: UserIcon },
+    { title: "Groups", url: "/manage/app/groups", icon: UsersRoundIcon },
     { title: "Roles", url: "/manage/app/roles", icon: ShieldIcon },
     { title: "Triggers", url: "/manage/app/triggers", icon: MailboxIcon },
     { title: "Templates", url: "/manage/app/templates", icon: TemplateIcon },

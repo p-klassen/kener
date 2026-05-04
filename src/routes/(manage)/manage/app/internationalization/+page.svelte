@@ -18,6 +18,10 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { format } from "date-fns";
+  import * as Popover from "$lib/components/ui/popover/index.js";
+  import * as Command from "$lib/components/ui/command/index.js";
+  import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
+  import CheckIcon from "@lucide/svelte/icons/check";
 
   interface Locale {
     code: string;
@@ -37,6 +41,9 @@
   let savingTimezone = $state(false);
   let savingDateTimeFormat = $state(false);
   let tzToggle = $state("NO");
+  let manualTimezone = $state("");
+  let tzOpen = $state(false);
+  const timezones = Intl.supportedValuesOf("timeZone");
   let dateAndTimeFormat = $state({
     datePlusTime: "PPpp",
     dateOnly: "PP",
@@ -69,6 +76,9 @@
       } else {
         if (result.tzToggle) {
           tzToggle = result.tzToggle;
+        }
+        if (result.manualTimezone !== undefined) {
+          manualTimezone = result.manualTimezone;
         }
         if (result.dateAndTimeFormat) {
           dateAndTimeFormat = {
@@ -136,7 +146,8 @@
         body: JSON.stringify({
           action: "storeSiteData",
           data: {
-            tzToggle: tzToggle
+            tzToggle: tzToggle,
+            manualTimezone: manualTimezone
           }
         })
       });
@@ -344,6 +355,40 @@
             onCheckedChange={(checked) => (tzToggle = checked ? "YES" : "NO")}
           />
           <Label for="tz-toggle" class="font-normal">Allow users to switch timezones</Label>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <Label>Server Timezone Override</Label>
+          <p class="text-muted-foreground text-xs">
+            Set a fixed IANA timezone for the server. Leave empty to use the system default.
+          </p>
+          <Popover.Root bind:open={tzOpen}>
+            <Popover.Trigger>
+              <Button variant="outline" role="combobox" aria-expanded={tzOpen} class="w-72 justify-between font-normal">
+                {manualTimezone || "System default"}
+                <ChevronsUpDownIcon class="text-muted-foreground size-4 shrink-0" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content class="w-72 p-0" align="start">
+              <Command.Root>
+                <Command.Input placeholder="Search timezone..." />
+                <Command.List class="max-h-60">
+                  <Command.Empty>No timezone found.</Command.Empty>
+                  <Command.Group>
+                    <Command.Item value="" onSelect={() => { manualTimezone = ""; tzOpen = false; }}>
+                      <CheckIcon class="size-4 {manualTimezone === '' ? 'opacity-100' : 'opacity-0'}" />
+                      System default
+                    </Command.Item>
+                    {#each timezones as tz (tz)}
+                      <Command.Item value={tz} onSelect={() => { manualTimezone = tz; tzOpen = false; }}>
+                        <CheckIcon class="size-4 {manualTimezone === tz ? 'opacity-100' : 'opacity-0'}" />
+                        {tz}
+                      </Command.Item>
+                    {/each}
+                  </Command.Group>
+                </Command.List>
+              </Command.Root>
+            </Popover.Content>
+          </Popover.Root>
         </div>
       </Card.Content>
       <Card.Footer class="flex justify-end">

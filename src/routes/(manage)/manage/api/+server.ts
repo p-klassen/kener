@@ -125,6 +125,26 @@ import {
   GetUserPermissions,
   RequirePermission,
 } from "$lib/server/controllers/userController.js";
+import {
+  GetAllGroups,
+  GetGroupById,
+  CreateGroup,
+  UpdateGroup,
+  DeleteGroup,
+  GetGroupMembers,
+  AddGroupMember,
+  RemoveGroupMember,
+  GetGroupRoles,
+  AddGroupRole,
+  RemoveGroupRole,
+} from "$lib/server/controllers/groupsController.js";
+import {
+  GetRolePages,
+  SetRolePages,
+  GetRoleMonitors,
+  SetRoleMonitors,
+  GetUserEffectiveAccess,
+} from "$lib/server/controllers/resourceAccessController.js";
 import type { SiteDataForNotification } from "$lib/server/notification/types";
 import { alertToVariables, siteDataToVariables } from "$lib/server/notification/notification_utils";
 import type { TriggerMeta } from "$lib/server/types/db.js";
@@ -656,6 +676,47 @@ export async function POST({ request, cookies }) {
       resp = await UpdateRole(data.roleId, { name: data.name, status: data.status });
     } else if (action == "deleteRole") {
       resp = await DeleteRole(data.roleId, data.options);
+    } else if (action == "getGroups") {
+      resp = await GetAllGroups();
+    } else if (action == "getGroup") {
+      resp = await GetGroupById(data.id);
+      if (!resp) throw new Error("Group not found");
+    } else if (action == "createGroup") {
+      resp = await CreateGroup(data);
+    } else if (action == "updateGroup") {
+      const { id, ...updateData } = data;
+      resp = await UpdateGroup(id, updateData);
+    } else if (action == "deleteGroup") {
+      await DeleteGroup(data.id);
+      resp = { success: true };
+    } else if (action == "getGroupMembers") {
+      resp = await GetGroupMembers(data.groupId);
+    } else if (action == "addGroupMember") {
+      await AddGroupMember(data.groupId, data.userId);
+      resp = { success: true };
+    } else if (action == "removeGroupMember") {
+      await RemoveGroupMember(data.groupId, data.userId);
+      resp = { success: true };
+    } else if (action == "getGroupRoles") {
+      resp = await GetGroupRoles(data.groupId);
+    } else if (action == "addGroupRole") {
+      await AddGroupRole(data.groupId, data.roleId);
+      resp = { success: true };
+    } else if (action == "removeGroupRole") {
+      await RemoveGroupRole(data.groupId, data.roleId);
+      resp = { success: true };
+    } else if (action == "getRolePages") {
+      resp = await GetRolePages(data.roleId);
+    } else if (action == "setRolePages") {
+      await SetRolePages(data.roleId, data.assignments);
+      resp = { success: true };
+    } else if (action == "getRoleMonitors") {
+      resp = await GetRoleMonitors(data.roleId);
+    } else if (action == "setRoleMonitors") {
+      await SetRoleMonitors(data.roleId, data.monitorTags);
+      resp = { success: true };
+    } else if (action == "getUserEffectiveAccess") {
+      resp = await GetUserEffectiveAccess(data.userId);
     }
   } catch (error: unknown) {
     console.log(error);
@@ -703,7 +764,7 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
     throw new Error("Image data is required");
   }
 
-  const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif"];
+  const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif", "image/svg+xml"];
   if (!allowedMimeTypes.includes(mimeType)) {
     throw new Error(`Invalid image type. Allowed types: ${allowedMimeTypes.join(", ")}`);
   }
@@ -722,8 +783,24 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
   const maybeTextHeader = imageBuffer.subarray(0, 4096).toString("utf8");
   const looksLikeSvg = /<svg[\s>]/i.test(maybeTextHeader) || /<\?xml/i.test(maybeTextHeader);
 
-  if (normalizedRequestedMime === "image/svg+xml" || looksLikeSvg) {
-    throw new Error("SVG uploads are not allowed");
+  // Reject if content looks like SVG but client claims it's not SVG
+  if (looksLikeSvg && normalizedRequestedMime !== "image/svg+xml") {
+    throw new Error("Image content does not match the declared MIME type");
+  }
+
+  // Store SVG as-is, bypassing sharp
+  if (normalizedRequestedMime === "image/svg+xml") {
+    const svgId = `${nanoid(16)}.svg`;
+    await db.insertImage({
+      id: svgId,
+      data: imageBuffer.toString("base64"),
+      mime_type: "image/svg+xml",
+      original_name: fileName || null,
+      width: null,
+      height: null,
+      size: imageBuffer.length,
+    });
+    return { id: svgId, url: `/assets/images/${svgId}` };
   }
 
   let processedBuffer: Buffer;
@@ -760,10 +837,6 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
   const detectedMimeType = metadata.format ? formatToMime[metadata.format] : undefined;
   if (!detectedMimeType) {
     throw new Error("Could not detect a valid image format");
-  }
-
-  if (detectedMimeType === "image/svg+xml") {
-    throw new Error("SVG uploads are not allowed");
   }
 
   // HEIC/HEIF files often have .jpg extension (e.g. iPhone photos); allow the mismatch

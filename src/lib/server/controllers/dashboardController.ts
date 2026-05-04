@@ -1,4 +1,5 @@
 import db from "../db/db.js";
+import { getPageVisibility } from "../utils/canSeeResource.js";
 import { GetMinuteStartNowTimestampUTC, BeginningOfMinute, BeginningOfDay } from "../tool.js";
 import { GetPageByPathWithMonitors, GetLatestMonitoringDataAllActive } from "./controller.js";
 import { GetMonitorsParsed } from "./monitorsController.js";
@@ -166,6 +167,8 @@ export interface PageDashboardData {
   socialPagePreviewImage?: string;
   metaPageTitle?: string;
   metaPageDescription?: string;
+  locked?: boolean;
+  lockedMode?: "teaser" | "locked";
 }
 
 const BuildPageStatus = (latestData: Array<{ status?: string | null; latency?: number | null }>, nowTs: number) => {
@@ -316,7 +319,75 @@ export const GetPageDashboardData = async (
   }
 
   const { page: pageDetails, monitors: pageMonitors } = pageData;
-  const monitorTags = pageMonitors.map((pm) => pm.monitor_tag);
+
+  // --- Resource-scoped visibility enforcement ---
+  const user = layoutData.loggedInUser;
+
+  // Cache accessible resources once (only fetched if user is logged in)
+  let accessibleResources: { pageIds: Set<number>; monitorTags: Set<string> } | null = null;
+  const getAccessible = async () => {
+    if (!accessibleResources && user) {
+      accessibleResources = await db.getAccessibleResources(user.id);
+    }
+    return accessibleResources;
+  };
+
+  if (!pageDetails.is_public) {
+    const accessible = await getAccessible();
+    const hasAccess = accessible ? accessible.pageIds.has(pageDetails.id) : false;
+    if (!hasAccess) {
+      const mode = getPageVisibility(pageDetails.visibility_mode ?? "hidden");
+      if (mode === "hidden") return null;
+      // Return minimal locked/teaser state — component checks locked=true before rendering
+      const nowTs = GetMinuteStartNowTimestampUTC();
+      const settings: PageSettingsType = defaultPageSettings;
+      return {
+        locked: true,
+        lockedMode: mode,
+        pageDetails: {
+          id: pageDetails.id,
+          page_path: pageDetails.page_path,
+          page_title: pageDetails.page_title,
+          page_header: pageDetails.page_header,
+          page_subheader: pageDetails.page_subheader,
+          page_logo: pageDetails.page_logo,
+          page_settings: settings,
+          is_public: pageDetails.is_public ?? 1,
+          visibility_mode: mode,
+          created_at: pageDetails.created_at,
+          updated_at: pageDetails.updated_at,
+        },
+        pageStatus: BuildPageStatus([], nowTs),
+        ongoingIncidents: [],
+        ongoingMaintenances: [],
+        upcomingMaintenances: [],
+        monitorTags: [],
+        monitorGroupMembersByTag: {},
+        socialPagePreviewImage: layoutData.socialPreviewImage,
+        metaPageTitle: layoutData.metaSiteTitle,
+        metaPageDescription: layoutData.metaSiteDescription,
+      };
+    }
+  }
+
+  // Filter monitors to only those the user can see
+  let visibleMonitorTags: string[];
+  const allTags = pageMonitors.map((pm) => pm.monitor_tag);
+  if (allTags.length === 0) {
+    visibleMonitorTags = [];
+  } else {
+    const monitorRecords = await db.getMonitorsByTags(allTags);
+    const isPublicByTag = new Map(monitorRecords.map((m) => [m.tag, m.is_public]));
+    const accessible = await getAccessible();
+    visibleMonitorTags = pageMonitors
+      .filter((pm) => {
+        const isPublic = isPublicByTag.get(pm.monitor_tag) ?? 1;
+        if (isPublic) return true;
+        return accessible ? accessible.monitorTags.has(pm.monitor_tag) : false;
+      })
+      .map((pm) => pm.monitor_tag);
+  }
+  const monitorTags = visibleMonitorTags;
 
   // Parse page settings with defaults
   let settings: PageSettingsType = defaultPageSettings;
@@ -342,6 +413,8 @@ export const GetPageDashboardData = async (
     page_subheader: pageDetails.page_subheader,
     page_logo: pageDetails.page_logo,
     page_settings: settings,
+    is_public: pageDetails.is_public ?? 1,
+    visibility_mode: pageDetails.visibility_mode ?? "hidden",
     created_at: pageDetails.created_at,
     updated_at: pageDetails.updated_at,
   };

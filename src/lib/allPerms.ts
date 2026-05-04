@@ -96,8 +96,14 @@ export const permissions: Array<{ id: string; permission_name: string }> = [
   { id: "roles.assign_users", permission_name: "Add and remove users to and from roles" },
 
   // Groups
-  { id: "groups.read", permission_name: "View groups and their members/roles" },
-  { id: "groups.write", permission_name: "Create, update, and delete groups; manage members and role assignments" },
+  { id: "groups.read", permission_name: "View groups, members, and role assignments" },
+  { id: "groups.write", permission_name: "Create, update, and delete groups" },
+  { id: "groups.assign_members", permission_name: "Add and remove users to and from groups" },
+  { id: "groups.assign_roles", permission_name: "Add and remove roles to and from groups" },
+
+  // Resource Access (role → pages/monitors)
+  { id: "resource_access.read", permission_name: "View role page and monitor assignments" },
+  { id: "resource_access.write", permission_name: "Set role page and monitor assignments" },
 ];
 
 export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
@@ -228,24 +234,22 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   // Groups
   getGroups: "groups.read",
   getGroup: "groups.read",
-  getGroupMembers: "groups.read",
-  getGroupRoles: "groups.read",
   createGroup: "groups.write",
   updateGroup: "groups.write",
   deleteGroup: "groups.write",
-  addGroupMember: "groups.write",
-  removeGroupMember: "groups.write",
-  addGroupRole: "groups.write",
-  removeGroupRole: "groups.write",
+  getGroupMembers: "groups.read",
+  addGroupMember: "groups.assign_members",
+  removeGroupMember: "groups.assign_members",
+  getGroupRoles: "groups.read",
+  addGroupRole: "groups.assign_roles",
+  removeGroupRole: "groups.assign_roles",
 
-  // Resource access (role ↔ pages/monitors)
-  getRolePages: "roles.read",
-  getRoleMonitors: "roles.read",
-  setRolePages: "roles.assign_permissions",
-  setRoleMonitors: "roles.assign_permissions",
-
-  // User effective access
-  getUserEffectiveAccess: "users.read",
+  // Resource Access
+  getRolePages: "resource_access.read",
+  setRolePages: "resource_access.write",
+  getRoleMonitors: "resource_access.read",
+  setRoleMonitors: "resource_access.write",
+  getUserEffectiveAccess: "resource_access.read",
 };
 
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {

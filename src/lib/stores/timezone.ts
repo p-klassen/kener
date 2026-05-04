@@ -5,6 +5,7 @@ const TIMEZONE_STORAGE_KEY = "kener_preferred_timezone";
 export interface TimezoneStore {
   selectedTimezone: string;
   availableTimezones: string[];
+  serverDefault: string;
 }
 
 function getDefaultTimezone(): string {
@@ -18,6 +19,7 @@ function getAllTimezones(): string[] {
 const defaultState: TimezoneStore = {
   selectedTimezone: getDefaultTimezone(),
   availableTimezones: [],
+  serverDefault: "",
 };
 
 function createTimezoneStore() {
@@ -28,26 +30,28 @@ function createTimezoneStore() {
 
     /**
      * Initialize the store
-     * Checks localStorage first, then falls back to browser's timezone
+     * Checks localStorage first, then falls back to serverDefault (if valid), then browser's timezone
      */
-    init(): void {
+    init(serverDefault?: string): void {
       const allTimezones = getAllTimezones();
-      let preferredTimezone = getDefaultTimezone();
+      const effectiveDefault =
+        serverDefault && (serverDefault === "UTC" || allTimezones.includes(serverDefault))
+          ? serverDefault
+          : getDefaultTimezone();
+      let preferredTimezone = effectiveDefault;
 
       // Check localStorage for saved preference (only in browser)
       if (typeof window !== "undefined") {
         const savedTimezone = localStorage.getItem(TIMEZONE_STORAGE_KEY);
         if (savedTimezone && (savedTimezone === "UTC" || allTimezones.includes(savedTimezone))) {
           preferredTimezone = savedTimezone;
-        } else {
-          // Save the default timezone to localStorage
-          localStorage.setItem(TIMEZONE_STORAGE_KEY, preferredTimezone);
         }
       }
 
       set({
         selectedTimezone: preferredTimezone,
         availableTimezones: ["UTC", ...allTimezones],
+        serverDefault: effectiveDefault,
       });
     },
 
@@ -71,11 +75,20 @@ function createTimezoneStore() {
     },
 
     /**
-     * Reset to browser's default timezone
+     * Reset to the admin's server default (or browser timezone if no server default is set).
+     * Clears the user's explicit localStorage preference so next load starts fresh from the admin default.
      */
     reset(): void {
-      const defaultTz = getDefaultTimezone();
-      this.setTimezone(defaultTz);
+      update((state) => {
+        const resetTarget = state.serverDefault || getDefaultTimezone();
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(TIMEZONE_STORAGE_KEY);
+        }
+        return {
+          ...state,
+          selectedTimezone: resetTarget,
+        };
+      });
     },
   };
 }
