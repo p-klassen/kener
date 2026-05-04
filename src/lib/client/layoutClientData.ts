@@ -19,12 +19,13 @@ interface LanguageSetting {
 export async function GetLayoutClientData(
   languageSetting: LanguageSetting,
   fetchFn: typeof fetch,
+  manualTimezone?: string,
 ): Promise<LayoutClientData> {
   // Initialize i18n store with available locales
   await i18n.init(languageSetting.locales, languageSetting.defaultLocale, fetchFn);
 
-  // Initialize timezone store (checks localStorage, falls back to browser timezone)
-  timezone.init();
+  // Initialize timezone store (checks localStorage, falls back to serverDefault, then browser timezone)
+  timezone.init(manualTimezone);
 
   // Get the selected timezone from the store
   const localTz = get(selectedTimezone);

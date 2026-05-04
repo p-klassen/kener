@@ -28,11 +28,15 @@ function createTimezoneStore() {
 
     /**
      * Initialize the store
-     * Checks localStorage first, then falls back to browser's timezone
+     * Checks localStorage first, then falls back to serverDefault (if valid), then browser's timezone
      */
-    init(): void {
+    init(serverDefault?: string): void {
       const allTimezones = getAllTimezones();
-      let preferredTimezone = getDefaultTimezone();
+      const effectiveDefault =
+        serverDefault && (serverDefault === "UTC" || allTimezones.includes(serverDefault))
+          ? serverDefault
+          : getDefaultTimezone();
+      let preferredTimezone = effectiveDefault;
 
       // Check localStorage for saved preference (only in browser)
       if (typeof window !== "undefined") {
@@ -40,7 +44,6 @@ function createTimezoneStore() {
         if (savedTimezone && (savedTimezone === "UTC" || allTimezones.includes(savedTimezone))) {
           preferredTimezone = savedTimezone;
         } else {
-          // Save the default timezone to localStorage
           localStorage.setItem(TIMEZONE_STORAGE_KEY, preferredTimezone);
         }
       }
