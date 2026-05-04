@@ -783,7 +783,13 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
   const maybeTextHeader = imageBuffer.subarray(0, 4096).toString("utf8");
   const looksLikeSvg = /<svg[\s>]/i.test(maybeTextHeader) || /<\?xml/i.test(maybeTextHeader);
 
-  if (normalizedRequestedMime === "image/svg+xml" || looksLikeSvg) {
+  // Reject if content looks like SVG but client claims it's not SVG
+  if (looksLikeSvg && normalizedRequestedMime !== "image/svg+xml") {
+    throw new Error("Image content does not match the declared MIME type");
+  }
+
+  // Store SVG as-is, bypassing sharp
+  if (normalizedRequestedMime === "image/svg+xml") {
     const svgId = `${nanoid(16)}.svg`;
     await db.insertImage({
       id: svgId,
