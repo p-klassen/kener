@@ -44,7 +44,7 @@ class DbImpl {
   private monitorAlertConfig!: MonitorAlertConfigRepository;
   private subscriptionSystem!: SubscriptionSystemRepository;
   private emailTemplateConfig!: EmailTemplateConfigRepository;
-  private groupsRepo!: GroupsRepository;
+  private groups!: GroupsRepository;
 
   // Method bindings - declared with definite assignment assertion
   // ============ Monitoring Data ============
@@ -412,7 +412,7 @@ class DbImpl {
     this.monitorAlertConfig = new MonitorAlertConfigRepository(this.knex);
     this.subscriptionSystem = new SubscriptionSystemRepository(this.knex);
     this.emailTemplateConfig = new EmailTemplateConfigRepository(this.knex);
-    this.groupsRepo = new GroupsRepository(this.knex);
+    this.groups = new GroupsRepository(this.knex);
 
     // Bind methods after repositories are initialized
     this.bindMonitoringMethods();
@@ -861,27 +861,27 @@ class DbImpl {
 
   private bindGroupsMethods(): void {
     // Groups CRUD
-    this.getAllGroups = this.groupsRepo.getAllGroups.bind(this.groupsRepo);
-    this.getGroupById = this.groupsRepo.getGroupById.bind(this.groupsRepo);
-    this.createGroup = this.groupsRepo.createGroup.bind(this.groupsRepo);
-    this.updateGroup = this.groupsRepo.updateGroup.bind(this.groupsRepo);
-    this.deleteGroup = this.groupsRepo.deleteGroup.bind(this.groupsRepo);
-    this.getGroupsCount = this.groupsRepo.getGroupsCount.bind(this.groupsRepo);
+    this.getAllGroups = this.groups.getAllGroups.bind(this.groups);
+    this.getGroupById = this.groups.getGroupById.bind(this.groups);
+    this.createGroup = this.groups.createGroup.bind(this.groups);
+    this.updateGroup = this.groups.updateGroup.bind(this.groups);
+    this.deleteGroup = this.groups.deleteGroup.bind(this.groups);
+    this.getGroupsCount = this.groups.getGroupsCount.bind(this.groups);
 
     // Group Members
-    this.getGroupMembers = this.groupsRepo.getGroupMembers.bind(this.groupsRepo);
-    this.addGroupMember = this.groupsRepo.addGroupMember.bind(this.groupsRepo);
-    this.removeGroupMember = this.groupsRepo.removeGroupMember.bind(this.groupsRepo);
-    this.getMemberCount = this.groupsRepo.getMemberCount.bind(this.groupsRepo);
+    this.getGroupMembers = this.groups.getGroupMembers.bind(this.groups);
+    this.addGroupMember = this.groups.addGroupMember.bind(this.groups);
+    this.removeGroupMember = this.groups.removeGroupMember.bind(this.groups);
+    this.getMemberCount = this.groups.getMemberCount.bind(this.groups);
 
     // Group Roles
-    this.getGroupRoles = this.groupsRepo.getGroupRoles.bind(this.groupsRepo);
-    this.addGroupRole = this.groupsRepo.addGroupRole.bind(this.groupsRepo);
-    this.removeGroupRole = this.groupsRepo.removeGroupRole.bind(this.groupsRepo);
-    this.getRoleCount = this.groupsRepo.getRoleCount.bind(this.groupsRepo);
+    this.getGroupRoles = this.groups.getGroupRoles.bind(this.groups);
+    this.addGroupRole = this.groups.addGroupRole.bind(this.groups);
+    this.removeGroupRole = this.groups.removeGroupRole.bind(this.groups);
+    this.getRoleCount = this.groups.getRoleCount.bind(this.groups);
 
     // Groups Lookup
-    this.getGroupsForUser = this.groupsRepo.getGroupsForUser.bind(this.groupsRepo);
+    this.getGroupsForUser = this.groups.getGroupsForUser.bind(this.groups);
   }
 
   async init(): Promise<void> {}

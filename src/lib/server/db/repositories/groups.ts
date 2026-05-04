@@ -73,17 +73,15 @@ export class GroupsRepository extends BaseRepository {
   }
 
   async addGroupMember(groupId: number, userId: number): Promise<void> {
-    const exists = await this.knex("users_groups")
-      .where({ groups_id: groupId, users_id: userId })
-      .first();
-    if (!exists) {
-      await this.knex("users_groups").insert({
+    await this.knex("users_groups")
+      .insert({
         groups_id: groupId,
         users_id: userId,
         created_at: this.knex.fn.now(),
         updated_at: this.knex.fn.now(),
-      });
-    }
+      })
+      .onConflict(["groups_id", "users_id"])
+      .ignore();
   }
 
   async removeGroupMember(groupId: number, userId: number): Promise<number> {
@@ -110,17 +108,15 @@ export class GroupsRepository extends BaseRepository {
   }
 
   async addGroupRole(groupId: number, roleId: string): Promise<void> {
-    const exists = await this.knex("groups_roles")
-      .where({ groups_id: groupId, roles_id: roleId })
-      .first();
-    if (!exists) {
-      await this.knex("groups_roles").insert({
+    await this.knex("groups_roles")
+      .insert({
         groups_id: groupId,
         roles_id: roleId,
         created_at: this.knex.fn.now(),
         updated_at: this.knex.fn.now(),
-      });
-    }
+      })
+      .onConflict(["groups_id", "roles_id"])
+      .ignore();
   }
 
   async removeGroupRole(groupId: number, roleId: string): Promise<number> {
