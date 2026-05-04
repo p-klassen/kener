@@ -764,7 +764,7 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
     throw new Error("Image data is required");
   }
 
-  const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif"];
+  const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif", "image/svg+xml"];
   if (!allowedMimeTypes.includes(mimeType)) {
     throw new Error(`Invalid image type. Allowed types: ${allowedMimeTypes.join(", ")}`);
   }
@@ -784,7 +784,17 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
   const looksLikeSvg = /<svg[\s>]/i.test(maybeTextHeader) || /<\?xml/i.test(maybeTextHeader);
 
   if (normalizedRequestedMime === "image/svg+xml" || looksLikeSvg) {
-    throw new Error("SVG uploads are not allowed");
+    const svgId = `${nanoid(16)}.svg`;
+    await db.insertImage({
+      id: svgId,
+      data: imageBuffer.toString("base64"),
+      mime_type: "image/svg+xml",
+      original_name: fileName || null,
+      width: null,
+      height: null,
+      size: imageBuffer.length,
+    });
+    return { id: svgId, url: `/assets/images/${svgId}` };
   }
 
   let processedBuffer: Buffer;
@@ -821,10 +831,6 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
   const detectedMimeType = metadata.format ? formatToMime[metadata.format] : undefined;
   if (!detectedMimeType) {
     throw new Error("Could not detect a valid image format");
-  }
-
-  if (detectedMimeType === "image/svg+xml") {
-    throw new Error("SVG uploads are not allowed");
   }
 
   // HEIC/HEIF files often have .jpg extension (e.g. iPhone photos); allow the mismatch

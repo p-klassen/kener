@@ -598,7 +598,7 @@
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
     if (!allowedTypes.includes(file.type)) {
       toast.error("Invalid file type. Allowed: PNG, JPG, SVG, WebP");
       return;
@@ -849,7 +849,7 @@
               <input
                 id="logo-input"
                 type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/svg+xml"
                 class="hidden"
                 onchange={(e) => handleImageUpload(e, "logo")}
                 disabled={uploadingLogo}
@@ -919,7 +919,7 @@
               <input
                 id="favicon-input"
                 type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/svg+xml"
                 class="hidden"
                 onchange={(e) => handleImageUpload(e, "favicon")}
                 disabled={uploadingFavicon}
@@ -989,7 +989,7 @@
               <input
                 id="social-preview-image-input"
                 type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/svg+xml"
                 class="hidden"
                 onchange={(e) => handleImageUpload(e, "socialPreviewImage")}
                 disabled={uploadingSocialPreviewImage}
@@ -1085,7 +1085,7 @@
                   <input
                     id="nav-icon-input-{index}"
                     type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/svg+xml"
                     class="hidden"
                     onchange={(e) => handleNavIconUpload(e, index)}
                   />
