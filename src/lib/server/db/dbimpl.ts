@@ -120,6 +120,7 @@ class DbImpl {
   getUsersPaginated!: UsersRepository["getUsersPaginated"];
   getTotalUsers!: UsersRepository["getTotalUsers"];
   updateUserName!: UsersRepository["updateUserName"];
+  updateUserPreferredLocale!: UsersRepository["updateUserPreferredLocale"];
   updateUserRoles!: UsersRepository["updateUserRoles"];
   updateUserIsActive!: UsersRepository["updateUserIsActive"];
   updateUserPasswordById!: UsersRepository["updateUserPasswordById"];
@@ -522,6 +523,7 @@ class DbImpl {
     this.getUsersPaginated = this.users.getUsersPaginated.bind(this.users);
     this.getTotalUsers = this.users.getTotalUsers.bind(this.users);
     this.updateUserName = this.users.updateUserName.bind(this.users);
+    this.updateUserPreferredLocale = this.users.updateUserPreferredLocale.bind(this.users);
     this.updateUserRoles = this.users.updateUserRoles.bind(this.users);
     this.updateUserIsActive = this.users.updateUserIsActive.bind(this.users);
     this.updateUserPasswordById = this.users.updateUserPasswordById.bind(this.users);

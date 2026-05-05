@@ -191,6 +191,16 @@ export async function POST({ request, cookies }) {
     if (action == "updateUser") {
       data.userID = userDB.id;
       resp = await UpdateUserData(data);
+    } else if (action === "updateUserLocale") {
+      const { locale } = data;
+      if (!locale || typeof locale !== "string") {
+        throw new Error("locale is required and must be a string");
+      }
+      if (locale.length > 10) {
+        throw new Error("locale code too long");
+      }
+      await db.updateUserPreferredLocale(userDB.id, locale);
+      resp = { success: true };
     } else if (action == "getAllSiteData") {
       resp = await GetAllSiteData();
     } else if (action == "manualUpdate") {
