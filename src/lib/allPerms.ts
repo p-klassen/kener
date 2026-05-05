@@ -116,8 +116,11 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   getAllSiteData: "settings.read",
   getSiteDataByKey: "settings.read",
   getSubscriptionsConfig: "settings.read",
+  getSmtpStatus: "settings.read",
   storeSiteData: "settings.write",
   updateSubscriptionsConfig: "settings.write",
+  saveSmtpConfig: "settings.write",
+  testSmtp: "settings.write",
 
   // Users
   getUsers: "users.read",

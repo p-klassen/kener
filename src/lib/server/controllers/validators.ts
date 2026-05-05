@@ -122,3 +122,19 @@ export function IsValidColors(colors: string): boolean {
   }
   return true;
 }
+
+export const IsValidSMTPConfig = (value: string): boolean => {
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
+    return (
+      typeof parsed.smtp_host === "string" && parsed.smtp_host.length > 0 &&
+      typeof parsed.smtp_port === "number" && parsed.smtp_port > 0 &&
+      typeof parsed.smtp_user === "string" &&
+      typeof parsed.smtp_pass === "string" &&
+      typeof parsed.smtp_sender === "string" && parsed.smtp_sender.length > 0
+    );
+  } catch {
+    return false;
+  }
+};

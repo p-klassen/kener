@@ -6,6 +6,7 @@ import {
   IsValidJSONArray,
   IsValidJSONString,
   IsValidNav,
+  IsValidSMTPConfig,
   IsValidURL,
 } from "./validators.js";
 
@@ -299,6 +300,11 @@ export const siteDataKeys: SiteDataKey[] = [
   {
     key: "globalMaintenanceNotificationSettings",
     isValid: IsValidJSONString,
+    data_type: "object",
+  },
+  {
+    key: "smtp",
+    isValid: IsValidSMTPConfig,
     data_type: "object",
   },
 ];

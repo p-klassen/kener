@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import db from "../db/db.js";
 
 const saltRounds = 10;
 const DUMMY_SECRET = "DUMMY_SECRET";
@@ -75,6 +76,18 @@ export const GetSMTPFromENV = (): SMTPConfiguration | null => {
     smtp_pass: smtpPassword,
     smtp_secure: !!Number(process.env.SMTP_SECURE),
   };
+};
+
+export const GetSMTPConfig = async (): Promise<SMTPConfiguration | null> => {
+  const fromEnv = GetSMTPFromENV();
+  if (fromEnv) return fromEnv;
+  const row = await db.getSiteDataByKey("smtp");
+  if (!row?.value) return null;
+  try {
+    return JSON.parse(row.value) as SMTPConfiguration;
+  } catch {
+    return null;
+  }
 };
 
 export const GenerateTokenWithExpiry = async (data: object, expiry: string): Promise<string> => {

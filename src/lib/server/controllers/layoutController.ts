@@ -115,7 +115,7 @@ export async function GetLayoutServerData(cookies: Cookies, request: Request): P
   const isThemeToggleEnabled = !!siteData.themeToggle && siteData.themeToggle !== "NO";
   const defaultSiteTheme = siteData.theme || "system";
   const font = siteData.font || { cssSrc: "", family: "" };
-  const canSendEmail = IsEmailSetup();
+  const canSendEmail = await IsEmailSetup();
   return {
     isMobile,
     isSetupComplete,

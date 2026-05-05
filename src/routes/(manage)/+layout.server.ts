@@ -59,7 +59,7 @@ export const load: LayoutServerLoad = async ({ cookies, route }) => {
     siteStatusColors,
     siteStatusColorsDark,
     font,
-    canSendEmail: IsEmailSetup(),
+    canSendEmail: await IsEmailSetup(),
     seedSiteData,
   };
 };

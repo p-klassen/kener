@@ -10,6 +10,9 @@
   import FileTextIcon from "@lucide/svelte/icons/file-text";
   import MailIcon from "@lucide/svelte/icons/mail";
   import Loader from "@lucide/svelte/icons/loader";
+  import Eye from "@lucide/svelte/icons/eye";
+  import EyeOff from "@lucide/svelte/icons/eye-off";
+  import Send from "@lucide/svelte/icons/send";
   import { toast } from "svelte-sonner";
   import { mode } from "mode-watcher";
   import CodeMirror from "svelte-codemirror-editor";
@@ -112,35 +115,6 @@
     }
   }
 
-  async function fetchSmtpStatus() {
-    try {
-      const response = await fetch(clientResolver(resolve, "/manage/api"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "getSmtpStatus", data: {} }),
-      });
-      const result = await response.json();
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-      smtpSource = result.source;
-      if (result.config) {
-        smtpConfig = {
-          smtp_host: result.config.smtp_host || "",
-          smtp_port: result.config.smtp_port || 587,
-          smtp_user: result.config.smtp_user || "",
-          smtp_pass: "",           // never returned from server
-          smtp_sender: result.config.smtp_sender || "",
-          smtp_secure: !!result.config.smtp_secure,
-        };
-      }
-    } catch (e) {
-      console.error("Failed to load SMTP status", e);
-      toast.error("Failed to load SMTP configuration");
-    }
-  }
-
   async function updateTemplate() {
     if (!selectedTemplateId) {
       toast.error("Please select a template");
@@ -190,9 +164,214 @@
     // Convert snake_case or kebab-case to Title Case
     return id.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
   }
+
+  async function fetchSmtpStatus() {
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getSmtpStatus", data: {} }),
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      smtpSource = result.source;
+      if (result.config) {
+        smtpConfig = {
+          smtp_host: result.config.smtp_host || "",
+          smtp_port: result.config.smtp_port || 587,
+          smtp_user: result.config.smtp_user || "",
+          smtp_pass: "",
+          smtp_sender: result.config.smtp_sender || "",
+          smtp_secure: !!result.config.smtp_secure,
+        };
+      }
+    } catch (e) {
+      console.error("Failed to load SMTP status", e);
+      toast.error("Failed to load SMTP configuration");
+    }
+  }
+
+  async function saveSmtp() {
+    savingSmtp = true;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "saveSmtpConfig",
+          data: smtpConfig,
+        }),
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        smtpSource = "db";
+        smtpConfig.smtp_pass = "";
+        toast.success("SMTP configuration saved");
+      }
+    } catch (e) {
+      toast.error("Failed to save SMTP configuration");
+    } finally {
+      savingSmtp = false;
+    }
+  }
+
+  async function sendTestEmail() {
+    testingSmtp = true;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "testSmtp", data: {} }),
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(`Test failed: ${result.error}`);
+      } else {
+        toast.success("Test email sent — check your inbox");
+      }
+    } catch (e) {
+      toast.error("Failed to send test email");
+    } finally {
+      testingSmtp = false;
+    }
+  }
 </script>
 
 <div class="container mx-auto space-y-6 py-6">
+  <!-- SMTP Configuration Card -->
+  <Card.Root>
+    <Card.Header class="border-b">
+      <Card.Title class="flex items-center gap-2">
+        <MailIcon class="h-5 w-5" />
+        SMTP Configuration
+        {#if smtpSource === "env"}
+          <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-normal">ENV active (read-only)</span>
+        {:else if smtpSource === "db"}
+          <span class="rounded bg-green-100 px-2 py-0.5 text-xs font-normal text-green-700 dark:bg-green-900 dark:text-green-300">DB configured</span>
+        {:else}
+          <span class="rounded bg-yellow-100 px-2 py-0.5 text-xs font-normal text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Not configured</span>
+        {/if}
+      </Card.Title>
+      <Card.Description>Configure SMTP to send email notifications. Environment variables take precedence over these settings.</Card.Description>
+    </Card.Header>
+    <Card.Content class="pt-6">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <Label for="smtp-host">Host</Label>
+          <Input
+            id="smtp-host"
+            bind:value={smtpConfig.smtp_host}
+            placeholder="smtp.example.com"
+            disabled={smtpSource === "env"}
+            class="mt-1"
+          />
+        </div>
+        <div>
+          <Label for="smtp-port">Port</Label>
+          <Input
+            id="smtp-port"
+            type="number"
+            bind:value={smtpConfig.smtp_port}
+            placeholder="587"
+            disabled={smtpSource === "env"}
+            class="mt-1"
+          />
+        </div>
+        <div>
+          <Label for="smtp-user">User</Label>
+          <Input
+            id="smtp-user"
+            bind:value={smtpConfig.smtp_user}
+            placeholder="user@example.com"
+            autocomplete="username"
+            disabled={smtpSource === "env"}
+            class="mt-1"
+          />
+        </div>
+        <div>
+          <Label for="smtp-pass">Password</Label>
+          <div class="relative mt-1">
+            <Input
+              id="smtp-pass"
+              type={showSmtpPassword ? "text" : "password"}
+              bind:value={smtpConfig.smtp_pass}
+              placeholder={smtpSource === "env" ? "••••••••" : smtpSource === "db" ? "leave blank to keep existing" : ""}
+              autocomplete="current-password"
+              disabled={smtpSource === "env"}
+              class="pr-10"
+            />
+            {#if smtpSource !== "env"}
+              <button
+                type="button"
+                onclick={() => (showSmtpPassword = !showSmtpPassword)}
+                class="text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2"
+                tabindex="-1"
+                aria-label={showSmtpPassword ? "Hide password" : "Show password"}
+              >
+                {#if showSmtpPassword}
+                  <EyeOff class="h-4 w-4" />
+                {:else}
+                  <Eye class="h-4 w-4" />
+                {/if}
+              </button>
+            {/if}
+          </div>
+        </div>
+        <div>
+          <Label for="smtp-sender">Sender Email</Label>
+          <Input
+            id="smtp-sender"
+            type="email"
+            bind:value={smtpConfig.smtp_sender}
+            placeholder="noreply@example.com"
+            disabled={smtpSource === "env"}
+            class="mt-1"
+          />
+        </div>
+        <div class="flex items-center gap-2 pt-6">
+          <input
+            id="smtp-secure"
+            type="checkbox"
+            bind:checked={smtpConfig.smtp_secure}
+            disabled={smtpSource === "env"}
+            class="h-4 w-4"
+          />
+          <Label for="smtp-secure">TLS (port 465)</Label>
+        </div>
+      </div>
+      <div class="mt-4 flex items-center gap-2">
+        <Button
+          onclick={saveSmtp}
+          disabled={savingSmtp || smtpSource === "env"}
+          size="sm"
+        >
+          {#if savingSmtp}
+            <Loader class="mr-2 h-4 w-4 animate-spin" />
+          {/if}
+          Save
+        </Button>
+        <Button
+          onclick={sendTestEmail}
+          disabled={testingSmtp || smtpSource === "none"}
+          variant="outline"
+          size="sm"
+        >
+          {#if testingSmtp}
+            <Loader class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <Send class="mr-2 h-4 w-4" />
+          {/if}
+          Send test email
+        </Button>
+      </div>
+    </Card.Content>
+  </Card.Root>
+
   {#if loading}
     <div class="flex items-center justify-center py-12">
       <Spinner class="size-8" />

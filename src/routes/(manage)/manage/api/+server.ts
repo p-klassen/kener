@@ -146,7 +146,10 @@ import {
   GetUserEffectiveAccess,
 } from "$lib/server/controllers/resourceAccessController.js";
 import type { SiteDataForNotification } from "$lib/server/notification/types";
+import type { SMTPConfiguration } from "$lib/server/notification/types.js";
 import { alertToVariables, siteDataToVariables } from "$lib/server/notification/notification_utils";
+import { GetSMTPConfig, GetSMTPFromENV } from "$lib/server/controllers/commonController.js";
+import getSMTPTransport from "$lib/server/notification/smtps.js";
 import type { TriggerMeta } from "$lib/server/types/db.js";
 import sendWebhook from "$lib/server/notification/webhook_notification.js";
 import sendEmail from "$lib/server/notification/email_notification.js";
@@ -656,6 +659,80 @@ export async function POST({ request, cookies }) {
       resp = siteData;
     } else if (action == "updateSubscriptionsConfig") {
       resp = await InsertKeyValue("subscriptionsSettings", JSON.stringify(data));
+    } else if (action === "getSmtpStatus") {
+      const envConfig = GetSMTPFromENV();
+      if (envConfig) {
+        const { smtp_pass: _omit, ...rest } = envConfig;
+        resp = { source: "env", config: rest };
+      } else {
+        const dbRow = await db.getSiteDataByKey("smtp");
+        let dbConfig: Omit<SMTPConfiguration, "smtp_pass"> | null = null;
+        if (dbRow?.value) {
+          try {
+            const parsed = JSON.parse(dbRow.value) as SMTPConfiguration;
+            const { smtp_pass: _omit, ...rest } = parsed;
+            dbConfig = rest;
+          } catch {
+            dbConfig = null;
+          }
+        }
+        resp = dbConfig ? { source: "db", config: dbConfig } : { source: "none", config: null };
+      }
+    } else if (action === "saveSmtpConfig") {
+      const { smtp_host, smtp_port, smtp_user, smtp_pass, smtp_sender, smtp_secure } = data as {
+        smtp_host: string;
+        smtp_port: number;
+        smtp_user: string;
+        smtp_pass: string;
+        smtp_sender: string;
+        smtp_secure: boolean;
+      };
+      if (GetSMTPFromENV()) {
+        throw new Error("SMTP is configured via environment variables and cannot be overridden");
+      }
+      if (!smtp_host || !smtp_sender) {
+        throw new Error("smtp_host and smtp_sender are required");
+      }
+      const port = Number(smtp_port);
+      if (!port || port < 1 || port > 65535) {
+        throw new Error("smtp_port must be a number between 1 and 65535");
+      }
+      let finalPass = smtp_pass;
+      if (!finalPass) {
+        const existing = await db.getSiteDataByKey("smtp");
+        if (existing?.value) {
+          try {
+            const parsed = JSON.parse(existing.value) as SMTPConfiguration;
+            finalPass = parsed.smtp_pass || "";
+          } catch {
+            finalPass = "";
+          }
+        }
+      }
+      const config: SMTPConfiguration = {
+        smtp_host,
+        smtp_port: port,
+        smtp_user,
+        smtp_pass: finalPass,
+        smtp_sender,
+        smtp_secure: !!smtp_secure,
+      };
+      await InsertKeyValue("smtp", JSON.stringify(config));
+      resp = { success: true };
+    } else if (action === "testSmtp") {
+      const smtpConfig = await GetSMTPConfig();
+      if (!smtpConfig) {
+        throw new Error("SMTP is not configured");
+      }
+      const transport = getSMTPTransport(smtpConfig);
+      await transport.sendMail({
+        from: smtpConfig.smtp_sender,
+        to: userDB.email,
+        subject: "Kener SMTP test",
+        text: "This is a test email from Kener. Your SMTP configuration is working correctly.",
+        html: "<p>This is a test email from Kener. Your SMTP configuration is working correctly.</p>",
+      });
+      resp = { ok: true };
     } else if (action == "getRoles") {
       resp = await GetAllRoles();
     } else if (action == "getAllPermissions") {
