@@ -12,6 +12,7 @@
   import { Checkbox } from "$lib/components/ui/checkbox/index.js";
   import Loader from "@lucide/svelte/icons/loader";
   import Info from "@lucide/svelte/icons/info";
+  import X from "@lucide/svelte/icons/x";
   import { toast } from "svelte-sonner";
   import { mode } from "mode-watcher";
   import constants from "$lib/global-constants";
@@ -40,6 +41,8 @@
   interface FontConfig {
     cssSrc: string;
     family: string;
+    fileId?: string;
+    originalName?: string;
   }
 
   type AnnouncementForm = Omit<SiteAnnouncement, "reshowAfterInHours" | "ctaURL" | "ctaText"> & {
@@ -53,6 +56,8 @@
   let savingFooter = $state(false);
   let savingColors = $state(false);
   let savingFont = $state(false);
+  let uploadingFont = $state(false);
+  let uploadedFontName = $state("");
   let savingCSS = $state(false);
   let savingTheme = $state(false);
   let savingAnnouncement = $state(false);
@@ -163,8 +168,10 @@
         if (result.font) {
           font = {
             cssSrc: result.font.cssSrc || "",
-            family: result.font.family || ""
+            family: result.font.family || "",
+            fileId: result.font.fileId || "",
           };
+          uploadedFontName = result.font.originalName || "";
         }
         if (result.customCSS) {
           customCSS = result.customCSS;
@@ -262,7 +269,7 @@
     }
   }
 
-  async function saveFont() {
+  async function saveFontUrl() {
     savingFont = true;
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
@@ -270,17 +277,150 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "storeSiteData",
-          data: { font: JSON.stringify(font) }
+          data: {
+            font: JSON.stringify({ cssSrc: font.cssSrc, family: font.family, fileId: "", originalName: "" })
+          }
         })
       });
       const result = await response.json();
       if (result.error) {
         toast.error(result.error);
       } else {
+        font.fileId = "";
+        uploadedFontName = "";
         toast.success("Font settings saved successfully");
       }
     } catch (e) {
       toast.error("Failed to save font settings");
+    } finally {
+      savingFont = false;
+    }
+  }
+
+  function fileToBase64Font(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
+  async function saveFontFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Font file must be under 5 MB");
+      input.value = "";
+      return;
+    }
+
+    uploadingFont = true;
+    try {
+      const base64 = await fileToBase64Font(file);
+
+      const uploadResponse = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "uploadImage",
+          data: {
+            base64,
+            mimeType: file.type,
+            fileName: file.name
+          }
+        })
+      });
+      const uploadResult = await uploadResponse.json();
+      if (uploadResult.error) {
+        toast.error(uploadResult.error);
+        return;
+      }
+
+      // Delete old font file if one exists
+      if (font.fileId) {
+        await fetch(clientResolver(resolve, "/manage/api"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "deleteImage",
+            data: { id: font.fileId }
+          })
+        });
+      }
+
+      const saveResponse = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "storeSiteData",
+          data: {
+            font: JSON.stringify({
+              cssSrc: "",
+              family: font.family,
+              fileId: uploadResult.id,
+              originalName: file.name
+            })
+          }
+        })
+      });
+      const saveResult = await saveResponse.json();
+      if (saveResult.error) {
+        toast.error(saveResult.error);
+      } else {
+        font.cssSrc = "";
+        font.fileId = uploadResult.id;
+        uploadedFontName = file.name;
+        toast.success("Font uploaded successfully");
+      }
+    } catch (e) {
+      toast.error("Failed to upload font");
+    } finally {
+      uploadingFont = false;
+      input.value = "";
+    }
+  }
+
+  async function removeFontFile() {
+    if (!font.fileId) return;
+    savingFont = true;
+    try {
+      await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "deleteImage",
+          data: { id: font.fileId }
+        })
+      });
+
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "storeSiteData",
+          data: {
+            font: JSON.stringify({ cssSrc: "", family: "", fileId: "", originalName: "" })
+          }
+        })
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        font.fileId = "";
+        font.family = "";
+        uploadedFontName = "";
+        toast.success("Font removed successfully");
+      }
+    } catch (e) {
+      toast.error("Failed to remove font");
     } finally {
       savingFont = false;
     }
@@ -692,54 +832,109 @@
               <Info class="text-muted-foreground h-4 w-4" />
             </Tooltip.Trigger>
             <Tooltip.Content class="max-w-xs">
-              <p>
-                You can use any web font by providing the CSS URL and font family name. Popular sources include Google
-                Fonts and Bunny Fonts.
-              </p>
+              <p>Choose between an external web font CSS URL or upload your own font file.</p>
             </Tooltip.Content>
           </Tooltip.Root>
         </Card.Title>
         <Card.Description>Customize the font used throughout your status page.</Card.Description>
       </Card.Header>
-      <Card.Content class="pt-6">
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label for="font-url">Font CSS URL</Label>
-            <Input
-              bind:value={font.cssSrc}
-              type="text"
-              id="font-url"
-              placeholder="https://fonts.bunny.net/css?family=lato:400,700&display=swap"
-              class="mt-1"
-            />
-            <p class="text-muted-foreground mt-1 text-xs">The URL to the CSS file that loads the font</p>
+      <Card.Content class="pt-6 flex flex-col gap-6">
+
+        <!-- Option A: External CSS URL -->
+        <div class="flex flex-col gap-3">
+          <p class="text-sm font-medium">Option A — External CSS URL</p>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label for="font-url">Font CSS URL</Label>
+              <Input
+                bind:value={font.cssSrc}
+                oninput={() => { font.fileId = ""; uploadedFontName = ""; }}
+                type="text"
+                id="font-url"
+                placeholder="https://fonts.bunny.net/css?family=lato:400,700&display=swap"
+                class="mt-1"
+              />
+              <p class="text-muted-foreground mt-1 text-xs">URL to a CSS file from Google Fonts, Bunny Fonts, etc.</p>
+            </div>
+            <div>
+              <Label for="font-family-url">Font Family Name</Label>
+              <Input
+                bind:value={font.family}
+                type="text"
+                id="font-family-url"
+                placeholder="Lato"
+                class="mt-1"
+              />
+              <p class="text-muted-foreground mt-1 text-xs">Must match the font-family name in the CSS</p>
+            </div>
           </div>
-          <div>
-            <Label for="font-family">Font Family Name</Label>
-            <Input bind:value={font.family} type="text" id="font-family" placeholder="Lato" class="mt-1" />
-            <p class="text-muted-foreground mt-1 text-xs">The name of the font family as defined in the CSS</p>
+          <div class="flex justify-end">
+            <Button onclick={saveFontUrl} disabled={savingFont || uploadingFont} variant="outline" size="sm">
+              {#if savingFont}
+                <Loader class="h-4 w-4 animate-spin" />
+              {/if}
+              Save URL Font
+            </Button>
           </div>
         </div>
 
-        <p class="text-muted-foreground mt-4 text-sm">
-          Want to upload and use custom fonts? Read more about it in the
-          <a
-            href="https://kener.ing/docs/v4/guides/custom-fonts"
-            target="_blank"
-            class="text-foreground underline underline-offset-4"
-          >
-            documentation
-          </a>.
-        </p>
-      </Card.Content>
-      <Card.Footer class="flex justify-end border-t pt-6">
-        <Button onclick={saveFont} disabled={savingFont}>
-          {#if savingFont}
-            <Loader class="h-4 w-4 animate-spin" />
+        <!-- Divider -->
+        <div class="relative flex items-center">
+          <div class="flex-grow border-t"></div>
+          <span class="text-muted-foreground mx-3 flex-shrink text-xs">or</span>
+          <div class="flex-grow border-t"></div>
+        </div>
+
+        <!-- Option B: Upload Font File -->
+        <div class="flex flex-col gap-3">
+          <p class="text-sm font-medium">Option B — Upload Font File</p>
+          {#if font.fileId && uploadedFontName}
+            <div class="flex items-center gap-2">
+              <span class="text-sm">{uploadedFontName}</span>
+              <Button
+                onclick={removeFontFile}
+                disabled={savingFont}
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Remove font file"
+              >
+                <X class="h-4 w-4" />
+              </Button>
+            </div>
+          {:else}
+            <div>
+              <Label for="font-upload">Font File</Label>
+              <input
+                id="font-upload"
+                type="file"
+                accept=".ttf,.otf,.woff,.woff2"
+                onchange={saveFontFile}
+                disabled={uploadingFont}
+                class="mt-1 block w-full text-sm text-muted-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium"
+              />
+              <p class="text-muted-foreground mt-1 text-xs">TTF, OTF, WOFF, or WOFF2. Max 5 MB.</p>
+            </div>
           {/if}
-          Save Font
-        </Button>
-      </Card.Footer>
+          <div>
+            <Label for="font-family-file">Font Family Name</Label>
+            <Input
+              bind:value={font.family}
+              type="text"
+              id="font-family-file"
+              placeholder="MyFont"
+              class="mt-1"
+            />
+            <p class="text-muted-foreground mt-1 text-xs">Used in the CSS font-family declaration</p>
+          </div>
+          {#if uploadingFont}
+            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader class="h-4 w-4 animate-spin" />
+              Uploading font…
+            </div>
+          {/if}
+        </div>
+
+      </Card.Content>
     </Card.Root>
 
     <!-- Theme Configuration Section -->
