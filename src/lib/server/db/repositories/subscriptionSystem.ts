@@ -477,4 +477,19 @@ export class SubscriptionSystemRepository extends BaseRepository {
 
     return { user, method, subscriptions };
   }
+
+  async upsertSubscriptionMonitorScopes(subscriptionId: number, monitorTags: string[]): Promise<void> {
+    await this.knex("subscription_monitor_scopes").where("subscription_id", subscriptionId).del();
+    if (monitorTags.length > 0) {
+      await this.knex("subscription_monitor_scopes").insert(
+        monitorTags.map((tag) => ({ subscription_id: subscriptionId, monitor_tag: tag })),
+      );
+    }
+  }
+
+  async getSubscriptionMonitorScopes(subscriptionId: number): Promise<string[]> {
+    return await this.knex("subscription_monitor_scopes")
+      .where("subscription_id", subscriptionId)
+      .pluck("monitor_tag");
+  }
 }

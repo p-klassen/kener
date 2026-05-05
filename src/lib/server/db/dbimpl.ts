@@ -367,6 +367,8 @@ class DbImpl {
   getMethodsCountByType!: SubscriptionSystemRepository["getMethodsCountByType"];
   getSubscribersByMethodTypeV2!: SubscriptionSystemRepository["getSubscribersByMethodTypeV2"];
   getSubscriberDetailsByMethodId!: SubscriptionSystemRepository["getSubscriberDetailsByMethodId"];
+  upsertSubscriptionMonitorScopes!: SubscriptionSystemRepository["upsertSubscriptionMonitorScopes"];
+  getSubscriptionMonitorScopes!: SubscriptionSystemRepository["getSubscriptionMonitorScopes"];
 
   // ============ General Email Templates ============
   insertEmailTemplate!: EmailTemplateConfigRepository["insertEmailTemplate"];
