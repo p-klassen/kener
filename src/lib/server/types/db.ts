@@ -241,6 +241,7 @@ export interface UserRecord {
   is_verified: number;
   must_change_password: number;
   role_ids: string[]; // Array of role IDs
+  preferred_locale: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -265,6 +266,7 @@ export interface UserRecordPublic {
   is_owner: string;
   must_change_password: number;
   role_ids: string[];
+  preferred_locale: string | null;
   created_at: Date;
   updated_at: Date;
 }
