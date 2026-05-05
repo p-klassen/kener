@@ -21,6 +21,9 @@
   import Sun from "@lucide/svelte/icons/sun";
   import Moon from "@lucide/svelte/icons/moon";
   import clientResolver from "$lib/client/resolver.js";
+  import { i18n } from "$lib/stores/i18n";
+  import GlobeIcon from "@lucide/svelte/icons/globe";
+  import * as Select from "$lib/components/ui/select/index.js";
 
   let user = $state<UserRecordPublic>(page.data.userDb);
   let nameAbbr = $derived(
@@ -36,6 +39,10 @@
 
   // Account dialog state
   let accountDialogOpen = $state(false);
+  let currentLocale = $state(page.data.userLocale ?? "en");
+  let savingLocale = $state(false);
+  let localeError = $state("");
+  let availableLocales = $derived(page.data.availableLocales ?? []);
   let myName = $state(user.name);
   let myPassword = $state("");
   let plainPassword = $state("");
@@ -136,6 +143,29 @@
     nameSuccess = false;
     passwordSuccess = false;
     accountDialogOpen = true;
+  }
+
+  async function saveLocale(locale: string) {
+    savingLocale = true;
+    localeError = "";
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updateUserLocale", data: { locale } }),
+      });
+      const resp = await response.json();
+      if (resp.error) {
+        localeError = resp.error;
+      } else {
+        currentLocale = locale;
+        await i18n.setLocale(locale);
+      }
+    } catch {
+      localeError = "Error saving language preference";
+    } finally {
+      savingLocale = false;
+    }
   }
 </script>
 
@@ -259,6 +289,32 @@
           <p class="text-destructive text-sm">{nameError}</p>
         {/if}
       </form>
+
+      <!-- Language Section -->
+      <div class="flex flex-col gap-3">
+        <Label>
+          <GlobeIcon class="inline size-3.5 mr-1" />
+          Interface Language
+        </Label>
+        <Select.Root
+          type="single"
+          value={currentLocale}
+          onValueChange={(v) => { if (v) saveLocale(v); }}
+          disabled={savingLocale}
+        >
+          <Select.Trigger class="w-full">
+            {availableLocales.find((l: { code: string; name: string }) => l.code === currentLocale)?.name ?? currentLocale}
+          </Select.Trigger>
+          <Select.Content>
+            {#each availableLocales as locale}
+              <Select.Item value={locale.code}>{locale.name}</Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
+        {#if localeError}
+          <p class="text-destructive text-sm">{localeError}</p>
+        {/if}
+      </div>
 
       <hr />
 
