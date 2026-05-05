@@ -1,6 +1,8 @@
-import { json, type Handle } from "@sveltejs/kit";
+import { json, redirect, type Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
 import { VerifyAPIKey } from "$lib/server/controllers/apiController";
+import { GetLoggedInSession } from "$lib/server/controllers/userController";
+import serverResolve from "$lib/server/resolver";
 import db from "$lib/server/db/db";
 import type { UnauthorizedResponse, NotFoundResponse } from "$lib/types/api";
 import { GetMonitorsParsed } from "$lib/server/controllers/monitorsController";
@@ -193,4 +195,14 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
   return response;
 };
 
-export const handle = sequence(csrfHandle, apiAuthHandle);
+const mustChangePasswordHandle: Handle = async ({ event, resolve }) => {
+  if (event.url.pathname.startsWith("/manage")) {
+    const user = await GetLoggedInSession(event.cookies);
+    if (user?.must_change_password) {
+      throw redirect(302, serverResolve("/account/change-password"));
+    }
+  }
+  return resolve(event);
+};
+
+export const handle = sequence(csrfHandle, mustChangePasswordHandle, apiAuthHandle);
