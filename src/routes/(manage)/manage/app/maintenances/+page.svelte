@@ -20,6 +20,7 @@
   import { format, formatDistanceToNow, isPast, isFuture, isWithinInterval } from "date-fns";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
 
   // Types
   interface MaintenanceEvent {
@@ -191,12 +192,12 @@
       <div class="flex items-center gap-3">
         <Select.Root type="single" value={status} onValueChange={handleStatusChange}>
           <Select.Trigger class="w-40">
-            {status === "ALL" ? "All" : status === "ACTIVE" ? "Active" : "Inactive"}
+            {status === "ALL" ? $t("manage.maintenances.status_all") : status === "ACTIVE" ? $t("manage.maintenances.status_active") : $t("manage.maintenances.status_inactive")}
           </Select.Trigger>
           <Select.Content>
-            <Select.Item value="ALL">All</Select.Item>
-            <Select.Item value="ACTIVE">Active</Select.Item>
-            <Select.Item value="INACTIVE">Inactive</Select.Item>
+            <Select.Item value="ALL">{$t("manage.maintenances.status_all")}</Select.Item>
+            <Select.Item value="ACTIVE">{$t("manage.maintenances.status_active")}</Select.Item>
+            <Select.Item value="INACTIVE">{$t("manage.maintenances.status_inactive")}</Select.Item>
           </Select.Content>
         </Select.Root>
       </div>
@@ -220,7 +221,7 @@
       <Table.Header>
         <Table.Row>
           <Table.Head class="w-16">ID</Table.Head>
-          <Table.Head>Title</Table.Head>
+          <Table.Head>{$t("manage.maintenances.col_title")}</Table.Head>
           <Table.Head class="w-32">Type</Table.Head>
           <Table.Head class="w-40">Duration</Table.Head>
           <Table.Head class="w-24">Monitors</Table.Head>

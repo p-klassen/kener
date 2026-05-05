@@ -18,6 +18,7 @@
   import GC from "$lib/global-constants";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
   // State
   let loading = $state(true);
   let incidents = $state<any[]>([]);
@@ -154,7 +155,7 @@
     <div class="flex items-center gap-3">
       <Button onclick={createNewIncident}>
         <PlusIcon class="size-4" />
-        New Incident
+        {$t("manage.incidents.add_button")}
       </Button>
     </div>
   </div>
@@ -165,7 +166,7 @@
       <Table.Header>
         <Table.Row>
           <Table.Head class="w-16">ID</Table.Head>
-          <Table.Head>Title</Table.Head>
+          <Table.Head>{$t("manage.incidents.col_title")}</Table.Head>
           <Table.Head class="w-32">Duration</Table.Head>
           <Table.Head class="w-36">State</Table.Head>
           <Table.Head class="w-40">Affects</Table.Head>
