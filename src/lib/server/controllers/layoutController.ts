@@ -56,6 +56,8 @@ export interface LayoutServerData {
   font: {
     cssSrc: string;
     family: string;
+    fileId?: string;
+    originalName?: string;
   };
   canSendEmail: boolean;
   announcement?: {

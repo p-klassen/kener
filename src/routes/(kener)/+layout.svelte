@@ -6,7 +6,7 @@
   import KenerFooter from "$lib/components/KenerFooter.svelte";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { Toaster } from "$lib/components/ui/sonner/index.js";
-  import { resolve } from "$app/paths";
+  import { resolve, base } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
 
   let { children, data } = $props();
@@ -18,7 +18,9 @@
 
 <svelte:head>
   <link rel="icon" href={data.favicon} />
-  {#if data.font?.cssSrc}
+  {#if data.font?.fileId}
+    {@html `<style>@font-face { font-family: '${data.font.family}'; src: url('${base}/assets/fonts/${data.font.fileId}'); } </style>`}
+  {:else if data.font?.cssSrc}
     <link rel="stylesheet" href={data.font.cssSrc} />
   {/if}
   {@html `
