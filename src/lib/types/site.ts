@@ -56,6 +56,8 @@ export interface SiteStatusColors {
 export interface SiteFont {
   cssSrc: string;
   family: string;
+  fileId?: string;
+  originalName?: string;
 }
 
 export interface SiteCategory {

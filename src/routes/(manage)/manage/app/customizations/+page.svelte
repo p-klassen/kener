@@ -345,14 +345,15 @@
 
       // Delete old font file if one exists
       if (font.fileId) {
-        await fetch(clientResolver(resolve, "/manage/api"), {
+        const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "deleteImage",
-            data: { id: font.fileId }
-          })
+          body: JSON.stringify({ action: "deleteImage", data: { id: font.fileId } })
         });
+        const deleteResult = await deleteRes.json();
+        if (deleteResult.error) {
+          console.warn("Failed to delete old font file:", deleteResult.error);
+        }
       }
 
       const saveResponse = await fetch(clientResolver(resolve, "/manage/api"), {
@@ -391,14 +392,16 @@
     if (!font.fileId) return;
     savingFont = true;
     try {
-      await fetch(clientResolver(resolve, "/manage/api"), {
+      const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "deleteImage",
-          data: { id: font.fileId }
-        })
+        body: JSON.stringify({ action: "deleteImage", data: { id: font.fileId } })
       });
+      const deleteResult = await deleteRes.json();
+      if (deleteResult.error) {
+        toast.error("Failed to remove font file");
+        return;
+      }
 
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
