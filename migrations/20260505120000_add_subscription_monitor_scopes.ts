@@ -7,14 +7,8 @@ export async function up(knex: Knex): Promise<void> {
       table.integer("subscription_id").unsigned().notNullable();
       table.string("monitor_tag", 255).notNullable();
       table.unique(["subscription_id", "monitor_tag"]);
-    });
-  }
-  try {
-    await knex.schema.alterTable("subscription_monitor_scopes", (table) => {
       table.index(["subscription_id"]);
     });
-  } catch (_e) {
-    /* index already exists */
   }
 }
 
