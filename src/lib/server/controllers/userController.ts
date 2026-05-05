@@ -194,7 +194,12 @@ export const CreateNewUser = async (data: NewUserInput): Promise<number[]> => {
   return await db.insertUser(user);
 };
 
-export const CreateFirstUser = async (data: { email: string; name: string; password: string }): Promise<number[]> => {
+export const CreateFirstUser = async (data: {
+  email: string;
+  name: string;
+  password: string;
+  must_change_password?: number;
+}): Promise<number[]> => {
   const normalizedEmail = validateEmailOrThrow(data.email);
   const normalizedName = validateNameOrThrow(data.name);
   if (!data.password) {
@@ -211,6 +216,7 @@ export const CreateFirstUser = async (data: { email: string; name: string; passw
     name: normalizedName,
     role_ids: ["admin"],
     is_owner: "YES",
+    must_change_password: data.must_change_password ?? 0,
   };
   return await db.insertUser(user);
 };

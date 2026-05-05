@@ -6,6 +6,7 @@ import Startup from "../src/lib/server/startup.ts";
 import shutdownSchedulers from "../src/lib/server/schedulers/shutdown.ts";
 import shutdownQueues from "../src/lib/server/queues/shutdown.ts";
 import dbInstance from "../src/lib/server/db/db.ts";
+import { CreateFirstUser } from "../src/lib/server/controllers/userController.ts";
 import knex from "knex";
 import knexOb from "../knexfile.js";
 
@@ -63,6 +64,28 @@ async function start() {
 	app.listen(PORT, async () => {
 		await runMigrations();
 		await runSeed();
+		// Auto-create default admin from environment variables (only when DB has zero users)
+		const adminEmail = process.env.KENER_ADMIN_EMAIL;
+		const adminPassword = process.env.KENER_ADMIN_PASSWORD;
+		if (adminEmail && adminPassword) {
+			const countRow = await dbInstance.getUsersCount();
+			const userCount = countRow ? Number(countRow.count) : 0;
+			if (userCount === 0) {
+				try {
+					await CreateFirstUser({
+						email: adminEmail,
+						password: adminPassword,
+						name: "Administrator",
+						must_change_password: 1,
+					});
+					console.log(`Default admin created for ${adminEmail}`);
+				} catch (err) {
+					console.error("Failed to create default admin:", err);
+				}
+			}
+		} else if (adminEmail || adminPassword) {
+			console.warn("KENER_ADMIN_EMAIL and KENER_ADMIN_PASSWORD must both be set to auto-create the default admin. Skipping.");
+		}
 		await db.destroy();
 		Startup();
 		console.log("Kener is running on port " + PORT + "!");
