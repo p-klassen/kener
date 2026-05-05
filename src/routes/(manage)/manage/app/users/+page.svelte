@@ -30,6 +30,7 @@
   import type { UserRecordDashboard, UserRecordPublic, RoleRecord } from "$lib/server/types/db.js";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
 
   // Types
   interface NewUser {
@@ -440,7 +441,7 @@
         {/if}
         <Button onclick={() => (showAddUserDialog = true)} disabled={!canSendEmail}>
           <PlusIcon class="h-4 w-4" />
-          Add User
+          {$t("manage.users.add_button")}
         </Button>
       {/if}
     </div>
@@ -451,12 +452,12 @@
     <Table.Root>
       <Table.Header>
         <Table.Row>
-          <Table.Head>Name</Table.Head>
-          <Table.Head>Email</Table.Head>
-          <Table.Head class="text-center">Verified</Table.Head>
-          <Table.Head>Role</Table.Head>
-          <Table.Head>Status</Table.Head>
-          <Table.Head class="w-20 text-center">Actions</Table.Head>
+          <Table.Head>{$t("manage.users.col_name")}</Table.Head>
+          <Table.Head>{$t("manage.users.col_email")}</Table.Head>
+          <Table.Head class="text-center">{$t("manage.users.col_verified")}</Table.Head>
+          <Table.Head>{$t("manage.users.col_role")}</Table.Head>
+          <Table.Head>{$t("manage.users.col_status")}</Table.Head>
+          <Table.Head class="w-20 text-center">{$t("manage.users.col_actions")}</Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
@@ -465,20 +466,20 @@
             <Table.Cell colspan={6} class="py-8 text-center">
               <div class="flex items-center justify-center gap-2">
                 <Spinner class="size-4" />
-                <span class="text-muted-foreground text-sm">Loading users...</span>
+                <span class="text-muted-foreground text-sm">{$t("manage.users.loading")}</span>
               </div>
             </Table.Cell>
           </Table.Row>
         {:else if users.length === 0}
           <Table.Row>
-            <Table.Cell colspan={6} class="text-muted-foreground py-8 text-center">No users found.</Table.Cell>
+            <Table.Cell colspan={6} class="text-muted-foreground py-8 text-center">{$t("manage.users.no_users")}</Table.Cell>
           </Table.Row>
         {:else}
           {#each users as user (user.id)}
             <Table.Row class={currentUser.id === user.id ? "bg-muted/50" : ""}>
               <Table.Cell class="font-medium"
                 >{user.name}{#if currentUser.id === user.id}
-                  <Badge variant="outline" class="ml-1 text-[10px]">You</Badge>{/if}</Table.Cell
+                  <Badge variant="outline" class="ml-1 text-[10px]">{$t("manage.common.you")}</Badge>{/if}</Table.Cell
               >
               <Table.Cell>{user.email}</Table.Cell>
               <Table.Cell class="text-center">
@@ -536,7 +537,7 @@
     {@const startItem = (page - 1) * limit + 1}
     {@const endItem = Math.min(page * limit, total)}
     <div class="flex items-center justify-between">
-      <span class="text-muted-foreground text-sm">Showing {startItem}-{endItem} of {total}</span>
+      <span class="text-muted-foreground text-sm">{$t("manage.users.showing")} {startItem}-{endItem} {$t("manage.common.of")} {total}</span>
       {#if totalPages > 1}
         <div class="flex items-center gap-2">
           <Button variant="outline" size="icon" disabled={page === 1} onclick={() => goToPage(page - 1)}>
@@ -566,8 +567,8 @@
 <Dialog.Root bind:open={showAddUserDialog}>
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Add New User</Dialog.Title>
-      <Dialog.Description>Add a new user to your project</Dialog.Description>
+      <Dialog.Title>{$t("manage.users.add_dialog_title")}</Dialog.Title>
+      <Dialog.Description>{$t("manage.users.add_dialog_desc")}</Dialog.Description>
     </Dialog.Header>
     <form
       onsubmit={(e) => {
@@ -577,16 +578,16 @@
     >
       <div class="space-y-4 py-4">
         <div class="space-y-2">
-          <Label for="name">Name</Label>
-          <Input id="name" type="text" placeholder="John Doe" bind:value={newUser.name} required />
+          <Label for="name">{$t("manage.users.name_label")}</Label>
+          <Input id="name" type="text" placeholder={$t("manage.users.name_placeholder")} bind:value={newUser.name} required />
         </div>
         <div class="space-y-2">
-          <Label for="email">Email</Label>
-          <Input id="email" type="email" placeholder="email@example.com" bind:value={newUser.email} required />
+          <Label for="email">{$t("manage.users.email_label")}</Label>
+          <Input id="email" type="email" placeholder={$t("manage.users.email_placeholder")} bind:value={newUser.email} required />
         </div>
 
         <div class="space-y-2">
-          <Label>Roles</Label>
+          <Label>{$t("manage.users.roles_label")}</Label>
           <div class="space-y-2">
             {#each activeRoles as role (role.id)}
               <label class="flex items-center gap-2">
@@ -600,7 +601,7 @@
               </label>
             {/each}
             {#if activeRoles.length === 0}
-              <p class="text-muted-foreground text-sm">No roles available</p>
+              <p class="text-muted-foreground text-sm">{$t("manage.users.no_roles")}</p>
             {/if}
           </div>
         </div>
@@ -609,7 +610,7 @@
         {/if}
       </div>
       <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => (showAddUserDialog = false)}>Cancel</Button>
+        <Button type="button" variant="outline" onclick={() => (showAddUserDialog = false)}>{$t("manage.common.cancel")}</Button>
         <Button type="submit" disabled={creatingUser}>
           {#if creatingUser}
             <Spinner class="size-4" />
@@ -625,8 +626,8 @@
 <Sheet.Root bind:open={showSettingsSheet}>
   <Sheet.Content side="right" class="w-full overflow-y-auto sm:max-w-xl">
     <Sheet.Header>
-      <Sheet.Title>Settings - {toEditUser?.name}</Sheet.Title>
-      <Sheet.Description>Manage user settings and permissions</Sheet.Description>
+      <Sheet.Title>{$t("manage.users.settings_title")} - {toEditUser?.name}</Sheet.Title>
+      <Sheet.Description>{$t("manage.users.settings_desc")}</Sheet.Description>
     </Sheet.Header>
     <div class="px-4">
       {#if toEditUser}
@@ -634,15 +635,15 @@
           <!-- User Info -->
           <div class="space-y-2 text-sm">
             <p>
-              <strong>Created At:</strong>
+              <strong>{$t("manage.users.created_at")}</strong>
               {formatDate(toEditUser.created_at)}
             </p>
             <p>
-              <strong>Updated At:</strong>
+              <strong>{$t("manage.users.updated_at")}</strong>
               {formatDate(toEditUser.updated_at)}
             </p>
             <p>
-              <strong>Name:</strong>
+              <strong>{$t("manage.users.name_field")}</strong>
               {toEditUser.name}
             </p>
           </div>
@@ -655,7 +656,7 @@
                 </p>
                 {#if !canSendEmail}
                   <Alert.Root variant="destructive" class="mb-4">
-                    <Alert.Description>Email service not configured. Cannot resend invitation email.</Alert.Description>
+                    <Alert.Description>{$t("manage.users.email_not_configured")}</Alert.Description>
                   </Alert.Root>
                 {/if}
                 <Button
@@ -698,7 +699,7 @@
                   </label>
                 {/each}
                 {#if activeRoles.length === 0}
-                  <p class="text-muted-foreground text-sm">No roles available</p>
+                  <p class="text-muted-foreground text-sm">{$t("manage.users.no_roles")}</p>
                 {/if}
               </div>
               <Button
@@ -748,7 +749,7 @@
           {:else}
             <Card.Root>
               <Card.Content class="p-4">
-                <p class="mb-3 text-sm">Activate User. The user will be able to login.</p>
+                <p class="mb-3 text-sm">{$t("manage.users.activate_desc")}</p>
                 <Button
                   variant="secondary"
                   disabled={toEditUser.actions.activatingUser}
