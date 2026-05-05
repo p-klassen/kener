@@ -84,6 +84,8 @@
   let showScopeDialog = $state(false);
   let scopeDialogSubscriber = $state<Subscriber | null>(null);
   let allMonitors = $state<MonitorOption[]>([]);
+  let fetchingMonitors = $state(false);
+  let fetchMonitorsError = $state("");
   let editingScope = $state<"incidents" | "maintenances" | null>(null);
   let editScopeSelections = $state<Record<string, boolean>>({});
   let savingScope = $state(false);
@@ -281,18 +283,27 @@
 
   async function fetchAllMonitors() {
     if (allMonitors.length > 0) return;
+    fetchingMonitors = true;
+    fetchMonitorsError = "";
     try {
       const res = await fetch(clientResolver(resolve, "/dashboard-apis/subscription/monitors"));
       if (res.ok) {
         const data = await res.json();
         allMonitors = data.monitors || [];
+      } else {
+        fetchMonitorsError = "Failed to load monitors";
       }
-    } catch (_e) {}
+    } catch (_e) {
+      fetchMonitorsError = "Failed to load monitors";
+    } finally {
+      fetchingMonitors = false;
+    }
   }
 
   async function openScopeDialog(subscriber: Subscriber) {
     scopeDialogSubscriber = subscriber;
     editingScope = null;
+    editScopeSelections = {};
     showScopeDialog = true;
     await fetchAllMonitors();
   }
@@ -330,8 +341,6 @@
         } else {
           scopeDialogSubscriber.maintenance_monitors = monitorTags;
         }
-        const idx = subscribers.findIndex(s => s.method_id === scopeDialogSubscriber!.method_id);
-        if (idx !== -1) subscribers[idx] = { ...scopeDialogSubscriber };
         editingScope = null;
         toast.success("Scope updated");
       }
@@ -668,7 +677,13 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    {#if scopeDialogSubscriber}
+    {#if fetchingMonitors}
+      <div class="flex items-center justify-center py-6">
+        <Loader class="text-muted-foreground h-5 w-5 animate-spin" />
+      </div>
+    {:else if fetchMonitorsError}
+      <p class="text-destructive py-4 text-sm">{fetchMonitorsError}</p>
+    {:else if scopeDialogSubscriber}
       <div class="space-y-4 py-2">
         {#if scopeDialogSubscriber.incidents_enabled}
           <div class="space-y-2">
@@ -756,7 +771,7 @@
           Save
         </Button>
       {:else}
-        <Button onclick={() => { showScopeDialog = false; }}>Close</Button>
+        <Button onclick={() => { showScopeDialog = false; editingScope = null; editScopeSelections = {}; }}>Close</Button>
       {/if}
     </Dialog.Footer>
   </Dialog.Content>
