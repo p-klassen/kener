@@ -301,4 +301,9 @@ export const siteDataKeys: SiteDataKey[] = [
     isValid: IsValidJSONString,
     data_type: "object",
   },
+  {
+    key: "smtp",
+    isValid: IsValidJSONString,
+    data_type: "object",
+  },
 ];

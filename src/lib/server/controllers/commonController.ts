@@ -40,6 +40,7 @@ export const VerifyPassword = async (plainTextPassword: string, hashedPassword: 
 };
 import type { TokenPayload } from "$lib/server/types/auth.js";
 import type { SMTPConfiguration } from "../notification/types";
+import db from "$lib/server/db/db";
 
 export const VerifyToken = async (token: string): Promise<TokenPayload | undefined> => {
   try {
@@ -75,6 +76,18 @@ export const GetSMTPFromENV = (): SMTPConfiguration | null => {
     smtp_pass: smtpPassword,
     smtp_secure: !!Number(process.env.SMTP_SECURE),
   };
+};
+
+export const GetSMTPConfig = async (): Promise<SMTPConfiguration | null> => {
+  const fromEnv = GetSMTPFromENV();
+  if (fromEnv) return fromEnv;
+  const row = await db.getSiteDataByKey("smtp");
+  if (!row?.value) return null;
+  try {
+    return JSON.parse(row.value) as SMTPConfiguration;
+  } catch {
+    return null;
+  }
 };
 
 export const GenerateTokenWithExpiry = async (data: object, expiry: string): Promise<string> => {
