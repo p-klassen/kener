@@ -25,7 +25,8 @@ Kener currently includes these templates:
 | `verify_email`              | Email verification link email                     |
 | `forgot_password`           | Password reset link email                         |
 | `subscription_account_code` | OTP code for subscription account verification    |
-| `subscription_update`       | Incident/maintenance update email for subscribers |
+| `incident_update`           | Incident subscriber notification email            |
+| `maintenance_update`        | Maintenance subscriber notification email         |
 
 ## How customization works {#how-customization-works}
 
@@ -82,12 +83,25 @@ All templates can use site-level variables:
 | `{{site_name}}`, `{{site_url}}`, `{{logo}}`, `{{favicon}}`, `{{tagline}}` | Site branding/context       |
 | `{{email_code}}`                                                          | OTP code sent to subscriber |
 
-### subscription_update {#subscription-update-variables}
+### incident_update {#incident-update-variables}
 
 | Variable                                                                  | Description                                                |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | `{{site_name}}`, `{{site_url}}`, `{{logo}}`, `{{favicon}}`, `{{tagline}}` | Site branding/context                                      |
-| `{{title}}`                                                               | Event title                                                |
+| `{{title}}`                                                               | Incident title                                             |
+| `{{update_subject}}`                                                      | Event subject line (also used by default subject template) |
+| `{{update_text}}`                                                         | Main update content                                        |
+| `{{cta_text}}`                                                            | Call-to-action text                                        |
+| `{{cta_url}}`                                                             | Call-to-action URL                                         |
+| `{{update_id}}`                                                           | Event/update identifier                                    |
+| `{{event_type}}`                                                          | Event category                                             |
+
+### maintenance_update {#maintenance-update-variables}
+
+| Variable                                                                  | Description                                                |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `{{site_name}}`, `{{site_url}}`, `{{logo}}`, `{{favicon}}`, `{{tagline}}` | Site branding/context                                      |
+| `{{title}}`                                                               | Maintenance title                                          |
 | `{{update_subject}}`                                                      | Event subject line (also used by default subject template) |
 | `{{update_text}}`                                                         | Main update content                                        |
 | `{{cta_text}}`                                                            | Call-to-action text                                        |
@@ -100,7 +114,7 @@ All templates can use site-level variables:
 - Keep subject lines short and user-facing.
 - Prefer editing wording and branding, not template structure.
 - Keep Mustache variables exactly as documented.
-- Test critical flows after updates (invite, verify, reset, subscription update).
+- Test critical flows after updates (invite, verify, reset, incident update, maintenance update).
 
 ## Troubleshooting {#troubleshooting}
 

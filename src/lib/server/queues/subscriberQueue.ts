@@ -38,9 +38,11 @@ const addWorker = () => {
       const siteData = await GetAllSiteData();
       const templateSiteVars = siteDataToVariables(siteData);
 
-      const template = await GetGeneralEmailTemplateById("subscription_update");
+      const templateId =
+        variables.event_type === "incidents" ? "incident_update" : "maintenance_update";
+      const template = await GetGeneralEmailTemplateById(templateId);
       if (!template) {
-        throw new Error("Subscription email template not found");
+        throw new Error(`Email template not found: ${templateId}`);
       }
       const emailVars = {
         ...templateSiteVars,
