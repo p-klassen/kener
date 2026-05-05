@@ -7,6 +7,7 @@ import seedSiteData from "$lib/server/db/seedSiteData.js";
 import serverResolve from "$lib/server/resolver.js";
 import { ROUTE_PERMISSION_MAP } from "$lib/allPerms.js";
 import { error } from "@sveltejs/kit";
+import { availableLocalesList } from "$lib/stores/i18n";
 
 import { resolve } from "$app/paths";
 import {
@@ -53,6 +54,16 @@ export const load: LayoutServerLoad = async ({ cookies, route }) => {
   const siteStatusColors = siteData.colors;
   const siteStatusColorsDark = siteData.colorsDark || siteStatusColors;
   const font = siteData.font || { cssSrc: "", family: "" };
+
+  const i18nConfig = siteData.i18n || seedSiteData.i18n;
+  const availableLocales = availableLocalesList;
+  const defaultLocale = i18nConfig.defaultLocale || "en";
+  const userLocale =
+    loggedInUser.preferred_locale &&
+    availableLocalesList.some((l) => l.code === loggedInUser.preferred_locale)
+      ? loggedInUser.preferred_locale
+      : null;
+
   return {
     userDb: loggedInUser,
     userPermissions: [...userPermissions],
@@ -61,5 +72,8 @@ export const load: LayoutServerLoad = async ({ cookies, route }) => {
     font,
     canSendEmail: await IsEmailSetup(),
     seedSiteData,
+    availableLocales,
+    defaultLocale,
+    userLocale,
   };
 };
