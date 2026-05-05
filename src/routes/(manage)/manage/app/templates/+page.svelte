@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -41,9 +40,32 @@
   // Derived: selected template
   let selectedTemplate = $derived(templates.find((t) => t.template_id === selectedTemplateId));
 
+  // SMTP state
+  interface SmtpConfig {
+    smtp_host: string;
+    smtp_port: number;
+    smtp_user: string;
+    smtp_pass: string;
+    smtp_sender: string;
+    smtp_secure: boolean;
+  }
+  let smtpSource = $state<"env" | "db" | "none">("none");
+  let smtpConfig = $state<SmtpConfig>({
+    smtp_host: "",
+    smtp_port: 587,
+    smtp_user: "",
+    smtp_pass: "",
+    smtp_sender: "",
+    smtp_secure: false,
+  });
+  let savingSmtp = $state(false);
+  let testingSmtp = $state(false);
+  let showSmtpPassword = $state(false);
+
   // Fetch templates on mount
   onMount(() => {
     fetchTemplates();
+    fetchSmtpStatus();
   });
 
   // Handle template selection change
@@ -87,6 +109,35 @@
       toast.error("Failed to load templates");
     } finally {
       loading = false;
+    }
+  }
+
+  async function fetchSmtpStatus() {
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getSmtpStatus", data: {} }),
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      smtpSource = result.source;
+      if (result.config) {
+        smtpConfig = {
+          smtp_host: result.config.smtp_host || "",
+          smtp_port: result.config.smtp_port || 587,
+          smtp_user: result.config.smtp_user || "",
+          smtp_pass: "",           // never returned from server
+          smtp_sender: result.config.smtp_sender || "",
+          smtp_secure: !!result.config.smtp_secure,
+        };
+      }
+    } catch (e) {
+      console.error("Failed to load SMTP status", e);
+      toast.error("Failed to load SMTP configuration");
     }
   }
 
