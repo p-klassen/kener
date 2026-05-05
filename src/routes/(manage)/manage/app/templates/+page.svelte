@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -191,6 +190,7 @@
       }
     } catch (e) {
       console.error("Failed to load SMTP status", e);
+      toast.error("Failed to load SMTP configuration");
     }
   }
 
