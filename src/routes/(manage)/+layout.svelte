@@ -29,6 +29,7 @@
   import TemplateIcon from "@lucide/svelte/icons/layout-template";
   import clientResolver from "$lib/client/resolver.js";
   import DatabaseIcon from "@lucide/svelte/icons/database";
+  import { t } from "$lib/stores/i18n";
 
   import { Toaster } from "$lib/components/ui/sonner/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
@@ -36,38 +37,40 @@
 
   let { children, data } = $props();
 
-  // Navigation items - single source of truth
-  const allNavItems = [
-    { title: "Site Configurations", url: "/manage/app/site-configurations", icon: Settings2Icon },
-    { title: "Internationalization", url: "/manage/app/internationalization", icon: GlobeIcon },
-    { title: "Customizations", url: "/manage/app/customizations", icon: Columns3CogIcon },
-    { title: "Analytics Providers", url: "/manage/app/analytics-providers", icon: ChartSplineIcon },
-    { title: "Pages", url: "/manage/app/pages", icon: BookOpenIcon },
-    { title: "Monitors", url: "/manage/app/monitors", icon: BlendIcon },
-    { title: "Monitoring Data", url: "/manage/app/monitoring-data", icon: DatabaseIcon },
-    { title: "Incidents", url: "/manage/app/incidents", icon: CloudAlertIcon },
-    { title: "Maintenances", url: "/manage/app/maintenances", icon: ClockAlertIcon },
-    { title: "Alerts", url: "/manage/app/alerts", icon: SirenIcon },
-    { title: "Subscriptions", url: "/manage/app/subscriptions", icon: BellIcon },
-    { title: "Users", url: "/manage/app/users", icon: UserIcon },
-    { title: "Groups", url: "/manage/app/groups", icon: UsersRoundIcon },
-    { title: "Roles", url: "/manage/app/roles", icon: ShieldIcon },
-    { title: "Triggers", url: "/manage/app/triggers", icon: MailboxIcon },
-    { title: "Templates", url: "/manage/app/templates", icon: TemplateIcon },
-    { title: "Badges", url: "/manage/app/badges", icon: BadgeIcon },
-    { title: "Embed", url: "/manage/app/embed", icon: CodeIcon },
-    { title: "API Keys", url: "/manage/app/api-keys", icon: KeyIcon }
-  ];
+  // Navigation items - single source of truth, reactive so titles update on locale change
+  const allNavItems = $derived([
+    { title: $t("manage.nav.site_configurations"), url: "/manage/app/site-configurations", icon: Settings2Icon },
+    { title: $t("manage.nav.internationalization"), url: "/manage/app/internationalization", icon: GlobeIcon },
+    { title: $t("manage.nav.customizations"), url: "/manage/app/customizations", icon: Columns3CogIcon },
+    { title: $t("manage.nav.analytics_providers"), url: "/manage/app/analytics-providers", icon: ChartSplineIcon },
+    { title: $t("manage.nav.pages"), url: "/manage/app/pages", icon: BookOpenIcon },
+    { title: $t("manage.nav.monitors"), url: "/manage/app/monitors", icon: BlendIcon },
+    { title: $t("manage.nav.monitoring_data"), url: "/manage/app/monitoring-data", icon: DatabaseIcon },
+    { title: $t("manage.nav.incidents"), url: "/manage/app/incidents", icon: CloudAlertIcon },
+    { title: $t("manage.nav.maintenances"), url: "/manage/app/maintenances", icon: ClockAlertIcon },
+    { title: $t("manage.nav.alerts"), url: "/manage/app/alerts", icon: SirenIcon },
+    { title: $t("manage.nav.subscriptions"), url: "/manage/app/subscriptions", icon: BellIcon },
+    { title: $t("manage.nav.users"), url: "/manage/app/users", icon: UserIcon },
+    { title: $t("manage.nav.groups"), url: "/manage/app/groups", icon: UsersRoundIcon },
+    { title: $t("manage.nav.roles"), url: "/manage/app/roles", icon: ShieldIcon },
+    { title: $t("manage.nav.triggers"), url: "/manage/app/triggers", icon: MailboxIcon },
+    { title: $t("manage.nav.templates"), url: "/manage/app/templates", icon: TemplateIcon },
+    { title: $t("manage.nav.badges"), url: "/manage/app/badges", icon: BadgeIcon },
+    { title: $t("manage.nav.embed"), url: "/manage/app/embed", icon: CodeIcon },
+    { title: $t("manage.nav.api_keys"), url: "/manage/app/api-keys", icon: KeyIcon },
+  ]);
 
-  const navItems = allNavItems
-    .filter((item) => {
-      const routeId = `/(manage)${item.url}`;
-      const requiredPermission = ROUTE_PERMISSION_MAP[routeId];
-      if (requiredPermission === undefined) return false;
-      if (requiredPermission === null) return true;
-      return (data.userPermissions ?? []).includes(requiredPermission);
-    })
-    .map((item) => ({ ...item, url: clientResolver(resolve, item.url) }));
+  const navItems = $derived(
+    allNavItems
+      .filter((item) => {
+        const routeId = `/(manage)${item.url}`;
+        const requiredPermission = ROUTE_PERMISSION_MAP[routeId];
+        if (requiredPermission === undefined) return false;
+        if (requiredPermission === null) return true;
+        return (data.userPermissions ?? []).includes(requiredPermission);
+      })
+      .map((item) => ({ ...item, url: clientResolver(resolve, item.url) }))
+  );
 
   // Derive page title from current URL
   let pageTitle = $derived(navItems.find((item) => page.url.pathname.startsWith(item.url))?.title || "Dashboard");
