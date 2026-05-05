@@ -76,6 +76,9 @@ export const actions: Actions = {
       sameSite: cookieConfig.sameSite,
     });
 
+    if (userDB.must_change_password) {
+      throw redirect(302, serverResolve("/account/change-password"));
+    }
     throw redirect(302, serverResolve("/manage/app/site-configurations"));
   },
   signup: async ({ request, cookies }) => {
