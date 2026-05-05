@@ -278,7 +278,10 @@ export class SubscriptionSystemRepository extends BaseRepository {
   /**
    * Get subscribers for a specific event (for sending notifications)
    */
-  async getSubscribersForEvent(eventType: SubscriptionEventType): Promise<
+  async getSubscribersForEvent(
+    eventType: SubscriptionEventType,
+    monitorTags: string[],
+  ): Promise<
     Array<{
       user: SubscriberUserRecord;
       method: SubscriberMethodRecord;
@@ -292,6 +295,23 @@ export class SubscriptionSystemRepository extends BaseRepository {
       .andWhere("us.status", "ACTIVE")
       .andWhere("su.status", "ACTIVE")
       .andWhere("sm.status", "ACTIVE");
+
+    if (monitorTags.length > 0) {
+      query = query.where((builder) => {
+        builder
+          .whereNotExists(
+            this.knex("subscription_monitor_scopes")
+              .select(1)
+              .whereRaw("subscription_id = us.id"),
+          )
+          .orWhereExists(
+            this.knex("subscription_monitor_scopes")
+              .select(1)
+              .whereRaw("subscription_id = us.id")
+              .whereIn("monitor_tag", monitorTags),
+          );
+      });
+    }
 
     const rows = await query.select(
       "su.id as user_id",
