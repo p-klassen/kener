@@ -8,6 +8,7 @@ import {
   VerifySubscriberToken,
   UpdateSubscriberPreferences,
 } from "$lib/server/controllers/userSubscriptionsController";
+import db from "$lib/server/db/db.js";
 
 interface LoginRequest {
   action: "login";
@@ -29,7 +30,9 @@ interface UpdatePreferencesRequest {
   action: "updatePreferences";
   token: string;
   incidents?: boolean;
+  incident_monitors?: string[];
   maintenances?: boolean;
+  maintenance_monitors?: string[];
 }
 
 type PostRequestBody = LoginRequest | VerifyRequest | GetPreferencesRequest | UpdatePreferencesRequest;
@@ -60,7 +63,9 @@ export default async function post(req: APIServerRequest): Promise<Response> {
       return handleUpdatePreferences(
         (body as UpdatePreferencesRequest).token,
         (body as UpdatePreferencesRequest).incidents,
+        (body as UpdatePreferencesRequest).incident_monitors,
         (body as UpdatePreferencesRequest).maintenances,
+        (body as UpdatePreferencesRequest).maintenance_monitors,
         config,
       );
     default:
@@ -96,9 +101,22 @@ async function handleVerify(email: string, code: string): Promise<Response> {
 
 async function handleGetPreferences(token: string, config: SubscriptionsConfig): Promise<Response> {
   const result = await VerifySubscriberToken(token);
-  if (!result.success) {
+  if (!result.success || !result.user || !result.method) {
     return error(401, { message: result.error || "Invalid token" });
   }
+
+  const allSubs = await db.getUserSubscriptionsV2({
+    subscriber_user_id: result.user.id,
+    subscriber_method_id: result.method.id,
+  });
+
+  const incidentSub = allSubs.find((s) => s.event_type === "incidents" && s.status === "ACTIVE");
+  const maintenanceSub = allSubs.find((s) => s.event_type === "maintenances" && s.status === "ACTIVE");
+
+  const [incidentMonitors, maintenanceMonitors] = await Promise.all([
+    incidentSub ? db.getSubscriptionMonitorScopes(incidentSub.id) : Promise.resolve([]),
+    maintenanceSub ? db.getSubscriptionMonitorScopes(maintenanceSub.id) : Promise.resolve([]),
+  ]);
 
   return json({
     success: true,
@@ -108,23 +126,37 @@ async function handleGetPreferences(token: string, config: SubscriptionsConfig):
       incidents: config.methods?.emails?.incidents === true,
       maintenances: config.methods?.emails?.maintenances === true,
     },
+    incident_monitors: incidentMonitors,
+    maintenance_monitors: maintenanceMonitors,
   });
 }
 
 async function handleUpdatePreferences(
   token: string,
   incidents: boolean | undefined,
+  incidentMonitors: string[] | undefined,
   maintenances: boolean | undefined,
+  maintenanceMonitors: string[] | undefined,
   config: SubscriptionsConfig,
 ): Promise<Response> {
-  // Only allow updating subscriptions that are enabled in config
-  const preferences: { incidents?: boolean; maintenances?: boolean } = {};
+  const preferences: {
+    incidents?: boolean;
+    incident_monitors?: string[];
+    maintenances?: boolean;
+    maintenance_monitors?: string[];
+  } = {};
 
   if (incidents !== undefined && config.methods?.emails?.incidents) {
     preferences.incidents = incidents;
+    if (incidentMonitors !== undefined) {
+      preferences.incident_monitors = incidentMonitors;
+    }
   }
   if (maintenances !== undefined && config.methods?.emails?.maintenances) {
     preferences.maintenances = maintenances;
+    if (maintenanceMonitors !== undefined) {
+      preferences.maintenance_monitors = maintenanceMonitors;
+    }
   }
 
   const result = await UpdateSubscriberPreferences(token, preferences);

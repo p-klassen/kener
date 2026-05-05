@@ -548,7 +548,12 @@ export async function VerifySubscriberOTP(
  */
 export async function UpdateSubscriberPreferences(
   token: string,
-  preferences: { incidents?: boolean; maintenances?: boolean },
+  preferences: {
+    incidents?: boolean;
+    incident_monitors?: string[];
+    maintenances?: boolean;
+    maintenance_monitors?: string[];
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const verifyResult = await VerifySubscriberToken(token);
   if (!verifyResult.success || !verifyResult.user || !verifyResult.method) {
@@ -557,7 +562,6 @@ export async function UpdateSubscriberPreferences(
 
   const { user, method } = verifyResult;
 
-  // Handle incidents subscription
   if (preferences.incidents !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
@@ -566,26 +570,31 @@ export async function UpdateSubscriberPreferences(
     });
 
     if (preferences.incidents) {
-      // Enable
       if (existingSub.length === 0) {
-        await db.createUserSubscriptionV2({
+        const created = await db.createUserSubscriptionV2({
           subscriber_user_id: user.id,
           subscriber_method_id: method.id,
           event_type: "incidents",
           status: "ACTIVE",
         });
-      } else if (existingSub[0].status !== "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+        if (preferences.incident_monitors !== undefined) {
+          await db.upsertSubscriptionMonitorScopes(created.id, preferences.incident_monitors);
+        }
+      } else {
+        if (existingSub[0].status !== "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+        }
+        if (preferences.incident_monitors !== undefined) {
+          await db.upsertSubscriptionMonitorScopes(existingSub[0].id, preferences.incident_monitors);
+        }
       }
     } else {
-      // Disable
       if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
         await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
       }
     }
   }
 
-  // Handle maintenances subscription
   if (preferences.maintenances !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
@@ -594,19 +603,25 @@ export async function UpdateSubscriberPreferences(
     });
 
     if (preferences.maintenances) {
-      // Enable
       if (existingSub.length === 0) {
-        await db.createUserSubscriptionV2({
+        const created = await db.createUserSubscriptionV2({
           subscriber_user_id: user.id,
           subscriber_method_id: method.id,
           event_type: "maintenances",
           status: "ACTIVE",
         });
-      } else if (existingSub[0].status !== "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+        if (preferences.maintenance_monitors !== undefined) {
+          await db.upsertSubscriptionMonitorScopes(created.id, preferences.maintenance_monitors);
+        }
+      } else {
+        if (existingSub[0].status !== "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+        }
+        if (preferences.maintenance_monitors !== undefined) {
+          await db.upsertSubscriptionMonitorScopes(existingSub[0].id, preferences.maintenance_monitors);
+        }
       }
     } else {
-      // Disable
       if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
         await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
       }
