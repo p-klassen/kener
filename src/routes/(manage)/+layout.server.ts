@@ -30,6 +30,10 @@ export const load: LayoutServerLoad = async ({ cookies, route }) => {
     throw redirect(302, serverResolve("/account/signin"));
   }
 
+  if (loggedInUser.must_change_password) {
+    throw redirect(302, serverResolve("/account/change-password"));
+  }
+
   const siteData = await GetAllSiteData();
   const userPermissions = await GetUserPermissions(loggedInUser.id);
   const routeId = route.id || "";
