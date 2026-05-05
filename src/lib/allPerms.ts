@@ -110,6 +110,7 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   // Self-actions — no permission needed beyond being logged in
   updateUser: null,
   updatePassword: null,
+  updateUserLocale: null,
   sendVerificationEmail: null, // controller has its own self-vs-other check
 
   // Settings
