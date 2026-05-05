@@ -864,6 +864,8 @@ class DbImpl {
     this.getSubscriberDetailsByMethodId = this.subscriptionSystem.getSubscriberDetailsByMethodId.bind(
       this.subscriptionSystem,
     );
+    this.upsertSubscriptionMonitorScopes = this.subscriptionSystem.upsertSubscriptionMonitorScopes.bind(this.subscriptionSystem);
+    this.getSubscriptionMonitorScopes = this.subscriptionSystem.getSubscriptionMonitorScopes.bind(this.subscriptionSystem);
   }
 
   private bindEmailTemplateConfigMethods(): void {
