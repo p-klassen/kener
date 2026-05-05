@@ -162,6 +162,13 @@ export class UsersRepository extends BaseRepository {
     });
   }
 
+  async updateUserPreferredLocale(id: number, locale: string | null): Promise<number> {
+    return await this.knex("users").where({ id }).update({
+      preferred_locale: locale,
+      updated_at: this.knex.fn.now(),
+    });
+  }
+
   async updateUserRoles(id: number, roleIds: string[]): Promise<void> {
     await this.knex("users_roles").where("users_id", id).delete();
     if (roleIds.length > 0) {
