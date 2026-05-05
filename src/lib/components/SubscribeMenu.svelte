@@ -5,7 +5,6 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Switch } from "$lib/components/ui/switch/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { onMount } from "svelte";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
 
@@ -54,14 +53,9 @@
   let incidentMonitorSelections = $state<Record<string, boolean>>({});
   let maintenanceScope = $state<"all" | "specific">("all");
   let maintenanceMonitorSelections = $state<Record<string, boolean>>({});
-  let scopeError = $state("");
+  let incidentScopeError = $state("");
+  let maintenanceScopeError = $state("");
 
-  // Check token on mount
-  onMount(() => {
-    checkExistingToken();
-  });
-
-  // Also check when dialog opens
   $effect(() => {
     if (open) {
       checkExistingToken();
@@ -183,18 +177,22 @@
     const token = localStorage.getItem(STORAGE_KEY);
     if (!token) { currentView = "login"; return; }
 
-    const monitorKey = type === "incidents" ? "incident_monitors" : "maintenance_monitors";
-    const scope = type === "incidents" ? incidentScope : maintenanceScope;
-    const selections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
-    const monitors = scope === "specific"
-      ? Object.entries(selections).filter(([, v]) => v).map(([k]) => k)
-      : [];
+    // Only include monitor scope when disabling — enabling defers scope to the picker
+    const body: Record<string, unknown> = { action: "updatePreferences", token, [type]: value };
+    if (!value) {
+      const monitorKey = type === "incidents" ? "incident_monitors" : "maintenance_monitors";
+      const scope = type === "incidents" ? incidentScope : maintenanceScope;
+      const selections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
+      body[monitorKey] = scope === "specific"
+        ? Object.entries(selections).filter(([, v]) => v).map(([k]) => k)
+        : [];
+    }
 
     try {
       const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updatePreferences", token, [type]: value, [monitorKey]: monitors })
+        body: JSON.stringify(body)
       });
 
       if (!response.ok) {
@@ -228,7 +226,8 @@
     incidentMonitorSelections = {};
     maintenanceScope = "all";
     maintenanceMonitorSelections = {};
-    scopeError = "";
+    incidentScopeError = "";
+    maintenanceScopeError = "";
     currentView = "login";
     trackEvent("subscribe_logout", { source: "subscribe_menu" });
   }
@@ -260,7 +259,12 @@
     const token = localStorage.getItem(STORAGE_KEY);
     if (!token) { currentView = "login"; return; }
 
-    scopeError = "";
+    const setError = (msg: string) => {
+      if (type === "incidents") incidentScopeError = msg;
+      else maintenanceScopeError = msg;
+    };
+    setError("");
+
     const scope = type === "incidents" ? incidentScope : maintenanceScope;
     const selections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
     const monitorKey = type === "incidents" ? "incident_monitors" : "maintenance_monitors";
@@ -269,7 +273,7 @@
     if (scope === "specific") {
       monitors = Object.entries(selections).filter(([, v]) => v).map(([k]) => k);
       if (monitors.length === 0) {
-        scopeError = $t("Select at least one monitor");
+        setError($t("Select at least one monitor"));
         return;
       }
     }
@@ -281,10 +285,10 @@
         body: JSON.stringify({ action: "updatePreferences", token, [monitorKey]: monitors })
       });
       if (!response.ok) {
-        scopeError = $t("Failed to save scope");
+        setError($t("Failed to save scope"));
       }
     } catch (_err) {
-      scopeError = $t("Network error. Please try again.");
+      setError($t("Network error. Please try again."));
     }
   }
 </script>
@@ -488,6 +492,9 @@
                         {/each}
                       </div>
                     {/if}
+                    {#if incidentScopeError}
+                      <p class="text-destructive text-xs">{incidentScopeError}</p>
+                    {/if}
                   </div>
                 {/if}
               </div>
@@ -547,13 +554,12 @@
                         {/each}
                       </div>
                     {/if}
+                    {#if maintenanceScopeError}
+                      <p class="text-destructive text-xs">{maintenanceScopeError}</p>
+                    {/if}
                   </div>
                 {/if}
               </div>
-            {/if}
-
-            {#if scopeError}
-              <p class="text-destructive text-sm">{scopeError}</p>
             {/if}
           </div>
 
