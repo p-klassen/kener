@@ -36,6 +36,7 @@ export interface SubscriptionVariableMap {
   update_subject: string;
   update_id: string;
   event_type: SubscriptionEventType;
+  monitor_tags: string[];
 }
 
 export interface EmailCodeVariableMap {

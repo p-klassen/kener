@@ -127,6 +127,8 @@ export interface AdminSubscriberRecord {
   maintenances_enabled: boolean;
   incidents_subscription_id: number | null;
   maintenances_subscription_id: number | null;
+  incident_monitors: string[];
+  maintenance_monitors: string[];
   created_at: Date;
 }
 
@@ -160,6 +162,11 @@ export async function GetAdminSubscribersPaginated(
     const incidentsSub = subscriptions.find((s) => s.event_type === "incidents");
     const maintenancesSub = subscriptions.find((s) => s.event_type === "maintenances");
 
+    const [incMonitors, mntMonitors] = await Promise.all([
+      incidentsSub ? db.getSubscriptionMonitorScopes(incidentsSub.id) : Promise.resolve([]),
+      maintenancesSub ? db.getSubscriptionMonitorScopes(maintenancesSub.id) : Promise.resolve([]),
+    ]);
+
     subscribers.push({
       user_id: item.id,
       method_id: item.method_id,
@@ -168,6 +175,8 @@ export async function GetAdminSubscribersPaginated(
       maintenances_enabled: maintenancesSub?.status === "ACTIVE",
       incidents_subscription_id: incidentsSub?.id || null,
       maintenances_subscription_id: maintenancesSub?.id || null,
+      incident_monitors: incMonitors,
+      maintenance_monitors: mntMonitors,
       created_at: item.created_at,
     });
   }
@@ -347,22 +356,45 @@ export async function AdminAddSubscriber(
       maintenances_enabled: maintenances,
       incidents_subscription_id: incidentsSub?.id || null,
       maintenances_subscription_id: maintenancesSub?.id || null,
+      incident_monitors: [],
+      maintenance_monitors: [],
       created_at: method.created_at,
     },
   };
 }
 
 /**
- * Get active email addresses for a given event type
+ * Admin: Update monitor scope for a specific subscription type
+ */
+export async function AdminUpdateSubscriptionScope(
+  methodId: number,
+  eventType: SubscriptionEventType,
+  monitorTags: string[],
+): Promise<{ success: boolean; error?: string }> {
+  const subs = await db.getUserSubscriptionsV2({
+    subscriber_method_id: methodId,
+    event_type: eventType,
+  });
+  if (subs.length === 0) {
+    return { success: false, error: "Subscription not found" };
+  }
+  if (subs.length > 1) {
+    console.warn(`AdminUpdateSubscriptionScope: found ${subs.length} subscriptions for method ${methodId} / ${eventType}, using first`);
+  }
+  await db.upsertSubscriptionMonitorScopes(subs[0].id, monitorTags);
+  return { success: true };
+}
+
+/**
+ * Get active email addresses for a given event type, filtered by monitor tags
  * Used for sending notification emails to subscribers
  */
-export async function GetActiveEmailsForEventType(eventType: SubscriptionEventType): Promise<string[]> {
-  const subscribers = await db.getSubscribersForEvent(eventType);
-
-  // Filter for email method type and extract unique email addresses
+export async function GetActiveEmailsForEvent(
+  eventType: SubscriptionEventType,
+  monitorTags: string[],
+): Promise<string[]> {
+  const subscribers = await db.getSubscribersForEvent(eventType, monitorTags);
   const emails = subscribers.filter((s) => s.method.method_type === "email").map((s) => s.method.method_value);
-
-  // Return unique emails
   return [...new Set(emails)];
 }
 
@@ -549,7 +581,12 @@ export async function VerifySubscriberOTP(
  */
 export async function UpdateSubscriberPreferences(
   token: string,
-  preferences: { incidents?: boolean; maintenances?: boolean },
+  preferences: {
+    incidents?: boolean;
+    incident_monitors?: string[];
+    maintenances?: boolean;
+    maintenance_monitors?: string[];
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const verifyResult = await VerifySubscriberToken(token);
   if (!verifyResult.success || !verifyResult.user || !verifyResult.method) {
@@ -558,59 +595,77 @@ export async function UpdateSubscriberPreferences(
 
   const { user, method } = verifyResult;
 
-  // Handle incidents subscription
-  if (preferences.incidents !== undefined) {
+  if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
       event_type: "incidents",
     });
+    let incidentSubId: number | null = existingSub.find((s) => s.status === "ACTIVE")?.id ?? null;
 
-    if (preferences.incidents) {
-      // Enable
-      if (existingSub.length === 0) {
-        await db.createUserSubscriptionV2({
-          subscriber_user_id: user.id,
-          subscriber_method_id: method.id,
-          event_type: "incidents",
-          status: "ACTIVE",
-        });
-      } else if (existingSub[0].status !== "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+    if (preferences.incidents !== undefined) {
+      if (preferences.incidents) {
+        if (existingSub.length === 0) {
+          const created = await db.createUserSubscriptionV2({
+            subscriber_user_id: user.id,
+            subscriber_method_id: method.id,
+            event_type: "incidents",
+            status: "ACTIVE",
+          });
+          incidentSubId = created.id;
+        } else {
+          if (existingSub[0].status !== "ACTIVE") {
+            await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+          }
+          incidentSubId = existingSub[0].id;
+        }
+      } else {
+        if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
+          incidentSubId = null;
+        }
       }
-    } else {
-      // Disable
-      if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
-      }
+    }
+
+    if (preferences.incident_monitors !== undefined && incidentSubId !== null) {
+      await db.upsertSubscriptionMonitorScopes(incidentSubId, preferences.incident_monitors);
     }
   }
 
-  // Handle maintenances subscription
-  if (preferences.maintenances !== undefined) {
+  if (preferences.maintenances !== undefined || preferences.maintenance_monitors !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
       event_type: "maintenances",
     });
+    let maintenanceSubId: number | null = existingSub.find((s) => s.status === "ACTIVE")?.id ?? null;
 
-    if (preferences.maintenances) {
-      // Enable
-      if (existingSub.length === 0) {
-        await db.createUserSubscriptionV2({
-          subscriber_user_id: user.id,
-          subscriber_method_id: method.id,
-          event_type: "maintenances",
-          status: "ACTIVE",
-        });
-      } else if (existingSub[0].status !== "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+    if (preferences.maintenances !== undefined) {
+      if (preferences.maintenances) {
+        if (existingSub.length === 0) {
+          const created = await db.createUserSubscriptionV2({
+            subscriber_user_id: user.id,
+            subscriber_method_id: method.id,
+            event_type: "maintenances",
+            status: "ACTIVE",
+          });
+          maintenanceSubId = created.id;
+        } else {
+          if (existingSub[0].status !== "ACTIVE") {
+            await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+          }
+          maintenanceSubId = existingSub[0].id;
+        }
+      } else {
+        if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
+          maintenanceSubId = null;
+        }
       }
-    } else {
-      // Disable
-      if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
-      }
+    }
+
+    if (preferences.maintenance_monitors !== undefined && maintenanceSubId !== null) {
+      await db.upsertSubscriptionMonitorScopes(maintenanceSubId, preferences.maintenance_monitors);
     }
   }
 

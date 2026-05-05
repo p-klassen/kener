@@ -216,6 +216,7 @@ export class SubscriptionSystemRepository extends BaseRepository {
   }
 
   async deleteUserSubscriptionV2(id: number): Promise<number> {
+    await this.knex("subscription_monitor_scopes").where("subscription_id", id).del();
     return await this.knex("user_subscriptions_v2").where("id", id).del();
   }
 
@@ -278,7 +279,10 @@ export class SubscriptionSystemRepository extends BaseRepository {
   /**
    * Get subscribers for a specific event (for sending notifications)
    */
-  async getSubscribersForEvent(eventType: SubscriptionEventType): Promise<
+  async getSubscribersForEvent(
+    eventType: SubscriptionEventType,
+    monitorTags: string[],
+  ): Promise<
     Array<{
       user: SubscriberUserRecord;
       method: SubscriberMethodRecord;
@@ -292,6 +296,23 @@ export class SubscriptionSystemRepository extends BaseRepository {
       .andWhere("us.status", "ACTIVE")
       .andWhere("su.status", "ACTIVE")
       .andWhere("sm.status", "ACTIVE");
+
+    if (monitorTags.length > 0) {
+      query = query.where((builder) => {
+        builder
+          .whereNotExists(
+            this.knex("subscription_monitor_scopes")
+              .select(1)
+              .whereRaw("subscription_id = us.id"),
+          )
+          .orWhereExists(
+            this.knex("subscription_monitor_scopes")
+              .select(1)
+              .whereRaw("subscription_id = us.id")
+              .whereIn("monitor_tag", monitorTags),
+          );
+      });
+    }
 
     const rows = await query.select(
       "su.id as user_id",
@@ -476,5 +497,20 @@ export class SubscriptionSystemRepository extends BaseRepository {
       .orderBy("created_at", "desc");
 
     return { user, method, subscriptions };
+  }
+
+  async upsertSubscriptionMonitorScopes(subscriptionId: number, monitorTags: string[]): Promise<void> {
+    await this.knex("subscription_monitor_scopes").where("subscription_id", subscriptionId).del();
+    if (monitorTags.length > 0) {
+      await this.knex("subscription_monitor_scopes").insert(
+        monitorTags.map((tag) => ({ subscription_id: subscriptionId, monitor_tag: tag })),
+      );
+    }
+  }
+
+  async getSubscriptionMonitorScopes(subscriptionId: number): Promise<string[]> {
+    return await this.knex("subscription_monitor_scopes")
+      .where("subscription_id", subscriptionId)
+      .pluck("monitor_tag");
   }
 }

@@ -5,7 +5,6 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Switch } from "$lib/components/ui/switch/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { onMount } from "svelte";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
 
@@ -48,12 +47,15 @@
     maintenances: false
   });
 
-  // Check token on mount
-  onMount(() => {
-    checkExistingToken();
-  });
+  // Monitor scope state
+  let availableMonitors = $state<{ tag: string; name: string }[]>([]);
+  let incidentScope = $state<"all" | "specific">("all");
+  let incidentMonitorSelections = $state<Record<string, boolean>>({});
+  let maintenanceScope = $state<"all" | "specific">("all");
+  let maintenanceMonitorSelections = $state<Record<string, boolean>>({});
+  let incidentScopeError = $state("");
+  let maintenanceScopeError = $state("");
 
-  // Also check when dialog opens
   $effect(() => {
     if (open) {
       checkExistingToken();
@@ -76,7 +78,6 @@
       });
 
       if (!response.ok) {
-        // Token invalid or expired
         localStorage.removeItem(STORAGE_KEY);
         currentView = "login";
         return;
@@ -87,8 +88,20 @@
       incidentsEnabled = data.subscriptions?.incidents || false;
       maintenancesEnabled = data.subscriptions?.maintenances || false;
       availableSubscriptions = data.availableSubscriptions || { incidents: false, maintenances: false };
+
+      // Fetch monitors then initialize scope state
+      await fetchAvailableMonitors();
+      const incMons: string[] = data.incident_monitors || [];
+      const mntMons: string[] = data.maintenance_monitors || [];
+      incidentScope = incMons.length > 0 ? "specific" : "all";
+      maintenanceScope = mntMons.length > 0 ? "specific" : "all";
+      const initSelections = (tags: string[]) =>
+        Object.fromEntries(availableMonitors.map((m) => [m.tag, tags.includes(m.tag)]));
+      incidentMonitorSelections = initSelections(incMons);
+      maintenanceMonitorSelections = initSelections(mntMons);
+
       currentView = "preferences";
-    } catch (err) {
+    } catch (_err) {
       localStorage.removeItem(STORAGE_KEY);
       currentView = "login";
     }
@@ -162,50 +175,41 @@
 
   async function handlePreferenceChange(type: "incidents" | "maintenances", value: boolean) {
     const token = localStorage.getItem(STORAGE_KEY);
-    if (!token) {
-      currentView = "login";
-      return;
+    if (!token) { currentView = "login"; return; }
+
+    // Only include monitor scope when disabling — enabling defers scope to the picker
+    const body: Record<string, unknown> = { action: "updatePreferences", token, [type]: value };
+    if (!value) {
+      const monitorKey = type === "incidents" ? "incident_monitors" : "maintenance_monitors";
+      const scope = type === "incidents" ? incidentScope : maintenanceScope;
+      const selections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
+      body[monitorKey] = scope === "specific"
+        ? Object.entries(selections).filter(([, v]) => v).map(([k]) => k)
+        : [];
     }
 
     try {
       const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "updatePreferences",
-          token,
-          [type]: value
-        })
+        body: JSON.stringify(body)
       });
 
       if (!response.ok) {
-        const data = await response.json();
         errorMessage = $t("Failed to update preference");
-        // Revert the toggle
-        if (type === "incidents") {
-          incidentsEnabled = !value;
-        } else {
-          maintenancesEnabled = !value;
-        }
+        if (type === "incidents") incidentsEnabled = !value;
+        else maintenancesEnabled = !value;
         return;
       }
 
-      // Update local state
-      if (type === "incidents") {
-        incidentsEnabled = value;
-      } else {
-        maintenancesEnabled = value;
-      }
+      if (type === "incidents") incidentsEnabled = value;
+      else maintenancesEnabled = value;
 
       trackEvent("subscribe_pref_toggled", { source: "subscribe_menu", type, value });
-    } catch (err) {
+    } catch (_err) {
       errorMessage = $t("Network error. Please try again.");
-      // Revert the toggle
-      if (type === "incidents") {
-        incidentsEnabled = !value;
-      } else {
-        maintenancesEnabled = !value;
-      }
+      if (type === "incidents") incidentsEnabled = !value;
+      else maintenancesEnabled = !value;
     }
   }
 
@@ -217,6 +221,13 @@
     incidentsEnabled = false;
     maintenancesEnabled = false;
     errorMessage = "";
+    availableMonitors = [];
+    incidentScope = "all";
+    incidentMonitorSelections = {};
+    maintenanceScope = "all";
+    maintenanceMonitorSelections = {};
+    incidentScopeError = "";
+    maintenanceScopeError = "";
     currentView = "login";
     trackEvent("subscribe_logout", { source: "subscribe_menu" });
   }
@@ -230,6 +241,55 @@
   function handleClose() {
     open = false;
     errorMessage = "";
+  }
+
+  async function fetchAvailableMonitors() {
+    try {
+      const res = await fetch(clientResolver(resolve, "/dashboard-apis/subscription/monitors"));
+      if (res.ok) {
+        const data = await res.json();
+        availableMonitors = data.monitors || [];
+      }
+    } catch (_err) {
+      // scope picker simply won't show monitor list
+    }
+  }
+
+  async function saveMonitorScope(type: "incidents" | "maintenances") {
+    const token = localStorage.getItem(STORAGE_KEY);
+    if (!token) { currentView = "login"; return; }
+
+    const setError = (msg: string) => {
+      if (type === "incidents") incidentScopeError = msg;
+      else maintenanceScopeError = msg;
+    };
+    setError("");
+
+    const scope = type === "incidents" ? incidentScope : maintenanceScope;
+    const selections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
+    const monitorKey = type === "incidents" ? "incident_monitors" : "maintenance_monitors";
+
+    let monitors: string[] = [];
+    if (scope === "specific") {
+      monitors = Object.entries(selections).filter(([, v]) => v).map(([k]) => k);
+      if (monitors.length === 0) {
+        setError($t("Select at least one monitor"));
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updatePreferences", token, [monitorKey]: monitors })
+      });
+      if (!response.ok) {
+        setError($t("Failed to save scope"));
+      }
+    } catch (_err) {
+      setError($t("Network error. Please try again."));
+    }
   }
 </script>
 
@@ -379,34 +439,126 @@
 
           <div class="flex flex-col gap-4">
             {#if availableSubscriptions.incidents}
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <AlertTriangle class="h-5 w-5 text-orange-500" />
-                  <div>
-                    <Label class="font-medium">{$t("Incident Updates")}</Label>
-                    <p class="text-muted-foreground text-xs">{$t("Get notified about incidents updates")}</p>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <AlertTriangle class="h-5 w-5 text-orange-500" />
+                    <div>
+                      <Label class="font-medium">{$t("Incident Updates")}</Label>
+                      <p class="text-muted-foreground text-xs">{$t("Get notified about incidents updates")}</p>
+                    </div>
                   </div>
+                  <Switch
+                    checked={incidentsEnabled}
+                    onCheckedChange={(value) => handlePreferenceChange("incidents", value)}
+                  />
                 </div>
-                <Switch
-                  checked={incidentsEnabled}
-                  onCheckedChange={(value) => handlePreferenceChange("incidents", value)}
-                />
+                {#if incidentsEnabled && availableMonitors.length > 0}
+                  <div class="bg-muted/50 ml-8 space-y-2 rounded-md p-3">
+                    <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
+                    <div class="flex flex-col gap-1">
+                      <label class="flex cursor-pointer items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="incident-scope"
+                          value="all"
+                          bind:group={incidentScope}
+                          onchange={() => saveMonitorScope("incidents")}
+                        />
+                        {$t("All monitors")}
+                      </label>
+                      <label class="flex cursor-pointer items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="incident-scope"
+                          value="specific"
+                          bind:group={incidentScope}
+                          onchange={() => saveMonitorScope("incidents")}
+                        />
+                        {$t("Specific monitors")}
+                      </label>
+                    </div>
+                    {#if incidentScope === "specific"}
+                      <div class="ml-4 flex flex-col gap-1 pt-1">
+                        {#each availableMonitors as monitor (monitor.tag)}
+                          <label class="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              bind:checked={incidentMonitorSelections[monitor.tag]}
+                              onchange={() => saveMonitorScope("incidents")}
+                            />
+                            {monitor.name}
+                          </label>
+                        {/each}
+                      </div>
+                    {/if}
+                    {#if incidentScopeError}
+                      <p class="text-destructive text-xs">{incidentScopeError}</p>
+                    {/if}
+                  </div>
+                {/if}
               </div>
             {/if}
 
             {#if availableSubscriptions.maintenances}
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <Wrench class="h-5 w-5 text-blue-500" />
-                  <div>
-                    <Label class="font-medium">{$t("Maintenance Updates")}</Label>
-                    <p class="text-muted-foreground text-xs">{$t("Get notified about scheduled maintenance")}</p>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <Wrench class="h-5 w-5 text-blue-500" />
+                    <div>
+                      <Label class="font-medium">{$t("Maintenance Updates")}</Label>
+                      <p class="text-muted-foreground text-xs">{$t("Get notified about scheduled maintenance")}</p>
+                    </div>
                   </div>
+                  <Switch
+                    checked={maintenancesEnabled}
+                    onCheckedChange={(value) => handlePreferenceChange("maintenances", value)}
+                  />
                 </div>
-                <Switch
-                  checked={maintenancesEnabled}
-                  onCheckedChange={(value) => handlePreferenceChange("maintenances", value)}
-                />
+                {#if maintenancesEnabled && availableMonitors.length > 0}
+                  <div class="bg-muted/50 ml-8 space-y-2 rounded-md p-3">
+                    <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
+                    <div class="flex flex-col gap-1">
+                      <label class="flex cursor-pointer items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="maintenance-scope"
+                          value="all"
+                          bind:group={maintenanceScope}
+                          onchange={() => saveMonitorScope("maintenances")}
+                        />
+                        {$t("All monitors")}
+                      </label>
+                      <label class="flex cursor-pointer items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="maintenance-scope"
+                          value="specific"
+                          bind:group={maintenanceScope}
+                          onchange={() => saveMonitorScope("maintenances")}
+                        />
+                        {$t("Specific monitors")}
+                      </label>
+                    </div>
+                    {#if maintenanceScope === "specific"}
+                      <div class="ml-4 flex flex-col gap-1 pt-1">
+                        {#each availableMonitors as monitor (monitor.tag)}
+                          <label class="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              bind:checked={maintenanceMonitorSelections[monitor.tag]}
+                              onchange={() => saveMonitorScope("maintenances")}
+                            />
+                            {monitor.name}
+                          </label>
+                        {/each}
+                      </div>
+                    {/if}
+                    {#if maintenanceScopeError}
+                      <p class="text-destructive text-xs">{maintenanceScopeError}</p>
+                    {/if}
+                  </div>
+                {/if}
               </div>
             {/if}
           </div>

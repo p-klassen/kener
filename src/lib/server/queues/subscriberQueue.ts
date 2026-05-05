@@ -9,7 +9,7 @@ import { GetAllSiteData } from "../controllers/controller.js";
 import { siteDataToVariables } from "../notification/notification_utils.js";
 import type { SubscriptionVariableMap } from "../notification/types.js";
 import { GetGeneralEmailTemplateById } from "../controllers/generalTemplateController.js";
-import { GetActiveEmailsForEventType } from "../controllers/userSubscriptionsController.js";
+import { GetActiveEmailsForEvent } from "../controllers/userSubscriptionsController.js";
 import emailQueue from "./emailQueue.js";
 let subscriberQueue: Queue | null = null;
 let worker: Worker | null = null;
@@ -44,15 +44,17 @@ const addWorker = () => {
       if (!template) {
         throw new Error(`Email template not found: ${templateId}`);
       }
+      // Exclude monitor_tags (string[]) from emailVars — not a valid template variable
+      const { monitor_tags: _monitor_tags, ...variablesWithoutTags } = variables;
       const emailVars = {
         ...templateSiteVars,
-        ...variables,
+        ...variablesWithoutTags,
       };
 
       const eventType = variables.event_type;
 
       // Get active subscriber emails for this event type
-      const subscriberEmails = await GetActiveEmailsForEventType(eventType);
+      const subscriberEmails = await GetActiveEmailsForEvent(eventType, variables.monitor_tags);
 
       if (subscriberEmails.length === 0) {
         console.log(`📭 No active subscribers for event type: ${eventType}`);
@@ -93,9 +95,6 @@ const addWorker = () => {
  * Push a subscriber notification job to the queue
  */
 export const push = async (variables: SubscriptionVariableMap, options?: JobsOptions) => {
-  if (!options) {
-    options = {};
-  }
   if (!options) {
     options = {};
   }

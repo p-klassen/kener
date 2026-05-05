@@ -367,6 +367,8 @@ class DbImpl {
   getMethodsCountByType!: SubscriptionSystemRepository["getMethodsCountByType"];
   getSubscribersByMethodTypeV2!: SubscriptionSystemRepository["getSubscribersByMethodTypeV2"];
   getSubscriberDetailsByMethodId!: SubscriptionSystemRepository["getSubscriberDetailsByMethodId"];
+  upsertSubscriptionMonitorScopes!: SubscriptionSystemRepository["upsertSubscriptionMonitorScopes"];
+  getSubscriptionMonitorScopes!: SubscriptionSystemRepository["getSubscriptionMonitorScopes"];
 
   // ============ General Email Templates ============
   insertEmailTemplate!: EmailTemplateConfigRepository["insertEmailTemplate"];
@@ -860,6 +862,12 @@ class DbImpl {
       this.subscriptionSystem,
     );
     this.getSubscriberDetailsByMethodId = this.subscriptionSystem.getSubscriberDetailsByMethodId.bind(
+      this.subscriptionSystem,
+    );
+    this.upsertSubscriptionMonitorScopes = this.subscriptionSystem.upsertSubscriptionMonitorScopes.bind(
+      this.subscriptionSystem,
+    );
+    this.getSubscriptionMonitorScopes = this.subscriptionSystem.getSubscriptionMonitorScopes.bind(
       this.subscriptionSystem,
     );
   }

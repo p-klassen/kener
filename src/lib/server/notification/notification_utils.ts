@@ -71,6 +71,7 @@ function formatMaintenanceMarkdown(
 export function maintenanceToVariables(
   event: MaintenanceEventRecordDetailed,
   monitorNames: string,
+  monitorTags: string[],
   statusMessage: string,
   updateIdSuffix: string,
   subjectPrefix: string,
@@ -85,5 +86,6 @@ export function maintenanceToVariables(
     update_id: `maintenance_${event.id}_${updateIdSuffix}`,
     update_subject: `${subjectPrefix}: ${event.title}`,
     update_text: template,
+    monitor_tags: monitorTags,
   };
 }

@@ -212,6 +212,7 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   adminUpdateSubscriptionStatus: "subscribers.write",
   adminDeleteSubscriber: "subscribers.write",
   adminAddSubscriber: "subscribers.write",
+  adminUpdateSubscriptionScope: "subscribers.write",
 
   // Email Templates
   getGeneralEmailTemplates: "email_templates.read",

@@ -136,6 +136,7 @@ export const CreateMaintenanceEventWithNotification = async (
       const update = maintenanceToVariables(
         eventDetailed,
         monitorNames,
+        monitors.map((m) => m.monitor_tag),
         "**has been created**",
         "created",
         "Maintenance Created",
@@ -632,6 +633,7 @@ export const UpdateMaintenanceEventStatuses = async (): Promise<void> => {
         const update = maintenanceToVariables(
           event,
           monitorNames,
+          monitors.map((m) => m.monitor_tag),
           `**is starting in ${timeUntilStart}**`,
           "starting_soon",
           "Maintenance Starting Soon",
@@ -653,6 +655,7 @@ export const UpdateMaintenanceEventStatuses = async (): Promise<void> => {
         const update = maintenanceToVariables(
           event,
           monitorNames,
+          monitors.map((m) => m.monitor_tag),
           "**is now in progress**",
           "ongoing",
           "Maintenance In Progress",
@@ -674,6 +677,7 @@ export const UpdateMaintenanceEventStatuses = async (): Promise<void> => {
         const update = maintenanceToVariables(
           event,
           monitorNames,
+          monitors.map((m) => m.monitor_tag),
           "**is now in progress**",
           "ongoing",
           "Maintenance In Progress",
@@ -695,6 +699,7 @@ export const UpdateMaintenanceEventStatuses = async (): Promise<void> => {
         const update = maintenanceToVariables(
           event,
           monitorNames,
+          monitors.map((m) => m.monitor_tag),
           "**has been completed**",
           "completed",
           "Maintenance Completed",
