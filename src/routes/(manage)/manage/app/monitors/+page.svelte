@@ -19,6 +19,7 @@
   import clientResolver from "$lib/client/resolver.js";
   import { GetInitials } from "$lib/clientTools.js";
   import { onMount } from "svelte";
+  import { t } from "$lib/stores/i18n";
 
   let monitors = $state<MonitorRecord[]>([]);
   let loading = $state(true);
@@ -30,26 +31,26 @@
   let pageNo = $state(1);
   const limit = 10;
 
-  const statusOptions = [
-    { value: "ALL", label: "All Status" },
-    { value: "ACTIVE", label: "Active" },
-    { value: "INACTIVE", label: "Inactive" }
-  ];
+  const statusOptions = $derived([
+    { value: "ALL", label: $t("manage.monitors.filter_status") },
+    { value: "ACTIVE", label: $t("manage.monitors.status_active") },
+    { value: "INACTIVE", label: $t("manage.monitors.status_inactive") },
+  ]);
 
-  const typeOptions = [
-    { value: "ALL", label: "All Types" },
-    { value: "API", label: "API" },
-    { value: "PING", label: "Ping" },
-    { value: "TCP", label: "TCP" },
-    { value: "DNS", label: "DNS" },
-    { value: "SSL", label: "SSL" },
-    { value: "SQL", label: "SQL" },
-    { value: "HEARTBEAT", label: "Heartbeat" },
-    { value: "GAMEDIG", label: "GameDig" },
-    { value: "GROUP", label: "Group" },
-    { value: "GRPC", label: "gRPC" },
-    { value: "NONE", label: "None" },
-  ];
+  const typeOptions = $derived([
+    { value: "ALL", label: $t("manage.monitors.filter_type") },
+    { value: "API", label: $t("manage.monitors.type_api") },
+    { value: "PING", label: $t("manage.monitors.type_ping") },
+    { value: "TCP", label: $t("manage.monitors.type_tcp") },
+    { value: "DNS", label: $t("manage.monitors.type_dns") },
+    { value: "SSL", label: $t("manage.monitors.type_ssl") },
+    { value: "SQL", label: $t("manage.monitors.type_sql") },
+    { value: "HEARTBEAT", label: $t("manage.monitors.type_heartbeat") },
+    { value: "GAMEDIG", label: $t("manage.monitors.type_gamedig") },
+    { value: "GROUP", label: $t("manage.monitors.type_group") },
+    { value: "GRPC", label: $t("manage.monitors.type_grpc") },
+    { value: "NONE", label: $t("manage.monitors.type_none") },
+  ]);
 
   const totalCount = $derived(monitors.length);
   const totalPages = $derived(Math.max(1, Math.ceil(totalCount / limit)));
@@ -107,7 +108,7 @@
         monitors = result;
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to fetch monitors";
+      error = e instanceof Error ? e.message : $t("manage.monitors.fetch_error");
     } finally {
       loading = false;
     }
@@ -135,7 +136,7 @@
       </div>
       <Button class="cursor-pointer" href={clientResolver(resolve, "/manage/app/monitors/new")}>
         <Plus class="size-4" />
-        New Monitor
+        {$t("manage.monitors.add_button")}
       </Button>
     </div>
 
@@ -203,7 +204,7 @@
           <Spinner />
         </Item.Media>
         <Item.Content>
-          <Item.Title class="line-clamp-1">Loading Monitors....</Item.Title>
+          <Item.Title class="line-clamp-1">{$t("manage.monitors.loading")}</Item.Title>
         </Item.Content>
         <Item.Content class="flex-none justify-end"></Item.Content>
       </Item.Root>
@@ -213,17 +214,17 @@
       {error}
     </div>
   {:else if monitors.length === 0}
-    <div class="text-muted-foreground py-8 text-center">No monitors found.</div>
+    <div class="text-muted-foreground py-8 text-center">{$t("manage.monitors.no_monitors")}</div>
   {:else}
     <div class="ktable rounded-xl border">
       <Table.Root>
         <Table.Header>
           <Table.Row>
-            <Table.Head class="w-[300px]">Monitor</Table.Head>
-            <Table.Head class="w-[180px]">Tag</Table.Head>
-            <Table.Head class="w-[130px]">Type</Table.Head>
-            <Table.Head class="w-[120px]">Status</Table.Head>
-            <Table.Head class="w-[120px]">Hidden</Table.Head>
+            <Table.Head class="w-[300px]">{$t("manage.monitors.col_name")}</Table.Head>
+            <Table.Head class="w-[180px]">{$t("manage.monitors.col_tag")}</Table.Head>
+            <Table.Head class="w-[130px]">{$t("manage.monitors.col_type")}</Table.Head>
+            <Table.Head class="w-[120px]">{$t("manage.monitors.col_status")}</Table.Head>
+            <Table.Head class="w-[120px]">{$t("manage.monitors.col_hidden")}</Table.Head>
             <Table.Head class="w-[180px]">Cron</Table.Head>
             <Table.Head class="w-[120px] text-right"></Table.Head>
           </Table.Row>

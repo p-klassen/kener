@@ -219,7 +219,7 @@
     "manage.monitors.type_group": "Group",
     "manage.monitors.type_grpc": "gRPC",
     "manage.monitors.type_none": "None",
-    "manage.monitors.col_name": "Name",
+    "manage.monitors.col_name": "Monitor",
     "manage.monitors.col_tag": "Tag",
     "manage.monitors.col_type": "Type",
     "manage.monitors.col_status": "Status",
