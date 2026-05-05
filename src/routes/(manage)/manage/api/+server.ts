@@ -105,6 +105,7 @@ import {
   AdminUpdateSubscriptionStatus,
   AdminDeleteSubscriber,
   AdminAddSubscriber,
+  AdminUpdateSubscriptionScope,
 } from "$lib/server/controllers/userSubscriptionsController.js";
 import {
   GetAllGeneralEmailTemplates,
@@ -630,6 +631,15 @@ export async function POST({ request, cookies }) {
         throw new Error("Email is required");
       }
       resp = await AdminAddSubscriber(email, incidents ?? false, maintenances ?? false);
+      if (!resp.success) {
+        throw new Error(resp.error);
+      }
+    } else if (action == "adminUpdateSubscriptionScope") {
+      const { methodId, eventType, monitorTags } = data;
+      if (!methodId || !eventType) {
+        throw new Error("Method ID and event type are required");
+      }
+      resp = await AdminUpdateSubscriptionScope(methodId, eventType, monitorTags ?? []);
       if (!resp.success) {
         throw new Error(resp.error);
       }

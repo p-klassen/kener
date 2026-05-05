@@ -127,6 +127,8 @@ export interface AdminSubscriberRecord {
   maintenances_enabled: boolean;
   incidents_subscription_id: number | null;
   maintenances_subscription_id: number | null;
+  incident_monitors: string[];
+  maintenance_monitors: string[];
   created_at: Date;
 }
 
@@ -160,6 +162,11 @@ export async function GetAdminSubscribersPaginated(
     const incidentsSub = subscriptions.find((s) => s.event_type === "incidents");
     const maintenancesSub = subscriptions.find((s) => s.event_type === "maintenances");
 
+    const [incMonitors, mntMonitors] = await Promise.all([
+      incidentsSub ? db.getSubscriptionMonitorScopes(incidentsSub.id) : Promise.resolve([]),
+      maintenancesSub ? db.getSubscriptionMonitorScopes(maintenancesSub.id) : Promise.resolve([]),
+    ]);
+
     subscribers.push({
       user_id: item.id,
       method_id: item.method_id,
@@ -168,6 +175,8 @@ export async function GetAdminSubscribersPaginated(
       maintenances_enabled: maintenancesSub?.status === "ACTIVE",
       incidents_subscription_id: incidentsSub?.id || null,
       maintenances_subscription_id: maintenancesSub?.id || null,
+      incident_monitors: incMonitors,
+      maintenance_monitors: mntMonitors,
       created_at: item.created_at,
     });
   }
@@ -347,9 +356,30 @@ export async function AdminAddSubscriber(
       maintenances_enabled: maintenances,
       incidents_subscription_id: incidentsSub?.id || null,
       maintenances_subscription_id: maintenancesSub?.id || null,
+      incident_monitors: [],
+      maintenance_monitors: [],
       created_at: method.created_at,
     },
   };
+}
+
+/**
+ * Admin: Update monitor scope for a specific subscription type
+ */
+export async function AdminUpdateSubscriptionScope(
+  methodId: number,
+  eventType: SubscriptionEventType,
+  monitorTags: string[],
+): Promise<{ success: boolean; error?: string }> {
+  const subs = await db.getUserSubscriptionsV2({
+    subscriber_method_id: methodId,
+    event_type: eventType,
+  });
+  if (subs.length === 0) {
+    return { success: false, error: "Subscription not found" };
+  }
+  await db.upsertSubscriptionMonitorScopes(subs[0].id, monitorTags);
+  return { success: true };
 }
 
 /**
