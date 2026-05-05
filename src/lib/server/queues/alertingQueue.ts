@@ -94,12 +94,6 @@ async function createNewIncident(
   };
   subscriberQueue.push(updateVariables);
   return incidentCreated;
-
-  /*
-	
-	
-	
-		subscriberQueue.push(updateVariables);*/
 }
 
 async function closeIncident(

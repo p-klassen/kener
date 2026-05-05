@@ -54,7 +54,7 @@ const addWorker = () => {
       const eventType = variables.event_type;
 
       // Get active subscriber emails for this event type
-      const subscriberEmails = await GetActiveEmailsForEvent(eventType, variables.monitor_tags ?? []);
+      const subscriberEmails = await GetActiveEmailsForEvent(eventType, variables.monitor_tags);
 
       if (subscriberEmails.length === 0) {
         console.log(`📭 No active subscribers for event type: ${eventType}`);
@@ -95,9 +95,6 @@ const addWorker = () => {
  * Push a subscriber notification job to the queue
  */
 export const push = async (variables: SubscriptionVariableMap, options?: JobsOptions) => {
-  if (!options) {
-    options = {};
-  }
   if (!options) {
     options = {};
   }
