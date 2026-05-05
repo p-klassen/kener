@@ -27,6 +27,7 @@ export class UsersRepository extends BaseRepository {
     "is_active",
     "is_verified",
     "is_owner",
+    "must_change_password",
     "created_at",
     "updated_at",
   ] as const;
@@ -88,6 +89,7 @@ export class UsersRepository extends BaseRepository {
       name: data.name,
       password_hash: data.password_hash,
       is_owner: data.is_owner || "NO",
+      must_change_password: data.must_change_password ?? 0,
       created_at: this.knex.fn.now(),
       updated_at: this.knex.fn.now(),
     };
@@ -114,6 +116,13 @@ export class UsersRepository extends BaseRepository {
   async updateUserPassword(data: { id: number; password_hash: string }): Promise<number> {
     return await this.knex("users").where({ id: data.id }).update({
       password_hash: data.password_hash,
+      updated_at: this.knex.fn.now(),
+    });
+  }
+
+  async updateMustChangePassword(id: number, value: 0 | 1): Promise<number> {
+    return await this.knex("users").where({ id }).update({
+      must_change_password: value,
       updated_at: this.knex.fn.now(),
     });
   }

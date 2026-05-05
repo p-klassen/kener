@@ -239,6 +239,7 @@ export interface UserRecord {
   password_hash: string;
   is_active: number;
   is_verified: number;
+  must_change_password: number;
   role_ids: string[]; // Array of role IDs
   created_at: Date;
   updated_at: Date;
@@ -252,6 +253,7 @@ export interface UserRecordInsert {
   is_active?: number;
   is_verified?: number;
   is_owner?: string;
+  must_change_password?: number;
 }
 
 export interface UserRecordPublic {
@@ -261,6 +263,7 @@ export interface UserRecordPublic {
   is_active: number;
   is_verified: number;
   is_owner: string;
+  must_change_password: number;
   role_ids: string[];
   created_at: Date;
   updated_at: Date;

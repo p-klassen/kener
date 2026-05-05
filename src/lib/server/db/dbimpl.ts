@@ -115,6 +115,7 @@ class DbImpl {
   getUserById!: UsersRepository["getUserById"];
   insertUser!: UsersRepository["insertUser"];
   updateUserPassword!: UsersRepository["updateUserPassword"];
+  updateMustChangePassword!: UsersRepository["updateMustChangePassword"];
   getAllUsers!: UsersRepository["getAllUsers"];
   getUsersPaginated!: UsersRepository["getUsersPaginated"];
   getTotalUsers!: UsersRepository["getTotalUsers"];
@@ -514,6 +515,7 @@ class DbImpl {
     this.getUserById = this.users.getUserById.bind(this.users);
     this.insertUser = this.users.insertUser.bind(this.users);
     this.updateUserPassword = this.users.updateUserPassword.bind(this.users);
+    this.updateMustChangePassword = this.users.updateMustChangePassword.bind(this.users);
     this.getAllUsers = this.users.getAllUsers.bind(this.users);
     this.getUsersPaginated = this.users.getUsersPaginated.bind(this.users);
     this.getTotalUsers = this.users.getTotalUsers.bind(this.users);
