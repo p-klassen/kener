@@ -26,6 +26,7 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import type { UserRecordPublic, RoleRecord } from "$lib/server/types/db.js";
+  import { t } from "$lib/stores/i18n";
 
   interface Permission {
     id: string;
@@ -477,12 +478,12 @@
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-2">
       <ShieldIcon class="h-5 w-5" />
-      <h2 class="text-xl font-semibold">Roles</h2>
+      <h2 class="text-xl font-semibold">{$t("manage.roles.title")}</h2>
     </div>
     {#if hasPermission("roles.write")}
       <Button size="sm" onclick={() => openCreateDialog()}>
         <PlusIcon class="mr-1 h-4 w-4" />
-        Create Role
+        {$t("manage.roles.add_button")}
       </Button>
     {/if}
   </div>
@@ -494,16 +495,16 @@
         <Spinner class="h-6 w-6" />
       </div>
     {:else if roles.length === 0}
-      <div class="text-muted-foreground p-8 text-center text-sm">No roles found</div>
+      <div class="text-muted-foreground p-8 text-center text-sm">{$t("manage.roles.no_roles")}</div>
     {:else}
       <div class="ktable overflow-hidden rounded-xl border">
         <Table.Root>
           <Table.Header>
             <Table.Row>
-              <Table.Head>Role ID</Table.Head>
-              <Table.Head>Name</Table.Head>
-              <Table.Head>Status</Table.Head>
-              <Table.Head>Type</Table.Head>
+              <Table.Head>{$t("manage.roles.col_id")}</Table.Head>
+              <Table.Head>{$t("manage.roles.col_name")}</Table.Head>
+              <Table.Head>{$t("manage.roles.col_status")}</Table.Head>
+              <Table.Head>{$t("manage.roles.col_type")}</Table.Head>
               <Table.Head class="text-right"></Table.Head>
             </Table.Row>
           </Table.Header>
@@ -524,7 +525,7 @@
                       Readonly
                     </Badge>
                   {:else}
-                    <Badge variant="outline">Custom</Badge>
+                    <Badge variant="outline">{$t("manage.roles.custom_badge")}</Badge>
                   {/if}
                 </Table.Cell>
                 <Table.Cell class="text-right">
@@ -544,7 +545,7 @@
                       <Button
                         variant="ghost"
                         size="sm"
-                        title="Duplicate"
+                        title={$t("manage.roles.duplicate")}
                         onclick={() =>
                           openCreateDialog({
                             role_id: role.id + "-copy",
@@ -587,25 +588,25 @@
 <Dialog.Root bind:open={showEditDialog}>
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>Edit Role</Dialog.Title>
+      <Dialog.Title>{$t("manage.roles.edit_dialog_title")}</Dialog.Title>
       <Dialog.Description>
         Update <span class="font-semibold">{roleToEdit?.role_name}</span> role.
       </Dialog.Description>
     </Dialog.Header>
     <div class="grid gap-4 py-4">
       <div class="grid gap-2">
-        <Label for="edit-role-name">Role Name</Label>
+        <Label for="edit-role-name">{$t("manage.roles.edit_name_label")}</Label>
         <Input id="edit-role-name" bind:value={editRole.name} />
       </div>
       <div class="grid gap-2">
-        <Label for="edit-role-status">Status</Label>
+        <Label for="edit-role-status">{$t("manage.roles.edit_status_label")}</Label>
         <select
           id="edit-role-status"
           class="border-input flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm"
           bind:value={editRole.status}
         >
-          <option value="ACTIVE">Active</option>
-          <option value="INACTIVE">Inactive</option>
+          <option value="ACTIVE">{$t("manage.roles.status_active")}</option>
+          <option value="INACTIVE">{$t("manage.roles.status_inactive")}</option>
         </select>
       </div>
       {#if editError}
@@ -613,12 +614,12 @@
       {/if}
     </div>
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (showEditDialog = false)}>Cancel</Button>
+      <Button variant="outline" onclick={() => (showEditDialog = false)}>{$t("manage.common.cancel")}</Button>
       <Button onclick={handleEditRole} disabled={editingRole}>
         {#if editingRole}
           <Spinner class="mr-2 h-4 w-4" />
         {/if}
-        Save
+        {$t("manage.common.save")}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
@@ -628,18 +629,18 @@
 <Dialog.Root bind:open={showCreateDialog}>
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>Create Role</Dialog.Title>
+      <Dialog.Title>{$t("manage.roles.create_dialog_title")}</Dialog.Title>
       <Dialog.Description>Create a new custom role with its own permissions.</Dialog.Description>
     </Dialog.Header>
     <div class="grid gap-4 py-4">
       <div class="grid gap-2">
-        <Label for="role-id">Role ID</Label>
-        <Input id="role-id" placeholder="e.g. viewer" bind:value={newRole.role_id} />
+        <Label for="role-id">{$t("manage.roles.create_id_label")}</Label>
+        <Input id="role-id" placeholder={$t("manage.roles.create_id_placeholder")} bind:value={newRole.role_id} />
         <p class="text-muted-foreground text-xs">Lowercase letters, numbers, underscores, hyphens only.</p>
       </div>
       <div class="grid gap-2">
-        <Label for="role-name">Role Name</Label>
-        <Input id="role-name" placeholder="e.g. Viewer" bind:value={newRole.name} />
+        <Label for="role-name">{$t("manage.roles.create_name_label")}</Label>
+        <Input id="role-name" placeholder={$t("manage.roles.create_name_placeholder")} bind:value={newRole.name} />
       </div>
       <div class="grid gap-2">
         <Label>Permissions</Label>
@@ -683,12 +684,12 @@
       {/if}
     </div>
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (showCreateDialog = false)}>Cancel</Button>
+      <Button variant="outline" onclick={() => (showCreateDialog = false)}>{$t("manage.common.cancel")}</Button>
       <Button onclick={handleCreateRole} disabled={creatingRole}>
         {#if creatingRole}
           <Spinner class="mr-2 h-4 w-4" />
         {/if}
-        Create
+        {$t("manage.common.create")}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
