@@ -613,8 +613,10 @@ export async function UpdateSubscriberPreferences(
             status: "ACTIVE",
           });
           incidentSubId = created.id;
-        } else if (existingSub[0].status !== "ACTIVE") {
-          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+        } else {
+          if (existingSub[0].status !== "ACTIVE") {
+            await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+          }
           incidentSubId = existingSub[0].id;
         }
       } else {
@@ -648,8 +650,10 @@ export async function UpdateSubscriberPreferences(
             status: "ACTIVE",
           });
           maintenanceSubId = created.id;
-        } else if (existingSub[0].status !== "ACTIVE") {
-          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+        } else {
+          if (existingSub[0].status !== "ACTIVE") {
+            await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+          }
           maintenanceSubId = existingSub[0].id;
         }
       } else {

@@ -151,7 +151,10 @@ async function handleUpdatePreferences(
       preferences.incidents = incidents;
     }
     if (incidentMonitors !== undefined) {
-      preferences.incident_monitors = incidentMonitors;
+      if (!Array.isArray(incidentMonitors)) {
+        return error(400, { message: "incident_monitors must be an array" });
+      }
+      preferences.incident_monitors = incidentMonitors.slice(0, 500).map(String);
     }
   }
   if (config.methods?.emails?.maintenances) {
@@ -159,7 +162,10 @@ async function handleUpdatePreferences(
       preferences.maintenances = maintenances;
     }
     if (maintenanceMonitors !== undefined) {
-      preferences.maintenance_monitors = maintenanceMonitors;
+      if (!Array.isArray(maintenanceMonitors)) {
+        return error(400, { message: "maintenance_monitors must be an array" });
+      }
+      preferences.maintenance_monitors = maintenanceMonitors.slice(0, 500).map(String);
     }
   }
 

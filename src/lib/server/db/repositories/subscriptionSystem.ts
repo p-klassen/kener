@@ -216,6 +216,7 @@ export class SubscriptionSystemRepository extends BaseRepository {
   }
 
   async deleteUserSubscriptionV2(id: number): Promise<number> {
+    await this.knex("subscription_monitor_scopes").where("subscription_id", id).del();
     return await this.knex("user_subscriptions_v2").where("id", id).del();
   }
 
