@@ -255,6 +255,7 @@ export interface UserRecordInsert {
   is_verified?: number;
   is_owner?: string;
   must_change_password?: number;
+  preferred_locale?: string | null;
 }
 
 export interface UserRecordPublic {
