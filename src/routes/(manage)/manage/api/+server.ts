@@ -148,7 +148,7 @@ import {
 import type { SiteDataForNotification } from "$lib/server/notification/types";
 import type { SMTPConfiguration } from "$lib/server/notification/types.js";
 import { alertToVariables, siteDataToVariables } from "$lib/server/notification/notification_utils";
-import { GetSMTPConfig } from "$lib/server/controllers/commonController.js";
+import { GetSMTPConfig, GetSMTPFromENV } from "$lib/server/controllers/commonController.js";
 import getSMTPTransport from "$lib/server/notification/smtps.js";
 import type { TriggerMeta } from "$lib/server/types/db.js";
 import sendWebhook from "$lib/server/notification/webhook_notification.js";
@@ -660,33 +660,23 @@ export async function POST({ request, cookies }) {
     } else if (action == "updateSubscriptionsConfig") {
       resp = await InsertKeyValue("subscriptionsSettings", JSON.stringify(data));
     } else if (action === "getSmtpStatus") {
-      const fromEnv = !!(process.env.SMTP_HOST);
-      const dbRow = await db.getSiteDataByKey("smtp");
-      let dbConfig: Omit<SMTPConfiguration, "smtp_pass"> | null = null;
-      if (dbRow?.value) {
-        try {
-          const parsed = JSON.parse(dbRow.value) as SMTPConfiguration;
-          const { smtp_pass: _omit, ...rest } = parsed;
-          dbConfig = rest;
-        } catch {
-          dbConfig = null;
-        }
-      }
-      if (fromEnv) {
-        resp = {
-          source: "env",
-          config: {
-            smtp_host: process.env.SMTP_HOST || "",
-            smtp_port: Number(process.env.SMTP_PORT) || 587,
-            smtp_user: process.env.SMTP_USER || "",
-            smtp_sender: process.env.SMTP_FROM_EMAIL || process.env.SMTP_SENDER || "",
-            smtp_secure: !!Number(process.env.SMTP_SECURE),
-          },
-        };
-      } else if (dbConfig) {
-        resp = { source: "db", config: dbConfig };
+      const envConfig = GetSMTPFromENV();
+      if (envConfig) {
+        const { smtp_pass: _omit, ...rest } = envConfig;
+        resp = { source: "env", config: rest };
       } else {
-        resp = { source: "none", config: null };
+        const dbRow = await db.getSiteDataByKey("smtp");
+        let dbConfig: Omit<SMTPConfiguration, "smtp_pass"> | null = null;
+        if (dbRow?.value) {
+          try {
+            const parsed = JSON.parse(dbRow.value) as SMTPConfiguration;
+            const { smtp_pass: _omit, ...rest } = parsed;
+            dbConfig = rest;
+          } catch {
+            dbConfig = null;
+          }
+        }
+        resp = dbConfig ? { source: "db", config: dbConfig } : { source: "none", config: null };
       }
     } else if (action === "saveSmtpConfig") {
       const { smtp_host, smtp_port, smtp_user, smtp_pass, smtp_sender, smtp_secure } = data as {
@@ -697,6 +687,13 @@ export async function POST({ request, cookies }) {
         smtp_sender: string;
         smtp_secure: boolean;
       };
+      if (!smtp_host || !smtp_sender) {
+        throw new Error("smtp_host and smtp_sender are required");
+      }
+      const port = Number(smtp_port);
+      if (!port || port < 1 || port > 65535) {
+        throw new Error("smtp_port must be a number between 1 and 65535");
+      }
       let finalPass = smtp_pass;
       if (!finalPass) {
         const existing = await db.getSiteDataByKey("smtp");
