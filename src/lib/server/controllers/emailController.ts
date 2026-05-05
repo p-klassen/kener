@@ -8,14 +8,14 @@ import {
 import { Resend } from "resend";
 import getSMTPTransport from "../notification/smtps.js";
 
-import { GetSMTPFromENV } from "./commonController.js";
+import { GetSMTPConfig } from "./commonController.js";
 
 export const IsResendSetup = () => {
   return !!process.env.RESEND_API_KEY && !!process.env.RESEND_SENDER_EMAIL;
 };
 
-export const IsEmailSetup = () => {
-  return !!GetSMTPFromENV() || IsResendSetup();
+export const IsEmailSetup = async (): Promise<boolean> => {
+  return !!(await GetSMTPConfig()) || IsResendSetup();
 };
 export const SendEmailWithTemplate = async (
   template: string,
@@ -43,7 +43,7 @@ export const SendEmailWithTemplate = async (
     html: template,
   };
 
-  let smtpData = GetSMTPFromENV();
+  let smtpData = await GetSMTPConfig();
 
   try {
     if (!!smtpData) {
