@@ -21,7 +21,7 @@
   import Sun from "@lucide/svelte/icons/sun";
   import Moon from "@lucide/svelte/icons/moon";
   import clientResolver from "$lib/client/resolver.js";
-  import { i18n } from "$lib/stores/i18n";
+  import { i18n, t } from "$lib/stores/i18n";
   import GlobeIcon from "@lucide/svelte/icons/globe";
   import * as Select from "$lib/components/ui/select/index.js";
 
@@ -217,13 +217,13 @@
         <DropdownMenu.Group>
           <DropdownMenu.Item onclick={openAccountDialog}>
             <UserCircleIcon />
-            Account
+            {$t("manage.user_menu.account")}
           </DropdownMenu.Item>
           <DropdownMenu.Item class="relative" onclick={toggleMode}>
             <Sun class="absolute left-2  scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
             <Moon class="absolute left-2  scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
             <span class="pl-6">
-              {mode.current === "light" ? "Light" : "Dark"}
+              {mode.current === "light" ? $t("manage.user_menu.light") : $t("manage.user_menu.dark")}
             </span>
           </DropdownMenu.Item>
         </DropdownMenu.Group>
@@ -233,7 +233,7 @@
             <form method="POST" action={clientResolver(resolve, "/account/logout")} class="w-full">
               <Button {...props} type="submit" variant="ghost" class="w-full justify-start">
                 <LogoutIcon />
-                Log out
+                {$t("manage.user_menu.log_out")}
               </Button>
             </form>
           {/snippet}
@@ -247,10 +247,10 @@
   <Dialog.Content class="max-w-md">
     <Dialog.Header>
       <Dialog.Title class="flex flex-col  justify-between">
-        <span>Account Settings</span>
+        <span>{$t("manage.user_menu.account_settings")}</span>
       </Dialog.Title>
       <Dialog.Description class="flex flex-col gap-2">
-        <span> Manage your profile information. </span>
+        <span>{$t("manage.user_menu.manage_profile")}</span>
         <div class="flex items-center justify-between">
           <span class="text-foreground rounded-sm font-medium">
             {user.email}
@@ -272,16 +272,16 @@
           saveName();
         }}
       >
-        <Label for="account-name">Name</Label>
+        <Label for="account-name">{$t("manage.user_menu.name_label")}</Label>
         <div class="flex gap-2">
-          <Input id="account-name" bind:value={myName} placeholder="Your name" disabled={savingName} class="flex-1" />
+          <Input id="account-name" bind:value={myName} placeholder={$t("manage.user_menu.name_placeholder")} disabled={savingName} class="flex-1" />
           <Button type="submit" disabled={savingName || !myName.trim()}>
             {#if savingName}
               <LoaderIcon class="size-4 animate-spin" />
             {:else if nameSuccess}
               <CheckIcon class="size-4" />
             {:else}
-              Save
+              {$t("manage.common.save")}
             {/if}
           </Button>
         </div>
@@ -294,7 +294,7 @@
       <div class="flex flex-col gap-3">
         <Label>
           <GlobeIcon class="inline size-3.5 mr-1" />
-          Interface Language
+          {$t("manage.common.language")}
         </Label>
         <Select.Root
           type="single"
@@ -326,19 +326,19 @@
           updatePassword();
         }}
       >
-        <Label for="new-password">Change Password</Label>
+        <Label for="new-password">{$t("manage.user_menu.change_password")}</Label>
         <Input
           id="new-password"
           type="password"
           bind:value={myPassword}
-          placeholder="New Password"
+          placeholder={$t("manage.user_menu.new_password")}
           disabled={resettingPass}
         />
         <Input
           id="confirm-password"
           type="password"
           bind:value={plainPassword}
-          placeholder="Confirm Password"
+          placeholder={$t("manage.user_menu.confirm_password")}
           disabled={resettingPass}
         />
 
@@ -346,19 +346,19 @@
           <p class="mb-1 font-medium">Password requirements:</p>
           <ul class="grid grid-cols-2 gap-1">
             <li class:text-green-500={hasDigit}>
-              {#if hasDigit}<CheckIcon class="inline size-3" />{/if} One digit
+              {#if hasDigit}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_digit")}
             </li>
             <li class:text-green-500={hasLowercase}>
-              {#if hasLowercase}<CheckIcon class="inline size-3" />{/if} One lowercase
+              {#if hasLowercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_lowercase")}
             </li>
             <li class:text-green-500={hasUppercase}>
-              {#if hasUppercase}<CheckIcon class="inline size-3" />{/if} One uppercase
+              {#if hasUppercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_uppercase")}
             </li>
             <li class:text-green-500={hasMinLength}>
-              {#if hasMinLength}<CheckIcon class="inline size-3" />{/if} 8+ characters
+              {#if hasMinLength}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_min")}
             </li>
             <li class:text-green-500={passwordsMatch}>
-              {#if passwordsMatch}<CheckIcon class="inline size-3" />{/if} Passwords match
+              {#if passwordsMatch}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_match")}
             </li>
           </ul>
         </div>
@@ -366,12 +366,12 @@
         <Button type="submit" disabled={resettingPass || !isPasswordValid}>
           {#if resettingPass}
             <LoaderIcon class="size-4 animate-spin" />
-            Updating...
+            {$t("manage.user_menu.updating")}
           {:else if passwordSuccess}
             <CheckIcon class="size-4" />
-            Updated!
+            {$t("manage.user_menu.updated")}
           {:else}
-            Update Password
+            {$t("manage.user_menu.update_password")}
           {/if}
         </Button>
         {#if passwordError}
