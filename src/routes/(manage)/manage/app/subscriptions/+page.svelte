@@ -28,6 +28,7 @@
 
   import type { SubscriptionsConfig } from "$lib/server/types/db.js";
   import AlertCircleIcon from "@lucide/svelte/icons/octagon-alert";
+  import { t } from "$lib/stores/i18n";
 
   // Config state
   let config = $state<SubscriptionsConfig>({
@@ -374,13 +375,13 @@
         <Bell class="h-5 w-5" />
         Subscriptions Settings
       </Card.Title>
-      <Card.Description>Configure subscription options for your status page</Card.Description>
+      <Card.Description>{$t("manage.subscriptions.configure_desc")}</Card.Description>
     </Card.Header>
     <Card.Content class="space-y-4">
       {#if pageData.data.canSendEmail === false}
         <Alert.Root variant="destructive">
           <AlertCircleIcon />
-          <Alert.Title>Email is not setup</Alert.Title>
+          <Alert.Title>{$t("manage.subscriptions.email_not_setup_title")}</Alert.Title>
           <Alert.Description>
             <p>
               Please visit the email set up documentation <a
@@ -459,8 +460,8 @@
     <Card.Header>
       <div class="flex items-center justify-between">
         <div>
-          <Card.Title>Subscribers</Card.Title>
-          <Card.Description>Manage email subscribers for notifications</Card.Description>
+          <Card.Title>{$t("manage.subscriptions.subscribers_title")}</Card.Title>
+          <Card.Description>{$t("manage.subscriptions.subscribers_desc")}</Card.Description>
         </div>
         <div class="flex items-center gap-2">
           {#if loadingSubscribers}
@@ -468,7 +469,7 @@
           {/if}
           <Button onclick={() => (showAddDialog = true)}>
             <PlusIcon class="h-4 w-4" />
-            Add Subscriber
+            {$t("manage.subscriptions.add_button")}
           </Button>
         </div>
       </div>
@@ -478,22 +479,22 @@
         <Table.Root>
           <Table.Header>
             <Table.Row>
-              <Table.Head>Email</Table.Head>
+              <Table.Head>{$t("manage.subscriptions.col_email")}</Table.Head>
               <Table.Head class="text-center">
                 <div class="flex items-center justify-center gap-1">
                   <AlertTriangle class="h-4 w-4 text-orange-500" />
-                  Incidents
+                  {$t("manage.subscriptions.col_incidents")}
                 </div>
               </Table.Head>
               <Table.Head class="text-center">
                 <div class="flex items-center justify-center gap-1">
                   <Wrench class="h-4 w-4 text-blue-500" />
-                  Maintenances
+                  {$t("manage.subscriptions.col_maintenances")}
                 </div>
               </Table.Head>
-              <Table.Head>Scope</Table.Head>
-              <Table.Head>Subscribed At</Table.Head>
-              <Table.Head class="w-20 text-center">Actions</Table.Head>
+              <Table.Head>{$t("manage.subscriptions.col_scope")}</Table.Head>
+              <Table.Head>{$t("manage.subscriptions.col_subscribed_at")}</Table.Head>
+              <Table.Head class="w-20 text-center">{$t("manage.common.actions")}</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -544,7 +545,7 @@
                       ].join(" ")}
                     >
                       <Filter class="mr-1 inline h-3 w-3" />
-                      {isScoped ? "Scoped" : "All"}
+                      {isScoped ? $t("manage.subscriptions.scope_scoped") : $t("manage.subscriptions.scope_all")}
                     </button>
                   </Table.Cell>
                   <Table.Cell>
@@ -608,16 +609,16 @@
 <Dialog.Root bind:open={showAddDialog}>
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Add Subscriber</Dialog.Title>
-      <Dialog.Description>Add a new email subscriber for notifications</Dialog.Description>
+      <Dialog.Title>{$t("manage.subscriptions.add_dialog_title")}</Dialog.Title>
+      <Dialog.Description>{$t("manage.subscriptions.add_dialog_desc")}</Dialog.Description>
     </Dialog.Header>
     <div class="space-y-4 py-4">
       <div class="space-y-2">
-        <Label for="new-email">Email Address</Label>
+        <Label for="new-email">{$t("manage.subscriptions.email_label")}</Label>
         <Input
           id="new-email"
           type="email"
-          placeholder="subscriber@example.com"
+          placeholder={$t("manage.subscriptions.email_placeholder")}
           bind:value={newEmail}
           disabled={addingSubscriber}
         />
@@ -653,14 +654,14 @@
         }}
         disabled={addingSubscriber}
       >
-        Cancel
+        {$t("manage.common.cancel")}
       </Button>
       <Button onclick={addSubscriber} disabled={addingSubscriber}>
         {#if addingSubscriber}
           <Spinner class="size-4" />
           Adding...
         {:else}
-          Add Subscriber
+          {$t("manage.subscriptions.add_button")}
         {/if}
       </Button>
     </Dialog.Footer>
@@ -671,7 +672,7 @@
 <Dialog.Root bind:open={showScopeDialog}>
   <Dialog.Content class="max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Monitor Scope</Dialog.Title>
+      <Dialog.Title>{$t("manage.subscriptions.scope_dialog_title")}</Dialog.Title>
       <Dialog.Description>
         Configure which monitors trigger notifications for {scopeDialogSubscriber?.email}
       </Dialog.Description>
@@ -762,16 +763,16 @@
     <Dialog.Footer>
       {#if editingScope}
         <Button variant="outline" onclick={() => { editingScope = null; }} disabled={savingScope}>
-          Cancel
+          {$t("manage.common.cancel")}
         </Button>
         <Button onclick={saveScope} disabled={savingScope}>
           {#if savingScope}
             <Loader class="mr-2 h-4 w-4 animate-spin" />
           {/if}
-          Save
+          {$t("manage.common.save")}
         </Button>
       {:else}
-        <Button onclick={() => { showScopeDialog = false; editingScope = null; editScopeSelections = {}; }}>Close</Button>
+        <Button onclick={() => { showScopeDialog = false; editingScope = null; editScopeSelections = {}; }}>{$t("manage.common.close")}</Button>
       {/if}
     </Dialog.Footer>
   </Dialog.Content>
@@ -781,7 +782,7 @@
 <Dialog.Root bind:open={showDeleteDialog}>
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Delete Subscriber</Dialog.Title>
+      <Dialog.Title>{$t("manage.subscriptions.delete_dialog_title")}</Dialog.Title>
       <Dialog.Description>
         Are you sure you want to delete this subscriber? This action cannot be undone.
       </Dialog.Description>
@@ -803,14 +804,14 @@
         }}
         disabled={isDeleting}
       >
-        Cancel
+        {$t("manage.common.cancel")}
       </Button>
       <Button variant="destructive" onclick={deleteSubscriber} disabled={isDeleting}>
         {#if isDeleting}
           <Spinner class="size-4" />
           Deleting...
         {:else}
-          Delete
+          {$t("manage.common.delete")}
         {/if}
       </Button>
     </Dialog.Footer>
