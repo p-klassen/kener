@@ -9,5 +9,5 @@ export const load: LayoutLoad = async ({ data, fetch }) => {
   }
 
   await i18n.init(availableLocales, defaultLocale ?? "en", fetch);
-  return {};
+  return data;
 };
