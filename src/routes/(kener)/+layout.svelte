@@ -18,7 +18,7 @@
 
 <svelte:head>
   <link rel="icon" href={data.favicon} />
-  {#if data.font?.fileId}
+  {#if data.font?.fileId && data.font?.family}
     {@html `<style>@font-face { font-family: '${data.font.family}'; src: url('${base}/assets/fonts/${data.font.fileId}'); } </style>`}
   {:else if data.font?.cssSrc}
     <link rel="stylesheet" href={data.font.cssSrc} />
