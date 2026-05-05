@@ -23,6 +23,7 @@
   import { toast } from "svelte-sonner";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
   import { page } from "$app/state";
   import type {
     DataRetentionPolicy,
@@ -767,21 +768,21 @@
     <!-- Site Information Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Site Information</Card.Title>
-        <Card.Description>Basic information about your status page</Card.Description>
+        <Card.Title>{$t("manage.site_config.section_site_info")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.site_info_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         <div class="grid gap-4 md:grid-cols-2">
           <!-- Site Name -->
           <div class="space-y-2">
-            <Label for="siteName">Site Name *</Label>
-            <Input id="siteName" type="text" bind:value={siteData.siteName} placeholder="My Status Page" />
+            <Label for="siteName">{$t("manage.site_config.site_name_label")}</Label>
+            <Input id="siteName" type="text" bind:value={siteData.siteName} placeholder={$t("manage.site_config.site_name_placeholder")} />
             <p class="text-muted-foreground text-xs">The name displayed in the header and browser tab</p>
           </div>
 
           <!-- Site URL -->
           <div class="space-y-2">
-            <Label for="siteURL">Site URL *</Label>
+            <Label for="siteURL">{$t("manage.site_config.site_url_label")}</Label>
             <Input id="siteURL" type="url" bind:value={siteData.siteURL} placeholder="https://status.example.com" />
             {#if siteData.siteURL.trim().length > 0 && !isOriginOnlySiteURL}
               <p class="text-destructive text-xs">
@@ -816,8 +817,8 @@
     <!-- Logo Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Logo</Card.Title>
-        <Card.Description>Upload your site logo (max 256x256px, PNG/JPG/SVG/WebP)</Card.Description>
+        <Card.Title>{$t("manage.site_config.logo_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.logo_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         <div class="flex items-start gap-4">
@@ -882,8 +883,8 @@
     <!-- Favicon Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Favicon</Card.Title>
-        <Card.Description>Upload your site favicon (max 64x64px, PNG/JPG/SVG/WebP)</Card.Description>
+        <Card.Title>{$t("manage.site_config.favicon_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.favicon_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         <div class="flex items-start gap-4">
@@ -952,8 +953,8 @@
     <!-- Social Preview & SEO Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Social Preview & SEO</Card.Title>
-        <Card.Description>Configure social preview image and meta tags for search engines</Card.Description>
+        <Card.Title>{$t("manage.site_config.seo_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.seo_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         <div class="flex items-start gap-4">
@@ -1009,21 +1010,21 @@
         </div>
 
         <div class="space-y-2">
-          <Label for="metaSiteTitle">Meta Title</Label>
+          <Label for="metaSiteTitle">{$t("manage.site_config.meta_title_label")}</Label>
           <Input
             id="metaSiteTitle"
             type="text"
             bind:value={metaSiteTitle}
-            placeholder="Custom page title for search engines"
+            placeholder={$t("manage.site_config.meta_title_placeholder")}
           />
           <p class="text-muted-foreground text-xs">Overrides the default page title in search results</p>
         </div>
         <div class="space-y-2">
-          <Label for="metaSiteDescription">Meta Description</Label>
+          <Label for="metaSiteDescription">{$t("manage.site_config.meta_desc_label")}</Label>
           <Textarea
             id="metaSiteDescription"
             bind:value={metaSiteDescription}
-            placeholder="Custom description for search engines"
+            placeholder={$t("manage.site_config.meta_desc_placeholder")}
             rows={3}
           />
           <p class="text-muted-foreground text-xs">Shown as the snippet text in search engine results</p>
@@ -1045,19 +1046,19 @@
     <!-- Navigation Menu Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Navigation Menu</Card.Title>
-        <Card.Description>Add custom navigation links to your status page header</Card.Description>
+        <Card.Title>{$t("manage.site_config.nav_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.nav_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         {#each nav as item, index (index)}
           <div class="flex items-end gap-2 rounded-lg border p-3">
             <div class="grid flex-1 gap-2 sm:grid-cols-3">
               <div class="space-y-1">
-                <Label for="nav-name-{index}">Name</Label>
-                <Input id="nav-name-{index}" type="text" bind:value={item.name} placeholder="Documentation" />
+                <Label for="nav-name-{index}">{$t("manage.site_config.nav_name_label")}</Label>
+                <Input id="nav-name-{index}" type="text" bind:value={item.name} placeholder={$t("manage.site_config.nav_name_placeholder")} />
               </div>
               <div class="space-y-1">
-                <Label for="nav-url-{index}">URL</Label>
+                <Label for="nav-url-{index}">{$t("manage.site_config.nav_url_label")}</Label>
                 <Input id="nav-url-{index}" type="text" bind:value={item.url} placeholder="https://docs.example.com" />
               </div>
               <div class="space-y-1">
@@ -1124,13 +1125,13 @@
     <!-- Sub Menu Options Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Monitor Sub Menu Options</Card.Title>
-        <Card.Description>Configure which options appear in the monitor sub menu on the status page</Card.Description>
+        <Card.Title>{$t("manage.site_config.submenu_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.submenu_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
         <div class="flex items-center justify-between">
           <div class="space-y-0.5">
-            <Label>Share Badge</Label>
+            <Label>{$t("manage.site_config.share_badge")}</Label>
             <p class="text-muted-foreground text-xs">
               Show option to get embeddable status and uptime badges for the monitor
             </p>
@@ -1139,7 +1140,7 @@
         </div>
         <div class="flex items-center justify-between">
           <div class="space-y-0.5">
-            <Label>Share Embed</Label>
+            <Label>{$t("manage.site_config.share_embed")}</Label>
             <p class="text-muted-foreground text-xs">Show option to get iframe or script embed code for the monitor</p>
           </div>
           <Switch bind:checked={subMenuOptions.showShareEmbedMonitor} />
@@ -1161,7 +1162,7 @@
     <!-- Global Page Visibility Settings Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Global Page Visibility Settings</Card.Title>
+        <Card.Title>{$t("manage.site_config.visibility_title")}</Card.Title>
         <Card.Description>
           Configure page switcher visibility and global exclusivity behavior for page-linked content.
         </Card.Description>
@@ -1210,20 +1211,20 @@
     <!-- Data Retention Policy Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Data Retention Policy</Card.Title>
-        <Card.Description>Configure automatic cleanup for old monitor status data</Card.Description>
+        <Card.Title>{$t("manage.site_config.retention_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.retention_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
         <div class="flex items-center justify-between">
           <div class="space-y-0.5">
-            <Label>Enable Data Retention</Label>
+            <Label>{$t("manage.site_config.retention_enable")}</Label>
             <p class="text-muted-foreground text-xs">Automatically remove status data older than retention days</p>
           </div>
           <Switch bind:checked={dataRetentionPolicy.enabled} />
         </div>
 
         <div class="space-y-2">
-          <Label for="retention-days">Retention Days</Label>
+          <Label for="retention-days">{$t("manage.site_config.retention_days_label")}</Label>
           <Input
             id="retention-days"
             type="number"
@@ -1250,15 +1251,15 @@
     <!-- Event Display Settings Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Event Display Settings</Card.Title>
-        <Card.Description>Configure which incidents and maintenances are shown on the site</Card.Description>
+        <Card.Title>{$t("manage.site_config.events_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.events_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
         <!-- Incidents -->
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
-              <Label>Incidents</Label>
+              <Label>{$t("manage.site_config.events_incidents")}</Label>
               <p class="text-muted-foreground text-xs">Enable or disable incident display globally</p>
             </div>
             <Switch bind:checked={eventDisplaySettings.incidents.enabled} />
@@ -1316,7 +1317,7 @@
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
-              <Label>Maintenances</Label>
+              <Label>{$t("manage.site_config.events_maintenances")}</Label>
               <p class="text-muted-foreground text-xs">Enable or disable maintenance display globally</p>
             </div>
             <Switch bind:checked={eventDisplaySettings.maintenances.enabled} />
@@ -1417,12 +1418,12 @@
     <!-- Sitemap Configuration Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Sitemap</Card.Title>
-        <Card.Description>Configure how your sitemap.xml is generated</Card.Description>
+        <Card.Title>{$t("manage.site_config.sitemap_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.sitemap_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
         <div class="space-y-3">
-          <Label>Mode</Label>
+          <Label>{$t("manage.site_config.sitemap_mode")}</Label>
           <RadioGroup.Root
             value={sitemap.mode}
             onValueChange={(v: string) => {
@@ -1513,9 +1514,9 @@
     <!-- Maintenance Notification Settings Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Maintenance Notification Settings</Card.Title>
+        <Card.Title>{$t("manage.site_config.maint_notif_title")}</Card.Title>
         <Card.Description
-          >Configure which maintenance lifecycle events trigger subscriber notifications</Card.Description
+          >{$t("manage.site_config.maint_notif_desc")}</Card.Description
         >
       </Card.Header>
       <Card.Content class="space-y-6">
