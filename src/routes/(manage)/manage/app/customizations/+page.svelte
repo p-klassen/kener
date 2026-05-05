@@ -272,6 +272,18 @@
   async function saveFontUrl() {
     savingFont = true;
     try {
+      if (font.fileId) {
+        const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "deleteImage", data: { id: font.fileId } })
+        });
+        const deleteResult = await deleteRes.json();
+        if (deleteResult.error) {
+          console.warn("Failed to delete old font file:", deleteResult.error);
+        }
+      }
+
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -315,13 +327,20 @@
     const file = input.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Font file must be under 5 MB");
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Font file must be under 2 MB");
+      input.value = "";
+      return;
+    }
+
+    if (!font.family.trim()) {
+      toast.error("Please enter a font family name before uploading");
       input.value = "";
       return;
     }
 
     uploadingFont = true;
+    const previousFileId = font.fileId;
     try {
       const base64 = await fileToBase64Font(file);
 
@@ -341,19 +360,6 @@
       if (uploadResult.error) {
         toast.error(uploadResult.error);
         return;
-      }
-
-      // Delete old font file if one exists
-      if (font.fileId) {
-        const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "deleteImage", data: { id: font.fileId } })
-        });
-        const deleteResult = await deleteRes.json();
-        if (deleteResult.error) {
-          console.warn("Failed to delete old font file:", deleteResult.error);
-        }
       }
 
       const saveResponse = await fetch(clientResolver(resolve, "/manage/api"), {
@@ -379,6 +385,19 @@
         font.fileId = uploadResult.id;
         uploadedFontName = file.name;
         toast.success("Font uploaded successfully");
+
+        // Best-effort: delete old font file only after metadata is saved
+        if (previousFileId) {
+          const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "deleteImage", data: { id: previousFileId } })
+          });
+          const deleteResult = await deleteRes.json();
+          if (deleteResult.error) {
+            console.warn("Failed to delete old font file:", deleteResult.error);
+          }
+        }
       }
     } catch (e) {
       toast.error("Failed to upload font");
@@ -915,7 +934,7 @@
                 disabled={uploadingFont}
                 class="mt-1 block w-full text-sm text-muted-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium"
               />
-              <p class="text-muted-foreground mt-1 text-xs">TTF, OTF, WOFF, or WOFF2. Max 5 MB.</p>
+              <p class="text-muted-foreground mt-1 text-xs">TTF, OTF, WOFF, or WOFF2. Max 2 MB.</p>
             </div>
           {/if}
           <div>

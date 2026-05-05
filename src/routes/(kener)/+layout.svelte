@@ -19,7 +19,7 @@
 <svelte:head>
   <link rel="icon" href={data.favicon} />
   {#if data.font?.fileId && data.font?.family}
-    {@html `<style>@font-face { font-family: '${data.font.family}'; src: url('${base}/assets/fonts/${data.font.fileId}'); } </style>`}
+    {@html `<style>@font-face { font-family: '${data.font.family.replace(/[^a-zA-Z0-9 \-_]/g, '')}'; src: url('${base}/assets/fonts/${data.font.fileId}'); } </style>`}
   {:else if data.font?.cssSrc}
     <link rel="stylesheet" href={data.font.cssSrc} />
   {/if}
@@ -32,7 +32,7 @@
 			--maintenance: ${data.siteStatusColors.MAINTENANCE};
 			--accent: ${data.siteStatusColors.ACCENT || "#f4f4f5"};
 			--accent-foreground: ${data.siteStatusColors.ACCENT_FOREGROUND || data.siteStatusColors.ACCENT || "#e96e2d"};
-			${data.font?.family ? `--font-family:'${data.font.family}', sans-serif;` : ""}
+			${data.font?.family ? `--font-family:'${data.font.family.replace(/[^a-zA-Z0-9 \-_]/g, '')}', sans-serif;` : ""}
 		}
 		:is(.dark) body {
 			--up: ${data.siteStatusColorsDark.UP};

@@ -25,6 +25,7 @@ export const GET: RequestHandler = async ({ params }) => {
       "Content-Type": record.mime_type,
       "Content-Length": buffer.length.toString(),
       "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 };
