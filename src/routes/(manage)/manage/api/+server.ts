@@ -764,7 +764,11 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
     throw new Error("Image data is required");
   }
 
-  const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif", "image/svg+xml"];
+  const allowedMimeTypes = [
+    "image/png", "image/jpeg", "image/jpg", "image/webp",
+    "image/heic", "image/heif", "image/svg+xml",
+    "font/ttf", "font/otf", "font/woff", "font/woff2",
+  ];
   if (!allowedMimeTypes.includes(mimeType)) {
     throw new Error(`Invalid image type. Allowed types: ${allowedMimeTypes.join(", ")}`);
   }
@@ -786,6 +790,23 @@ async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: st
   // Reject if content looks like SVG but client claims it's not SVG
   if (looksLikeSvg && normalizedRequestedMime !== "image/svg+xml") {
     throw new Error("Image content does not match the declared MIME type");
+  }
+
+  // Store font files as-is, bypassing sharp
+  const FONT_MIME_TYPES = new Set(["font/ttf", "font/otf", "font/woff", "font/woff2"]);
+  if (FONT_MIME_TYPES.has(normalizedRequestedMime)) {
+    const ext = normalizedRequestedMime.split("/")[1]; // "ttf", "otf", "woff", "woff2"
+    const fontId = `font_${nanoid(16)}.${ext}`;
+    await db.insertImage({
+      id: fontId,
+      data: imageBuffer.toString("base64"),
+      mime_type: normalizedRequestedMime,
+      original_name: fileName || null,
+      width: null,
+      height: null,
+      size: imageBuffer.length,
+    });
+    return { id: fontId, url: `/assets/fonts/${fontId}` };
   }
 
   // Store SVG as-is, bypassing sharp
