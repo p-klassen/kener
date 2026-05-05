@@ -6,6 +6,7 @@ import {
   IsValidJSONArray,
   IsValidJSONString,
   IsValidNav,
+  IsValidSMTPConfig,
   IsValidURL,
 } from "./validators.js";
 
@@ -303,7 +304,7 @@ export const siteDataKeys: SiteDataKey[] = [
   },
   {
     key: "smtp",
-    isValid: IsValidJSONString,
+    isValid: IsValidSMTPConfig,
     data_type: "object",
   },
 ];

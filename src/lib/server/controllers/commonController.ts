@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import db from "../db/db.js";
 
 const saltRounds = 10;
 const DUMMY_SECRET = "DUMMY_SECRET";
@@ -40,7 +41,6 @@ export const VerifyPassword = async (plainTextPassword: string, hashedPassword: 
 };
 import type { TokenPayload } from "$lib/server/types/auth.js";
 import type { SMTPConfiguration } from "../notification/types";
-import db from "$lib/server/db/db";
 
 export const VerifyToken = async (token: string): Promise<TokenPayload | undefined> => {
   try {
