@@ -8,6 +8,7 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { toast } from "svelte-sonner";
+  import { t } from "$lib/stores/i18n";
 
   type Group = {
     id: number;
@@ -85,23 +86,23 @@
 
 <div class="space-y-4 p-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">Groups</h1>
-    <Button onclick={() => (showCreate = true)}>New Group</Button>
+    <h1 class="text-2xl font-bold">{$t("manage.groups.title")}</h1>
+    <Button onclick={() => (showCreate = true)}>{$t("manage.groups.add_button")}</Button>
   </div>
 
   {#if loading}
     <p class="text-muted-foreground">Loading…</p>
   {:else if groups.length === 0}
-    <p class="text-muted-foreground">No groups yet. Create one to get started.</p>
+    <p class="text-muted-foreground">{$t("manage.groups.no_groups")}</p>
   {:else}
     <div class="rounded-md border">
       <table class="w-full text-sm">
         <thead class="bg-muted/50">
           <tr>
-            <th class="px-4 py-2 text-left font-medium">Name</th>
-            <th class="px-4 py-2 text-left font-medium">Description</th>
-            <th class="px-4 py-2 text-right font-medium">Members</th>
-            <th class="px-4 py-2 text-right font-medium">Roles</th>
+            <th class="px-4 py-2 text-left font-medium">{$t("manage.groups.col_name")}</th>
+            <th class="px-4 py-2 text-left font-medium">{$t("manage.groups.col_description")}</th>
+            <th class="px-4 py-2 text-right font-medium">{$t("manage.groups.col_members")}</th>
+            <th class="px-4 py-2 text-right font-medium">{$t("manage.groups.col_roles")}</th>
             <th class="px-4 py-2"></th>
           </tr>
         </thead>
@@ -120,7 +121,7 @@
                   variant="ghost"
                   size="sm"
                   onclick={(e) => { e.stopPropagation(); deleteTarget = group; }}
-                >Delete</Button>
+                >{$t("manage.common.delete")}</Button>
               </td>
             </tr>
           {/each}
@@ -133,21 +134,21 @@
 <!-- Create dialog -->
 <Dialog.Root bind:open={showCreate}>
   <Dialog.Content>
-    <Dialog.Header><Dialog.Title>New Group</Dialog.Title></Dialog.Header>
+    <Dialog.Header><Dialog.Title>{$t("manage.groups.create_dialog_title")}</Dialog.Title></Dialog.Header>
     <div class="space-y-3">
       <div>
-        <Label>Name</Label>
-        <Input bind:value={newName} placeholder="e.g. Customers" />
+        <Label>{$t("manage.groups.name_label")}</Label>
+        <Input bind:value={newName} placeholder={$t("manage.groups.name_placeholder")} />
       </div>
       <div>
         <Label>Description (optional)</Label>
-        <Input bind:value={newDesc} placeholder="What is this group for?" />
+        <Input bind:value={newDesc} placeholder={$t("manage.groups.desc_placeholder")} />
       </div>
     </div>
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (showCreate = false)}>Cancel</Button>
+      <Button variant="outline" onclick={() => (showCreate = false)}>{$t("manage.common.cancel")}</Button>
       <Button onclick={createGroup} disabled={creating || !newName.trim()}>
-        {creating ? "Creating…" : "Create"}
+        {creating ? "Creating…" : $t("manage.common.create")}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
@@ -156,12 +157,12 @@
 <!-- Delete dialog -->
 <Dialog.Root open={!!deleteTarget} onOpenChange={(v) => { if (!v) deleteTarget = null; }}>
   <Dialog.Content>
-    <Dialog.Header><Dialog.Title>Delete Group</Dialog.Title></Dialog.Header>
+    <Dialog.Header><Dialog.Title>{$t("manage.groups.delete_dialog_title")}</Dialog.Title></Dialog.Header>
     <p>Delete <strong>{deleteTarget?.name}</strong>? This removes all member and role assignments.</p>
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (deleteTarget = null)}>Cancel</Button>
+      <Button variant="outline" onclick={() => (deleteTarget = null)}>{$t("manage.common.cancel")}</Button>
       <Button variant="destructive" onclick={deleteGroup} disabled={deleting}>
-        {deleting ? "Deleting…" : "Delete"}
+        {deleting ? "Deleting…" : $t("manage.common.delete")}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
