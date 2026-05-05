@@ -146,14 +146,18 @@ async function handleUpdatePreferences(
     maintenance_monitors?: string[];
   } = {};
 
-  if (incidents !== undefined && config.methods?.emails?.incidents) {
-    preferences.incidents = incidents;
+  if (config.methods?.emails?.incidents) {
+    if (incidents !== undefined) {
+      preferences.incidents = incidents;
+    }
     if (incidentMonitors !== undefined) {
       preferences.incident_monitors = incidentMonitors;
     }
   }
-  if (maintenances !== undefined && config.methods?.emails?.maintenances) {
-    preferences.maintenances = maintenances;
+  if (config.methods?.emails?.maintenances) {
+    if (maintenances !== undefined) {
+      preferences.maintenances = maintenances;
+    }
     if (maintenanceMonitors !== undefined) {
       preferences.maintenance_monitors = maintenanceMonitors;
     }

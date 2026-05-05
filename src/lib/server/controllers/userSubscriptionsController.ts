@@ -562,69 +562,73 @@ export async function UpdateSubscriberPreferences(
 
   const { user, method } = verifyResult;
 
-  if (preferences.incidents !== undefined) {
+  if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
       event_type: "incidents",
     });
+    let incidentSubId: number | null = existingSub.find((s) => s.status === "ACTIVE")?.id ?? null;
 
-    if (preferences.incidents) {
-      if (existingSub.length === 0) {
-        const created = await db.createUserSubscriptionV2({
-          subscriber_user_id: user.id,
-          subscriber_method_id: method.id,
-          event_type: "incidents",
-          status: "ACTIVE",
-        });
-        if (preferences.incident_monitors !== undefined) {
-          await db.upsertSubscriptionMonitorScopes(created.id, preferences.incident_monitors);
+    if (preferences.incidents !== undefined) {
+      if (preferences.incidents) {
+        if (existingSub.length === 0) {
+          const created = await db.createUserSubscriptionV2({
+            subscriber_user_id: user.id,
+            subscriber_method_id: method.id,
+            event_type: "incidents",
+            status: "ACTIVE",
+          });
+          incidentSubId = created.id;
+        } else if (existingSub[0].status !== "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+          incidentSubId = existingSub[0].id;
         }
       } else {
-        if (existingSub[0].status !== "ACTIVE") {
-          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
-        }
-        if (preferences.incident_monitors !== undefined) {
-          await db.upsertSubscriptionMonitorScopes(existingSub[0].id, preferences.incident_monitors);
+        if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
+          incidentSubId = null;
         }
       }
-    } else {
-      if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
-      }
+    }
+
+    if (preferences.incident_monitors !== undefined && incidentSubId !== null) {
+      await db.upsertSubscriptionMonitorScopes(incidentSubId, preferences.incident_monitors);
     }
   }
 
-  if (preferences.maintenances !== undefined) {
+  if (preferences.maintenances !== undefined || preferences.maintenance_monitors !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
       event_type: "maintenances",
     });
+    let maintenanceSubId: number | null = existingSub.find((s) => s.status === "ACTIVE")?.id ?? null;
 
-    if (preferences.maintenances) {
-      if (existingSub.length === 0) {
-        const created = await db.createUserSubscriptionV2({
-          subscriber_user_id: user.id,
-          subscriber_method_id: method.id,
-          event_type: "maintenances",
-          status: "ACTIVE",
-        });
-        if (preferences.maintenance_monitors !== undefined) {
-          await db.upsertSubscriptionMonitorScopes(created.id, preferences.maintenance_monitors);
+    if (preferences.maintenances !== undefined) {
+      if (preferences.maintenances) {
+        if (existingSub.length === 0) {
+          const created = await db.createUserSubscriptionV2({
+            subscriber_user_id: user.id,
+            subscriber_method_id: method.id,
+            event_type: "maintenances",
+            status: "ACTIVE",
+          });
+          maintenanceSubId = created.id;
+        } else if (existingSub[0].status !== "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+          maintenanceSubId = existingSub[0].id;
         }
       } else {
-        if (existingSub[0].status !== "ACTIVE") {
-          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
-        }
-        if (preferences.maintenance_monitors !== undefined) {
-          await db.upsertSubscriptionMonitorScopes(existingSub[0].id, preferences.maintenance_monitors);
+        if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
+          maintenanceSubId = null;
         }
       }
-    } else {
-      if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
-        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
-      }
+    }
+
+    if (preferences.maintenance_monitors !== undefined && maintenanceSubId !== null) {
+      await db.upsertSubscriptionMonitorScopes(maintenanceSubId, preferences.maintenance_monitors);
     }
   }
 
