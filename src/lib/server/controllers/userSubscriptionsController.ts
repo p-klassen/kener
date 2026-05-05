@@ -378,6 +378,9 @@ export async function AdminUpdateSubscriptionScope(
   if (subs.length === 0) {
     return { success: false, error: "Subscription not found" };
   }
+  if (subs.length > 1) {
+    console.warn(`AdminUpdateSubscriptionScope: found ${subs.length} subscriptions for method ${methodId} / ${eventType}, using first`);
+  }
   await db.upsertSubscriptionMonitorScopes(subs[0].id, monitorTags);
   return { success: true };
 }
