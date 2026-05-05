@@ -687,6 +687,9 @@ export async function POST({ request, cookies }) {
         smtp_sender: string;
         smtp_secure: boolean;
       };
+      if (GetSMTPFromENV()) {
+        throw new Error("SMTP is configured via environment variables and cannot be overridden");
+      }
       if (!smtp_host || !smtp_sender) {
         throw new Error("smtp_host and smtp_sender are required");
       }
@@ -708,7 +711,7 @@ export async function POST({ request, cookies }) {
       }
       const config: SMTPConfiguration = {
         smtp_host,
-        smtp_port: Number(smtp_port) || 587,
+        smtp_port: port,
         smtp_user,
         smtp_pass: finalPass,
         smtp_sender,

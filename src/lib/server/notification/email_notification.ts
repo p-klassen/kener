@@ -5,7 +5,7 @@ import { Resend, type CreateEmailOptions } from "resend";
 import type { SMTPConfiguration } from "./types.js";
 import getSMTPTransport from "./smtps.js";
 import { GetSMTPConfig } from "../controllers/commonController.js";
-import { IsEmailSetup, IsResendSetup } from "../controllers/emailController.js";
+import { IsResendSetup } from "../controllers/emailController.js";
 
 export default async function send(
   emailBody: string,
@@ -35,12 +35,11 @@ export default async function send(
   const textBody = emailTextBody ? Mustache.render(emailTextBody, variables) : striptags(htmlBody);
 
   try {
-    let isEmailSetupDone = await IsEmailSetup();
-    if (!isEmailSetupDone) {
-      throw new Error("Email not configured properly. Please check SMTP or Resend configuration.");
-    }
     let isResend = IsResendSetup();
     let mySMTPData = await GetSMTPConfig();
+    if (!isResend && !mySMTPData) {
+      throw new Error("Email not configured properly. Please check SMTP or Resend configuration.");
+    }
     if (isResend) {
       //check if triggerRecord is of type ResendAPIConfiguration
       const resend = new Resend(process.env.RESEND_API_KEY || "");
