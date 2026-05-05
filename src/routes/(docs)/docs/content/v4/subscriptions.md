@@ -86,7 +86,7 @@ Maintenance subscription emails are queued on maintenance event status transitio
 When an event is queued:
 
 1. Kener selects active subscribers for that `event_type`.
-2. Kener renders the `subscription_update` email template with event/site variables.
+2. Kener renders the `incident_update` template for incident notifications or the `maintenance_update` template for maintenance notifications, with event/site variables.
 3. Kener enqueues **one email per recipient** (privacy-safe fan-out).
 4. Email sender queue sends the final emails.
 
