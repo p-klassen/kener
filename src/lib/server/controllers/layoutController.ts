@@ -92,9 +92,9 @@ export async function GetLayoutServerData(cookies: Cookies, request: Request): P
   const isSetupComplete = await IsSetupComplete();
 
   const selectedLang = GetLocaleFromCookie(siteData, cookies);
-  const siteStatusColors = siteData.colors;
+  const siteStatusColors = siteData.colors ?? seedSiteData.colors;
 
-  const siteStatusColorsDark = siteData.colorsDark || siteStatusColors;
+  const siteStatusColorsDark = siteData.colorsDark ?? siteData.colors ?? seedSiteData.colorsDark;
 
   // Check if subscription is enabled
   let isSubsEnabled = false;

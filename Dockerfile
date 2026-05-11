@@ -164,7 +164,8 @@ COPY --chown=node:node --from=builder /app/src/lib/server/db/seedSiteData.ts    
 COPY --chown=node:node --from=builder /app/src/lib/server/db/seedMonitorData.ts   ./src/lib/server/db/seedMonitorData.ts
 COPY --chown=node:node --from=builder /app/src/lib/server/db/seedPagesData.ts     ./src/lib/server/db/seedPagesData.ts
 COPY --chown=node:node --from=builder /app/src/lib/allPerms.ts                   ./src/lib/allPerms.ts
-COPY --chown=node:node --from=builder /app/src/lib/server/templates/general       ./src/lib/server/templates/general
+COPY --chown=node:node --from=builder /app/src/lib/server/templates/general             ./src/lib/server/templates/general
+COPY --chown=node:node --from=builder /app/src/lib/server/templates/emailTemplateFactory.ts ./src/lib/server/templates/emailTemplateFactory.ts
 
 # Locale JSON files (read at runtime by server-side i18n)
 COPY --chown=node:node --from=builder /app/src/lib/locales ./src/lib/locales
