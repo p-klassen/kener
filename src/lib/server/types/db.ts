@@ -242,6 +242,8 @@ export interface UserRecord {
   must_change_password: number;
   role_ids: string[]; // Array of role IDs
   preferred_locale: string | null;
+  auth_provider: string; // "local" | "oidc" | "ldap"
+  external_id: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -256,6 +258,8 @@ export interface UserRecordInsert {
   is_owner?: string;
   must_change_password?: number;
   preferred_locale?: string | null;
+  auth_provider?: string;
+  external_id?: string | null;
 }
 
 export interface UserRecordPublic {
@@ -268,6 +272,8 @@ export interface UserRecordPublic {
   must_change_password: number;
   role_ids: string[];
   preferred_locale: string | null;
+  auth_provider: string;
+  external_id: string | null;
   created_at: Date;
   updated_at: Date;
 }

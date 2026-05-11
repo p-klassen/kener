@@ -163,6 +163,14 @@ import heicConvert from "heic-convert";
 import serverResolver from "$lib/server/resolver.js";
 import { ACTION_PERMISSION_MAP } from "$lib/allPerms.js";
 import { exportData, importData } from "$lib/server/controllers/exportImportController.js";
+import {
+  GetOidcConfig,
+  SaveOidcConfig,
+  GetLdapConfig,
+  SaveLdapConfig,
+  GetLdapConfigPublic,
+} from "$lib/server/controllers/authConfigController.js";
+import { TestLdapConnection } from "$lib/server/controllers/ldapController.js";
 
 export async function POST({ request, cookies }) {
   const payload = await request.json();
@@ -211,6 +219,9 @@ export async function POST({ request, cookies }) {
       await ManualUpdateUserData(data.id, data);
       resp = await GetUserByIDDashboard(data.id);
     } else if (action == "updatePassword") {
+      if (userDB.auth_provider !== "local") {
+        throw new Error("Password cannot be changed for accounts authenticated via OIDC or LDAP");
+      }
       data.userID = userDB.id;
       resp = await UpdatePassword(data);
     } else if (action == "changeOwnEmail") {
@@ -896,6 +907,52 @@ export async function POST({ request, cookies }) {
       resp = { success: true };
     } else if (action == "getUserEffectiveAccess") {
       resp = await GetUserEffectiveAccess(data.userId);
+    } else if (action === "getOidcConfig") {
+      const cfg = await GetOidcConfig();
+      // Never expose client_secret to the frontend
+      const { client_secret: _s, ...safeOidc } = cfg;
+      resp = { ...safeOidc, client_secret: cfg.client_secret ? "••••••••" : "" };
+    } else if (action === "saveOidcConfig") {
+      const payload = { ...data };
+      // If placeholder is sent back, preserve existing secret
+      if (payload.client_secret === "••••••••") {
+        const current = await GetOidcConfig();
+        payload.client_secret = current.client_secret;
+      }
+      resp = await SaveOidcConfig(payload);
+      // Return without exposing secret
+      const { client_secret: _s2, ...safeResp } = resp;
+      resp = { ...safeResp, client_secret: resp.client_secret ? "••••••••" : "" };
+    } else if (action === "testOidcDiscovery") {
+      const { issuer_url } = data as { issuer_url: string };
+      if (!issuer_url) throw new Error("issuer_url is required");
+      try {
+        const discoveryUrl = issuer_url.replace(/\/$/, "") + "/.well-known/openid-configuration";
+        const r = await fetch(discoveryUrl, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) throw new Error(`Discovery endpoint returned ${r.status}`);
+        const meta = (await r.json()) as Record<string, string>;
+        resp = {
+          success: true,
+          endpoints: {
+            authorization_endpoint: meta.authorization_endpoint || "",
+            token_endpoint: meta.token_endpoint || "",
+            userinfo_endpoint: meta.userinfo_endpoint || "",
+            jwks_uri: meta.jwks_uri || "",
+            end_session_endpoint: meta.end_session_endpoint || "",
+          },
+        };
+      } catch (e) {
+        resp = { success: false, error: e instanceof Error ? e.message : String(e) };
+      }
+    } else if (action === "getLdapConfig") {
+      resp = await GetLdapConfigPublic();
+    } else if (action === "saveLdapConfig") {
+      resp = await SaveLdapConfig(data);
+      // Return without bind_password
+      const { bind_password: _p, ...safeLdap } = resp;
+      resp = safeLdap;
+    } else if (action === "testLdapConnection") {
+      resp = await TestLdapConnection(data);
     } else if (action == "exportData") {
       resp = await exportData(data.scope);
     } else if (action == "importData") {

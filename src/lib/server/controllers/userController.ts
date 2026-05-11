@@ -243,6 +243,11 @@ export const UpdatePassword = async (data: PasswordUpdateInput): Promise<number>
 };
 
 export const ChangeOwnEmail = async (userId: number, newEmail: string, currentPassword: string): Promise<void> => {
+  const currentUser = await db.getUserById(userId);
+  if (currentUser && currentUser.auth_provider !== "local") {
+    throw new Error("Email cannot be changed for accounts authenticated via OIDC or LDAP");
+  }
+
   const normalizedEmail = validateEmailOrThrow(newEmail);
 
   const existing = await db.getUserByEmail(normalizedEmail);

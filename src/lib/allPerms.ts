@@ -264,6 +264,14 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   // Export / Import
   exportData: "settings.read",
   importData: "settings.write",
+
+  // Authentication (OIDC / LDAP)
+  getOidcConfig: "settings.read",
+  saveOidcConfig: "settings.write",
+  testOidcDiscovery: "settings.write",
+  getLdapConfig: "settings.read",
+  saveLdapConfig: "settings.write",
+  testLdapConnection: "settings.write",
 };
 
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
@@ -325,6 +333,9 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
 
   // Export / Import
   "/(manage)/manage/app/export-import": "settings.read",
+
+  // Authentication (OIDC / LDAP)
+  "/(manage)/manage/app/authentication": "settings.write",
 
   // API Docs (no auth beyond login — any logged-in user can view)
   "/(manage)/manage/app/api-docs": null,

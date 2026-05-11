@@ -28,6 +28,9 @@ export class UsersRepository extends BaseRepository {
     "is_verified",
     "is_owner",
     "must_change_password",
+    "auth_provider",
+    "external_id",
+    "preferred_locale",
     "created_at",
     "updated_at",
   ] as const;
@@ -90,6 +93,8 @@ export class UsersRepository extends BaseRepository {
       password_hash: data.password_hash,
       is_owner: data.is_owner || "NO",
       must_change_password: data.must_change_password ?? 0,
+      auth_provider: data.auth_provider ?? "local",
+      external_id: data.external_id ?? null,
       created_at: this.knex.fn.now(),
       updated_at: this.knex.fn.now(),
     };
@@ -165,6 +170,24 @@ export class UsersRepository extends BaseRepository {
   async updateUserPreferredLocale(id: number, locale: string | null): Promise<number> {
     return await this.knex("users").where({ id }).update({
       preferred_locale: locale,
+      updated_at: this.knex.fn.now(),
+    });
+  }
+
+  async getUserByExternalId(provider: string, externalId: string): Promise<UserRecordPublic | undefined> {
+    const row = await this.knex("users")
+      .select(...this.userColumns)
+      .where("auth_provider", provider)
+      .where("external_id", externalId)
+      .first();
+    if (!row) return undefined;
+    return await this.enrichWithRoleIds(row);
+  }
+
+  async updateUserAuthProvider(id: number, provider: string, externalId: string | null): Promise<number> {
+    return await this.knex("users").where({ id }).update({
+      auth_provider: provider,
+      external_id: externalId,
       updated_at: this.knex.fn.now(),
     });
   }

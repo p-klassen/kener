@@ -24,6 +24,7 @@
   import UserIcon from "@lucide/svelte/icons/user";
   import ShieldIcon from "@lucide/svelte/icons/shield";
   import UsersRoundIcon from "@lucide/svelte/icons/users-round";
+  import LockKeyholeIcon from "@lucide/svelte/icons/lock-keyhole";
   import Columns3CogIcon from "@lucide/svelte/icons/columns-3-cog";
   import SiteHeader from "./manage/site-header.svelte";
   import TemplateIcon from "@lucide/svelte/icons/layout-template";
@@ -53,6 +54,7 @@
     { title: $t("manage.nav.maintenances"), url: "/manage/app/maintenances", icon: ClockAlertIcon },
     { title: $t("manage.nav.alerts"), url: "/manage/app/alerts", icon: SirenIcon },
     { title: $t("manage.nav.subscriptions"), url: "/manage/app/subscriptions", icon: BellIcon },
+    { title: $t("manage.nav.authentication"), url: "/manage/app/authentication", icon: LockKeyholeIcon },
     { title: $t("manage.nav.users"), url: "/manage/app/users", icon: UserIcon },
     { title: $t("manage.nav.groups"), url: "/manage/app/groups", icon: UsersRoundIcon },
     { title: $t("manage.nav.roles"), url: "/manage/app/roles", icon: ShieldIcon },

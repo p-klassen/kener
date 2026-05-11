@@ -1,5 +1,7 @@
 import db from "../db/db.js";
 import type { SiteData } from "../types/db.js";
+import { GetOidcConfig, GetLdapConfig, SaveOidcConfig, SaveLdapConfig } from "./authConfigController.js";
+import type { OidcConfig, LdapConfig } from "./authConfigController.js";
 
 export type ExportScope = "config" | "users_groups_roles" | "everything";
 
@@ -73,6 +75,10 @@ export interface ExportPayload {
     monitors: ExportedMonitor[];
     pages: ExportedPage[];
     triggers: ExportedTrigger[];
+    auth?: {
+      oidc: Omit<OidcConfig, "client_secret">;
+      ldap: Omit<LdapConfig, "bind_password">;
+    };
   };
   users_groups_roles?: {
     users: ExportedUser[];
@@ -89,12 +95,17 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
   };
 
   if (scope === "config" || scope === "everything") {
-    const [siteData, monitors, pages, triggers] = await Promise.all([
+    const [siteData, monitors, pages, triggers, oidcConfig, ldapConfig] = await Promise.all([
       db.getAllSiteData(),
       db.getMonitors({}),
       db.getAllPages(),
       db.getTriggers({}),
+      GetOidcConfig(),
+      GetLdapConfig(),
     ]);
+
+    const { client_secret: _cs, ...oidcSafe } = oidcConfig;
+    const { bind_password: _bp, ...ldapSafe } = ldapConfig;
 
     payload.config = {
       site_data: siteData,
@@ -133,6 +144,7 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
         trigger_status: t.trigger_status,
         trigger_meta: t.trigger_meta,
       })),
+      auth: { oidc: oidcSafe, ldap: ldapSafe },
     };
   }
 
@@ -268,6 +280,13 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
       triggersImported++;
     }
     imported.triggers = triggersImported;
+
+    if (payload.config.auth) {
+      const { oidc, ldap } = payload.config.auth;
+      if (oidc) await SaveOidcConfig(oidc);
+      if (ldap) await SaveLdapConfig(ldap);
+      imported.auth_config = 1;
+    }
   }
 
   if (payload.users_groups_roles) {

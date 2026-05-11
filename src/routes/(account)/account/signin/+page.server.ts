@@ -7,18 +7,28 @@ import {
   CreateFirstUser,
 } from "$lib/server/controllers/userController";
 import { VerifyPassword, GenerateToken, CookieConfig } from "$lib/server/controllers/commonController";
+import { AuthenticateWithLdap } from "$lib/server/controllers/ldapController.js";
+import { GetOidcConfig, GetLdapConfig } from "$lib/server/controllers/authConfigController.js";
 import constants from "$lib/global-constants";
 import serverResolve from "$lib/server/resolver.js";
 
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ parent, url }) => {
   const parentData = await parent();
 
   if (!!parentData.loggedInUser && parentData.isSetupComplete) {
     throw redirect(302, serverResolve("/manage/app/site-configurations"));
   }
 
+  const [oidcConfig, ldapConfig] = await Promise.all([GetOidcConfig(), GetLdapConfig()]);
+  const oidcError = url.searchParams.get("error") ?? null;
+
   return {
     ...parentData,
+    oidcEnabled: oidcConfig.enabled,
+    oidcButtonText: oidcConfig.button_text || "Sign in with SSO",
+    oidcButtonIconUrl: oidcConfig.button_icon_url || "",
+    ldapEnabled: ldapConfig.enabled,
+    oidcError,
   };
 };
 
@@ -80,6 +90,33 @@ export const actions: Actions = {
       throw redirect(302, serverResolve("/account/change-password"));
     }
     throw redirect(302, serverResolve("/manage/app/site-configurations"));
+  },
+  ldap: async ({ request, cookies }) => {
+    const formData = await request.formData();
+    const username = String(formData.get("ldap_username") ?? "").trim();
+    const password = String(formData.get("ldap_password") ?? "");
+
+    if (!username || !password) {
+      return fail(400, { error: "Username and password are required", values: { ldap_username: username } });
+    }
+
+    try {
+      const userDB = await AuthenticateWithLdap(username, password);
+      const token = await GenerateToken(userDB);
+      const cookieConfig = CookieConfig();
+      cookies.set(cookieConfig.name, token, {
+        path: cookieConfig.path,
+        maxAge: cookieConfig.maxAge,
+        httpOnly: cookieConfig.httpOnly,
+        secure: cookieConfig.secure,
+        sameSite: cookieConfig.sameSite,
+      });
+      throw redirect(302, serverResolve("/manage/app/site-configurations"));
+    } catch (e: unknown) {
+      if (e instanceof Response) throw e;
+      const msg = e instanceof Error ? e.message : "LDAP authentication failed";
+      return fail(401, { error: msg, values: { ldap_username: username } });
+    }
   },
   signup: async ({ request, cookies }) => {
     const formData = await request.formData();

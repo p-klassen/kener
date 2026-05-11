@@ -352,7 +352,8 @@
         {/if}
       </div>
 
-      <!-- Email Change Section -->
+      <!-- Email Change Section (hidden for external auth users) -->
+      {#if user.auth_provider === "local"}
       <form
         class="flex flex-col gap-3"
         onsubmit={(e) => { e.preventDefault(); changeEmail(); }}
@@ -388,10 +389,12 @@
           <p class="text-destructive text-sm">{emailError}</p>
         {/if}
       </form>
+      {/if}
 
       <hr />
 
-      <!-- Password Section -->
+      <!-- Password Section (hidden for external auth users) -->
+      {#if user.auth_provider === "local"}
       <form
         class="flex flex-col gap-3"
         onsubmit={(e) => {
@@ -451,6 +454,11 @@
           <p class="text-destructive text-sm">{passwordError}</p>
         {/if}
       </form>
+      {:else}
+        <p class="text-muted-foreground text-sm">
+          {$t("manage.user_menu.external_auth_notice")}
+        </p>
+      {/if}
     </div>
   </Dialog.Content>
 </Dialog.Root>

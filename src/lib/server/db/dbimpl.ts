@@ -126,6 +126,8 @@ class DbImpl {
   updateUserPasswordById!: UsersRepository["updateUserPasswordById"];
   updateIsVerified!: UsersRepository["updateIsVerified"];
   updateUserEmail!: UsersRepository["updateUserEmail"];
+  getUserByExternalId!: UsersRepository["getUserByExternalId"];
+  updateUserAuthProvider!: UsersRepository["updateUserAuthProvider"];
 
   // ============ Roles ============
   getRoleById!: UsersRepository["getRoleById"];
@@ -530,6 +532,8 @@ class DbImpl {
     this.updateUserPasswordById = this.users.updateUserPasswordById.bind(this.users);
     this.updateIsVerified = this.users.updateIsVerified.bind(this.users);
     this.updateUserEmail = this.users.updateUserEmail.bind(this.users);
+    this.getUserByExternalId = this.users.getUserByExternalId.bind(this.users);
+    this.updateUserAuthProvider = this.users.updateUserAuthProvider.bind(this.users);
     this.createNewApiKey = this.users.createNewApiKey.bind(this.users);
     this.updateApiKeyStatus = this.users.updateApiKeyStatus.bind(this.users);
     this.deleteApiKey = this.users.deleteApiKey.bind(this.users);
