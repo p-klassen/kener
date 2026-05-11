@@ -85,6 +85,12 @@ RUN if [ "$WITH_DOCS" = "true" ]; then \
       npm run build; \
     fi
 
+# 6b. Compile emailTemplateFactory.ts → .js so the seed runner can import it
+#     at runtime (Node's --experimental-strip-types does not map .js → .ts)
+RUN npx esbuild src/lib/server/templates/emailTemplateFactory.ts \
+      --bundle=false --platform=node --format=esm \
+      --outfile=src/lib/server/templates/emailTemplateFactory.js
+
 # 7. Stage docs runtime files for index-docs (empty dir when docs disabled)
 RUN mkdir -p /docs-runtime && \
     if [ "$WITH_DOCS" = "true" ]; then \
@@ -165,7 +171,7 @@ COPY --chown=node:node --from=builder /app/src/lib/server/db/seedMonitorData.ts 
 COPY --chown=node:node --from=builder /app/src/lib/server/db/seedPagesData.ts     ./src/lib/server/db/seedPagesData.ts
 COPY --chown=node:node --from=builder /app/src/lib/allPerms.ts                   ./src/lib/allPerms.ts
 COPY --chown=node:node --from=builder /app/src/lib/server/templates/general             ./src/lib/server/templates/general
-COPY --chown=node:node --from=builder /app/src/lib/server/templates/emailTemplateFactory.ts ./src/lib/server/templates/emailTemplateFactory.ts
+COPY --chown=node:node --from=builder /app/src/lib/server/templates/emailTemplateFactory.js ./src/lib/server/templates/emailTemplateFactory.js
 
 # Locale JSON files (read at runtime by server-side i18n)
 COPY --chown=node:node --from=builder /app/src/lib/locales ./src/lib/locales
