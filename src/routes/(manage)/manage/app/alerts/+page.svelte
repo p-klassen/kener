@@ -19,6 +19,7 @@
   import type { MonitorAlertConfigWithTriggers } from "$lib/server/types/db";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
 
   // State
   let loading = $state(true);
@@ -140,10 +141,10 @@
     <div class="flex items-center gap-3">
       <Select.Root type="single" value={monitorFilter} onValueChange={handleMonitorChange}>
         <Select.Trigger class="w-48">
-          {monitorFilter ? monitors.find((m) => m.tag === monitorFilter)?.name || monitorFilter : "All Monitors"}
+          {monitorFilter ? monitors.find((m) => m.tag === monitorFilter)?.name || monitorFilter : $t("manage.alerts.filter_all")}
         </Select.Trigger>
         <Select.Content>
-          <Select.Item value="">All Monitors</Select.Item>
+          <Select.Item value="">{$t("manage.alerts.filter_all")}</Select.Item>
           {#each monitors as monitor}
             <Select.Item value={monitor.tag}>{monitor.name}</Select.Item>
           {/each}
@@ -155,7 +156,7 @@
     </div>
     <Button onclick={() => goto(clientResolver(resolve, "/manage/app/alerts/new"))}>
       <PlusIcon class="size-4" />
-      Create Alert
+      {$t("manage.alerts.create_button")}
     </Button>
   </div>
 
@@ -164,13 +165,13 @@
     <Table.Root>
       <Table.Header>
         <Table.Row>
-          <Table.Head>Monitors</Table.Head>
-          <Table.Head>Alert Type</Table.Head>
-          <Table.Head>Severity</Table.Head>
-          <Table.Head>Description</Table.Head>
-          <Table.Head class="w-24">Triggers</Table.Head>
-          <Table.Head class="w-20 text-center">Active</Table.Head>
-          <Table.Head class="w-32 text-right">Actions</Table.Head>
+          <Table.Head>{$t("manage.alerts.col_monitors")}</Table.Head>
+          <Table.Head>{$t("manage.alerts.col_type")}</Table.Head>
+          <Table.Head>{$t("manage.alerts.col_severity")}</Table.Head>
+          <Table.Head>{$t("manage.alerts.col_description")}</Table.Head>
+          <Table.Head class="w-24">{$t("manage.alerts.col_triggers")}</Table.Head>
+          <Table.Head class="w-20 text-center">{$t("manage.alerts.col_active")}</Table.Head>
+          <Table.Head class="w-32 text-right">{$t("manage.alerts.col_actions")}</Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
@@ -180,16 +181,16 @@
               <div class="flex flex-col items-center gap-4">
                 <BellOffIcon class="text-muted-foreground size-16" />
                 <div class="space-y-2">
-                  <h3 class="text-lg font-semibold">No alert configurations</h3>
+                  <h3 class="text-lg font-semibold">{$t("manage.alerts.no_alerts")}</h3>
                   <p class="text-muted-foreground text-sm">
                     {monitorFilter
-                      ? "No alerts found for this monitor."
-                      : "Create an alert to get notified when your monitors have issues."}
+                      ? $t("manage.alerts.no_alerts_filtered")
+                      : $t("manage.alerts.no_alerts_helper")}
                   </p>
                 </div>
                 <Button onclick={() => goto(clientResolver(resolve, "/manage/app/alerts/new"))}>
                   <PlusIcon class="size-4" />
-                  Create Alert
+                  {$t("manage.alerts.create_button")}
                 </Button>
               </div>
             </Table.Cell>
@@ -285,7 +286,7 @@
                     onclick={() => goto(clientResolver(resolve, `/manage/app/alerts/${config.id}`))}
                   >
                     <EditIcon class="size-3" />
-                    Edit
+                    {$t("manage.alerts.edit_button")}
                   </Button>
                   <Button
                     variant="outline"
@@ -293,7 +294,7 @@
                     onclick={() => goto(clientResolver(resolve, `/manage/app/alerts/logs/${config.id}`))}
                   >
                     <ListIcon class="size-3" />
-                    Logs
+                    {$t("manage.alerts.logs_button")}
                   </Button>
                 </div>
               </Table.Cell>

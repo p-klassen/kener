@@ -20,6 +20,8 @@
   import type { MonitorAlertConfigWithTriggers, MonitorAlertV2WithConfig } from "$lib/server/types/db";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
+
   let { data } = $props();
   const alertConfigId = $derived(data.alert_config_id);
 
@@ -103,11 +105,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(`Status updated to ${newStatus}`);
+        toast.success($t("manage.alert_logs.status_updated_toast"));
         await fetchAlerts();
       }
     } catch (error) {
-      toast.error("Failed to update status");
+      toast.error($t("manage.alert_logs.status_error"));
     }
   }
 
@@ -139,11 +141,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Alert deleted successfully");
+        toast.success($t("manage.alert_logs.deleted_toast"));
         await fetchAlerts();
       }
     } catch (error) {
-      toast.error("Failed to delete alert");
+      toast.error($t("manage.alert_logs.delete_error"));
     } finally {
       deleteDialogOpen = false;
       alertToDelete = null;
@@ -185,11 +187,11 @@
   <Breadcrumb.Root>
     <Breadcrumb.List>
       <Breadcrumb.Item>
-        <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/alerts")}>Alerts</Breadcrumb.Link>
+        <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/alerts")}>{$t("manage.alert_logs.breadcrumb")}</Breadcrumb.Link>
       </Breadcrumb.Item>
       <Breadcrumb.Separator />
       <Breadcrumb.Item>
-        <Breadcrumb.Page>Alert Logs</Breadcrumb.Page>
+        <Breadcrumb.Page>{$t("manage.alert_logs.title")}</Breadcrumb.Page>
       </Breadcrumb.Item>
     </Breadcrumb.List>
   </Breadcrumb.Root>
@@ -200,12 +202,12 @@
   <div class="flex items-center gap-3">
     <Select.Root type="single" value={statusFilter} onValueChange={handleStatusChange}>
       <Select.Trigger class="w-36">
-        {statusFilter === "ALL" ? "All Status" : statusFilter}
+        {statusFilter === "ALL" ? $t("manage.alert_logs.filter_all") : statusFilter}
       </Select.Trigger>
       <Select.Content>
-        <Select.Item value="ALL">All Status</Select.Item>
-        <Select.Item value="TRIGGERED">Triggered</Select.Item>
-        <Select.Item value="RESOLVED">Resolved</Select.Item>
+        <Select.Item value="ALL">{$t("manage.alert_logs.filter_all")}</Select.Item>
+        <Select.Item value="TRIGGERED">{$t("manage.alert_logs.filter_triggered")}</Select.Item>
+        <Select.Item value="RESOLVED">{$t("manage.alert_logs.filter_resolved")}</Select.Item>
       </Select.Content>
     </Select.Root>
     {#if loading}
@@ -218,11 +220,11 @@
     <div class="flex flex-col items-center gap-4 py-16 text-center">
       <BellOffIcon class="text-muted-foreground size-16" />
       <div class="space-y-2">
-        <h3 class="text-lg font-semibold">No alert logs</h3>
+        <h3 class="text-lg font-semibold">{$t("manage.alert_logs.no_logs_title")}</h3>
         <p class="text-muted-foreground text-sm">
           {statusFilter !== "ALL"
             ? `No ${statusFilter.toLowerCase()} alerts found.`
-            : "This alert has not been triggered yet."}
+            : $t("manage.alert_logs.no_logs_desc")}
         </p>
       </div>
     </div>
@@ -232,13 +234,13 @@
       <Table.Root>
         <Table.Header>
           <Table.Row>
-            <Table.Head class="w-16">ID</Table.Head>
-            <Table.Head class="w-40">Monitor</Table.Head>
-            <Table.Head class="w-40">Status</Table.Head>
-            <Table.Head class="w-32">Incident</Table.Head>
-            <Table.Head class="w-44">Created At</Table.Head>
-            <Table.Head class="w-44">Updated At</Table.Head>
-            <Table.Head class="w-20 text-right">Actions</Table.Head>
+            <Table.Head class="w-16">{$t("manage.alert_logs.col_id")}</Table.Head>
+            <Table.Head class="w-40">{$t("manage.alert_logs.col_monitor")}</Table.Head>
+            <Table.Head class="w-40">{$t("manage.alert_logs.col_status")}</Table.Head>
+            <Table.Head class="w-32">{$t("manage.alert_logs.col_incident")}</Table.Head>
+            <Table.Head class="w-44">{$t("manage.alert_logs.col_created_at")}</Table.Head>
+            <Table.Head class="w-44">{$t("manage.alert_logs.col_updated_at")}</Table.Head>
+            <Table.Head class="w-20 text-right">{$t("manage.alert_logs.col_actions")}</Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -327,9 +329,9 @@
 <AlertDialog.Root bind:open={deleteDialogOpen}>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Delete Alert</AlertDialog.Title>
+      <AlertDialog.Title>{$t("manage.alert_logs.delete_dialog_title")}</AlertDialog.Title>
       <AlertDialog.Description>
-        Are you sure you want to delete this alert? This action cannot be undone.
+        {$t("manage.alert_logs.delete_dialog_desc")}
       </AlertDialog.Description>
     </AlertDialog.Header>
 

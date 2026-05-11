@@ -14,6 +14,7 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { mode } from "mode-watcher";
+  import { t } from "$lib/stores/i18n";
 
   // Monitors state
   let monitors = $state<MonitorRecord[]>([]);
@@ -190,9 +191,9 @@
     <div class="flex flex-col gap-6">
       <Card.Root>
         <Card.Header>
-          <Card.Title>Embed Generator</Card.Title>
+          <Card.Title>{$t("manage.embed.title")}</Card.Title>
           <Card.Description>
-            Create customizable embeds to display the status or latency of your monitors on external websites
+            {$t("manage.embed.desc")}
           </Card.Description>
         </Card.Header>
         <Card.Content>
@@ -201,7 +202,7 @@
             <div class="flex flex-col gap-4 border-r pr-4">
               <!-- Embed Type -->
               <div class="flex flex-col gap-2">
-                <Label for="embed-type">Embed Type</Label>
+                <Label for="embed-type">{$t("manage.embed.type_label")}</Label>
                 <Select.Root
                   type="single"
                   value={embedConfig.embedType}
@@ -211,15 +212,15 @@
                 >
                   <Select.Trigger id="embed-type" class="w-full capitalize">
                     {embedConfig.embedType === "status"
-                      ? "Status Bar"
+                      ? $t("manage.embed.type_status_bar")
                       : embedConfig.embedType === "latency"
-                        ? "Latency Chart"
-                        : "Live Events"}
+                        ? $t("manage.embed.type_latency")
+                        : $t("manage.embed.type_events")}
                   </Select.Trigger>
                   <Select.Content>
-                    <Select.Item value="status">Status Bar</Select.Item>
-                    <Select.Item value="latency">Latency Chart</Select.Item>
-                    <Select.Item value="events">Live Events</Select.Item>
+                    <Select.Item value="status">{$t("manage.embed.type_status_bar")}</Select.Item>
+                    <Select.Item value="latency">{$t("manage.embed.type_latency")}</Select.Item>
+                    <Select.Item value="events">{$t("manage.embed.type_events")}</Select.Item>
                   </Select.Content>
                 </Select.Root>
                 <p class="text-muted-foreground text-xs">

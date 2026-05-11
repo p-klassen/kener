@@ -21,6 +21,8 @@
   import { onMount } from "svelte";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
+
 
   interface GeneralEmailTemplate {
     template_id: string;
@@ -109,7 +111,7 @@
       }
     } catch (error) {
       console.error("Error fetching templates:", error);
-      toast.error("Failed to load templates");
+      toast.error($t("manage.templates.load_error"));
     } finally {
       loading = false;
     }
@@ -140,7 +142,7 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Template updated successfully");
+        toast.success($t("manage.templates.updated_toast"));
         // Update local state
         const index = templates.findIndex((t) => t.template_id === selectedTemplateId);
         if (index !== -1) {
@@ -154,7 +156,7 @@
       }
     } catch (error) {
       console.error("Error updating template:", error);
-      toast.error("Failed to update template");
+      toast.error($t("manage.templates.update_error"));
     } finally {
       saving = false;
     }
@@ -190,7 +192,7 @@
       }
     } catch (e) {
       console.error("Failed to load SMTP status", e);
-      toast.error("Failed to load SMTP configuration");
+      toast.error($t("manage.templates.smtp_load_error"));
     }
   }
 
@@ -211,10 +213,10 @@
       } else {
         smtpSource = "db";
         smtpConfig.smtp_pass = "";
-        toast.success("SMTP configuration saved");
+        toast.success($t("manage.templates.smtp_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save SMTP configuration");
+      toast.error($t("manage.templates.smtp_save_error"));
     } finally {
       savingSmtp = false;
     }
@@ -230,12 +232,12 @@
       });
       const result = await response.json();
       if (result.error) {
-        toast.error(`Test failed: ${result.error}`);
+        toast.error($t("manage.templates.test_error"));
       } else {
-        toast.success("Test email sent — check your inbox");
+        toast.success($t("manage.templates.test_success"));
       }
     } catch (e) {
-      toast.error("Failed to send test email");
+      toast.error($t("manage.templates.test_error"));
     } finally {
       testingSmtp = false;
     }
@@ -248,31 +250,31 @@
     <Card.Header class="border-b">
       <Card.Title class="flex items-center gap-2">
         <MailIcon class="h-5 w-5" />
-        SMTP Configuration
+        {$t("manage.templates.smtp_title")}
         {#if smtpSource === "env"}
-          <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-normal">ENV active (read-only)</span>
+          <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs font-normal">{$t("manage.templates.smtp_env_badge")}</span>
         {:else if smtpSource === "db"}
-          <span class="rounded bg-green-100 px-2 py-0.5 text-xs font-normal text-green-700 dark:bg-green-900 dark:text-green-300">DB configured</span>
+          <span class="rounded bg-green-100 px-2 py-0.5 text-xs font-normal text-green-700 dark:bg-green-900 dark:text-green-300">{$t("manage.templates.smtp_db_badge")}</span>
         {:else}
-          <span class="rounded bg-yellow-100 px-2 py-0.5 text-xs font-normal text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Not configured</span>
+          <span class="rounded bg-yellow-100 px-2 py-0.5 text-xs font-normal text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">{$t("manage.templates.smtp_not_configured")}</span>
         {/if}
       </Card.Title>
-      <Card.Description>Configure SMTP to send email notifications. Environment variables take precedence over these settings.</Card.Description>
+      <Card.Description>{$t("manage.templates.smtp_desc")}</Card.Description>
     </Card.Header>
     <Card.Content class="pt-6">
       <div class="grid gap-4 md:grid-cols-2">
         <div>
-          <Label for="smtp-host">Host</Label>
+          <Label for="smtp-host">{$t("manage.templates.smtp_host_label")}</Label>
           <Input
             id="smtp-host"
             bind:value={smtpConfig.smtp_host}
-            placeholder="smtp.example.com"
+            placeholder={$t("manage.templates.smtp_host_placeholder")}
             disabled={smtpSource === "env"}
             class="mt-1"
           />
         </div>
         <div>
-          <Label for="smtp-port">Port</Label>
+          <Label for="smtp-port">{$t("manage.templates.smtp_port_label")}</Label>
           <Input
             id="smtp-port"
             type="number"
@@ -283,7 +285,7 @@
           />
         </div>
         <div>
-          <Label for="smtp-user">User</Label>
+          <Label for="smtp-user">{$t("manage.templates.smtp_user_label")}</Label>
           <Input
             id="smtp-user"
             bind:value={smtpConfig.smtp_user}
@@ -294,7 +296,7 @@
           />
         </div>
         <div>
-          <Label for="smtp-pass">Password</Label>
+          <Label for="smtp-pass">{$t("manage.templates.smtp_password_label")}</Label>
           <div class="relative mt-1">
             <Input
               id="smtp-pass"
@@ -323,7 +325,7 @@
           </div>
         </div>
         <div>
-          <Label for="smtp-sender">Sender Email</Label>
+          <Label for="smtp-sender">{$t("manage.templates.smtp_sender_label")}</Label>
           <Input
             id="smtp-sender"
             type="email"
@@ -341,7 +343,7 @@
             disabled={smtpSource === "env"}
             class="h-4 w-4"
           />
-          <Label for="smtp-secure">TLS (port 465)</Label>
+          <Label for="smtp-secure">{$t("manage.templates.smtp_tls_label")}</Label>
         </div>
       </div>
       <div class="mt-4 flex items-center gap-2">
@@ -353,7 +355,7 @@
           {#if savingSmtp}
             <Loader class="mr-2 h-4 w-4 animate-spin" />
           {/if}
-          Save
+          {$t("manage.templates.smtp_save")}
         </Button>
         <Button
           onclick={sendTestEmail}
@@ -366,7 +368,7 @@
           {:else}
             <Send class="mr-2 h-4 w-4" />
           {/if}
-          Send test email
+          {$t("manage.templates.smtp_test")}
         </Button>
       </div>
     </Card.Content>
@@ -380,8 +382,8 @@
     <Card.Root>
       <Card.Content class="flex flex-col items-center justify-center py-12">
         <MailIcon class="text-muted-foreground mb-4 size-12" />
-        <h3 class="mb-2 text-lg font-semibold">No Templates Found</h3>
-        <p class="text-muted-foreground text-center">There are no email templates configured yet.</p>
+        <h3 class="mb-2 text-lg font-semibold">{$t("manage.templates.no_templates_title")}</h3>
+        <p class="text-muted-foreground text-center">{$t("manage.templates.no_templates_desc")}</p>
       </Card.Content>
     </Card.Root>
   {:else}
@@ -389,14 +391,14 @@
       <Card.Header>
         <Card.Title class="flex items-center gap-2">
           <FileTextIcon class="size-5" />
-          Edit Template
+          {$t("manage.templates.edit_title")}
         </Card.Title>
-        <Card.Description>Select a template from the dropdown to view and edit its content</Card.Description>
+        <Card.Description>{$t("manage.templates.edit_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
         <!-- Template Selector -->
         <div class="space-y-2">
-          <Label for="template-select">Select Template</Label>
+          <Label for="template-select">{$t("manage.templates.select_label")}</Label>
           <Select.Root
             type="single"
             value={selectedTemplateId}
@@ -424,7 +426,7 @@
         {#if selectedTemplateId}
           <!-- Subject -->
           <div class="space-y-2">
-            <Label for="template-subject">Subject</Label>
+            <Label for="template-subject">{$t("manage.templates.subject_label")}</Label>
             <Input id="template-subject" bind:value={templateSubject} placeholder="Email subject line" />
             <p class="text-muted-foreground text-xs">
               The subject line for the email. You can use Mustache variables like <code class="bg-muted rounded px-1"
@@ -435,7 +437,7 @@
 
           <!-- HTML Body -->
           <div class="space-y-2">
-            <Label>HTML Body</Label>
+            <Label>{$t("manage.templates.html_body_label")}</Label>
             <p class="text-muted-foreground text-xs">
               The HTML content of the email. Use Mustache variables for dynamic content.
             </p>
@@ -451,7 +453,7 @@
 
           <!-- Text Body -->
           <div class="space-y-2">
-            <Label for="template-text-body">Text Body</Label>
+            <Label for="template-text-body">{$t("manage.templates.text_body_label")}</Label>
             <p class="text-muted-foreground text-xs">
               Plain text version of the email for clients that don't support HTML
             </p>
@@ -472,7 +474,7 @@
             {:else}
               <SaveIcon class="size-4" />
             {/if}
-            Update Template
+            {$t("manage.templates.update_button")}
           </Button>
         </Card.Footer>
       {/if}

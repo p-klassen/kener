@@ -29,6 +29,8 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import GC from "$lib/global-constants.js";
+  import { t } from "$lib/stores/i18n";
+
 
   // Default page settings
   const defaultPageSettings: PageSettingsType = {
@@ -205,7 +207,7 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(isNew ? "Page created successfully" : "Page updated successfully");
+        toast.success(isNew ? $t("manage.page_detail.created_toast") : $t("manage.page_detail.updated_toast"));
         if (isNew && result.id) {
           // Navigate to the newly created page
           goto(clientResolver(resolve, `/manage/app/pages/${result.id}`));
@@ -215,7 +217,7 @@
         }
       }
     } catch (e) {
-      toast.error(isNew ? "Failed to create page" : "Failed to update page");
+      toast.error(isNew ? $t("manage.page_detail.create_error") : $t("manage.page_detail.update_error"));
     } finally {
       saving = false;
     }
@@ -242,12 +244,12 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Monitor added to page");
+        toast.success($t("manage.page_detail.monitor_added_toast"));
         selectedMonitors = [...selectedMonitors, selectedMonitorTag];
         selectedMonitorTag = "";
       }
     } catch (e) {
-      toast.error("Failed to add monitor");
+      toast.error($t("manage.page_detail.monitor_add_error"));
     } finally {
       addingMonitor = false;
     }
@@ -271,11 +273,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Page deleted successfully");
+        toast.success($t("manage.page_detail.deleted_toast"));
         goto(clientResolver(resolve, "/manage/app/pages"));
       }
     } catch (e) {
-      toast.error("Failed to delete page");
+      toast.error($t("manage.page_detail.delete_error"));
     } finally {
       deleting = false;
     }
@@ -302,11 +304,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Monitor removed from page");
+        toast.success($t("manage.page_detail.monitor_removed_toast"));
         selectedMonitors = selectedMonitors.filter((t) => t !== monitorTag);
       }
     } catch (e) {
-      toast.error("Failed to remove monitor");
+      toast.error($t("manage.page_detail.monitor_remove_error"));
     } finally {
       removingMonitor = null;
     }
@@ -504,10 +506,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Page settings saved successfully");
+        toast.success($t("manage.page_detail.settings_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save page settings");
+      toast.error($t("manage.page_detail.settings_error"));
     } finally {
       if (source === "display") savingDisplaySettings = false;
       else savingSeoSettings = false;
@@ -531,11 +533,11 @@
       <Breadcrumb.Root>
         <Breadcrumb.List>
           <Breadcrumb.Item>
-            <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/pages")}>Pages</Breadcrumb.Link>
+            <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/pages")}>{$t("manage.page_detail.breadcrumb")}</Breadcrumb.Link>
           </Breadcrumb.Item>
           <Breadcrumb.Separator />
           <Breadcrumb.Item>
-            <Breadcrumb.Page>{isNew ? "New Page" : currentPage?.page_title || "Edit Page"}</Breadcrumb.Page>
+            <Breadcrumb.Page>{isNew ? $t("manage.page_detail.new_title") : currentPage?.page_title || "Edit Page"}</Breadcrumb.Page>
           </Breadcrumb.Item>
         </Breadcrumb.List>
       </Breadcrumb.Root>
@@ -558,14 +560,14 @@
       <Card.Header>
         <Card.Title>General Information</Card.Title>
         <Card.Description>
-          {isNew ? "Create a new status page" : "Update page settings"}
+          {isNew ? $t("manage.page_detail.create_card_desc") : $t("manage.page_detail.edit_card_desc")}
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         <!-- Path -->
         <div class="space-y-2">
           <Label for="page-path">
-            Path <span class="text-destructive">*</span>
+            {$t("manage.page_detail.path_label")} <span class="text-destructive">*</span>
           </Label>
           <Input
             id="page-path"
@@ -575,32 +577,32 @@
           />
           <p class="text-muted-foreground text-xs">
             {!isNew && currentPage?.page_path === ""
-              ? "Home page path cannot be changed"
-              : "URL path for the page (e.g., services, infrastructure). Will be made URL-friendly."}
+              ? $t("manage.page_detail.path_home_helper")
+              : $t("manage.page_detail.path_helper")}
           </p>
         </div>
 
         <!-- Title -->
         <div class="space-y-2">
           <Label for="page-title">
-            Title <span class="text-destructive">*</span>
+            {$t("manage.page_detail.title_label")} <span class="text-destructive">*</span>
           </Label>
-          <Input id="page-title" type="text" bind:value={formData.page_title} placeholder="Services Status" />
-          <p class="text-muted-foreground text-xs">Page title shown in browser tab</p>
+          <Input id="page-title" type="text" bind:value={formData.page_title} placeholder={$t("manage.page_detail.title_placeholder")} />
+          <p class="text-muted-foreground text-xs">{$t("manage.page_detail.title_helper")}</p>
         </div>
 
         <!-- Header -->
         <div class="space-y-2">
           <Label for="page-header">
-            Header <span class="text-destructive">*</span>
+            {$t("manage.page_detail.header_label")} <span class="text-destructive">*</span>
           </Label>
           <Input id="page-header" type="text" bind:value={formData.page_header} placeholder="Services Status" />
-          <p class="text-muted-foreground text-xs">Main heading displayed on the page</p>
+          <p class="text-muted-foreground text-xs">{$t("manage.page_detail.header_helper")}</p>
         </div>
 
         <!-- Subheader -->
         <div class="space-y-2">
-          <Label for="page-subheader">Page Content</Label>
+          <Label for="page-subheader">{$t("manage.page_detail.content_label")}</Label>
           <div class="overflow-hidden rounded-md border">
             <CodeMirror
               bind:value={formData.page_subheader}
@@ -615,12 +617,12 @@
               }}
             />
           </div>
-          <p class="text-muted-foreground text-xs">Supports Markdown. Optional content below the header.</p>
+          <p class="text-muted-foreground text-xs">{$t("manage.page_detail.content_helper")}</p>
         </div>
 
         <!-- Logo Upload -->
         <div class="space-y-2">
-          <Label>Page Logo</Label>
+          <Label>{$t("manage.page_detail.logo_label")}</Label>
           <div class="flex items-start gap-4">
             <div class="bg-muted flex h-16 w-16 items-center justify-center rounded-lg border">
               {#if formData.page_logo}
@@ -643,10 +645,10 @@
                 >
                   {#if uploadingLogo}
                     <Loader class="h-4 w-4 animate-spin" />
-                    Uploading...
+                    {$t("manage.page_detail.logo_uploading")}
                   {:else}
                     <UploadIcon class="h-4 w-4" />
-                    Upload
+                    {$t("manage.page_detail.logo_upload")}
                   {/if}
                 </Button>
                 <input
@@ -663,30 +665,30 @@
                   </Button>
                 {/if}
               </div>
-              <p class="text-muted-foreground text-xs">Optional logo for this page (max 256x256px)</p>
+              <p class="text-muted-foreground text-xs">{$t("manage.page_detail.logo_helper")}</p>
             </div>
           </div>
         </div>
 
         <!-- Visibility -->
         <div class="space-y-3">
-          <Label>Visibility</Label>
+          <Label>{$t("manage.page_detail.visibility_label")}</Label>
           <div class="flex items-center gap-2">
             <Switch
               id="is_public"
               checked={!!formData.is_public}
               onCheckedChange={(v) => (formData.is_public = v ? 1 : 0)}
             />
-            <Label for="is_public" class="font-normal">Public (visible to everyone)</Label>
+            <Label for="is_public" class="font-normal">{$t("manage.page_detail.visibility_public")}</Label>
           </div>
 
           {#if !formData.is_public}
             <div class="ml-6 space-y-2">
-              <p class="text-muted-foreground text-xs">How should unauthorized users see this page?</p>
+              <p class="text-muted-foreground text-xs">{$t("manage.page_detail.visibility_helper")}</p>
               {#each [
-                { value: 'hidden', label: 'Hidden', desc: 'Does not appear at all' },
-                { value: 'teaser', label: 'Login teaser', desc: 'Shows name, hides status' },
-                { value: 'locked', label: 'Locked page', desc: 'Full-screen login prompt' },
+                { value: 'hidden', label: $t("manage.page_detail.visibility_hidden_label"), desc: $t("manage.page_detail.visibility_hidden_desc") },
+                { value: 'teaser', label: $t("manage.page_detail.visibility_teaser_label"), desc: $t("manage.page_detail.visibility_teaser_desc") },
+                { value: 'locked', label: $t("manage.page_detail.visibility_locked_label"), desc: $t("manage.page_detail.visibility_locked_desc") },
               ] as opt (opt.value)}
                 <label class="flex cursor-pointer items-start gap-2">
                   <input
@@ -711,10 +713,10 @@
         <Button onclick={savePage} disabled={saving || !isFormValid}>
           {#if saving}
             <Loader class="h-4 w-4 animate-spin" />
-            {isNew ? "Creating..." : "Saving..."}
+            {isNew ? $t("manage.page_detail.creating") : $t("manage.page_detail.saving")}
           {:else}
             <SaveIcon class="h-4 w-4" />
-            {isNew ? "Create Page" : "Save Changes"}
+            {isNew ? $t("manage.page_detail.create_button") : $t("manage.page_detail.save_button")}
           {/if}
         </Button>
       </Card.Footer>
@@ -724,8 +726,8 @@
     {#if !isNew && currentPage}
       <Card.Root>
         <Card.Header>
-          <Card.Title>Page Monitors</Card.Title>
-          <Card.Description>Select which monitors to display on this page</Card.Description>
+          <Card.Title>{$t("manage.page_detail.monitors_title")}</Card.Title>
+          <Card.Description>{$t("manage.page_detail.monitors_desc")}</Card.Description>
         </Card.Header>
         <Card.Content class="space-y-4">
           <!-- Add Monitor -->
@@ -743,7 +745,7 @@
                   <Select.Item value={monitor.tag}>{monitor.name} ({monitor.tag})</Select.Item>
                 {/each}
                 {#if availableMonitors.length === 0}
-                  <div class="text-muted-foreground px-2 py-1 text-sm">No available monitors</div>
+                  <div class="text-muted-foreground px-2 py-1 text-sm">{$t("manage.page_detail.no_available_monitors")}</div>
                 {/if}
               </Select.Content>
             </Select.Root>
@@ -759,7 +761,7 @@
 
           <!-- Current Monitors -->
           <div class="space-y-2">
-            <Label>Current Monitors</Label>
+            <Label>{$t("manage.page_detail.current_monitors")}</Label>
             {#if selectedMonitors.length > 0}
               <div class="space-y-2">
                 {#each selectedMonitors as monitorTag, i (monitorTag)}
@@ -804,7 +806,7 @@
               </div>
             {:else}
               <div class="text-muted-foreground bg-muted rounded-lg p-4 text-center text-sm">
-                No monitors added to this page yet
+                {$t("manage.page_detail.no_monitors")}
               </div>
             {/if}
           </div>
@@ -814,22 +816,22 @@
       <!-- Page Settings Card -->
       <Card.Root>
         <Card.Header>
-          <Card.Title>Display Settings</Card.Title>
-          <Card.Description>Configure what content is shown on this status page</Card.Description>
+          <Card.Title>{$t("manage.page_detail.display_title")}</Card.Title>
+          <Card.Description>{$t("manage.page_detail.display_desc")}</Card.Description>
         </Card.Header>
         <Card.Content class="space-y-6">
           <!-- Monitor Status History Days -->
           <div class="space-y-4">
             <div>
-              <Label class="text-base font-medium">Monitor Status History</Label>
+              <Label class="text-base font-medium">{$t("manage.page_detail.history_label")}</Label>
               <p class="text-muted-foreground text-sm">
-                Configure how many days of status history to display on the status page
+                {$t("manage.page_detail.history_helper")}
               </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <Label for="history-desktop">Desktop (days)</Label>
+                <Label for="history-desktop">{$t("manage.page_detail.history_desktop_label")}</Label>
                 <Input
                   id="history-desktop"
                   type="number"
@@ -837,10 +839,10 @@
                   max="365"
                   bind:value={pageSettings.monitor_status_history_days.desktop}
                 />
-                <p class="text-muted-foreground text-xs">Number of days shown on desktop screens</p>
+                <p class="text-muted-foreground text-xs">{$t("manage.page_detail.history_desktop_helper")}</p>
               </div>
               <div class="space-y-2">
-                <Label for="history-mobile">Mobile (days)</Label>
+                <Label for="history-mobile">{$t("manage.page_detail.history_mobile_label")}</Label>
                 <Input
                   id="history-mobile"
                   type="number"
@@ -848,7 +850,7 @@
                   max="365"
                   bind:value={pageSettings.monitor_status_history_days.mobile}
                 />
-                <p class="text-muted-foreground text-xs">Number of days shown on mobile screens</p>
+                <p class="text-muted-foreground text-xs">{$t("manage.page_detail.history_mobile_helper")}</p>
               </div>
             </div>
           </div>
@@ -858,8 +860,8 @@
           <!-- Monitor Layout Style -->
           <div class="space-y-4">
             <div>
-              <Label class="text-base font-medium">Monitor Layout Style</Label>
-              <p class="text-muted-foreground text-sm">Choose how monitors are displayed on the status page</p>
+              <Label class="text-base font-medium">{$t("manage.page_detail.layout_label")}</Label>
+              <p class="text-muted-foreground text-sm">{$t("manage.page_detail.layout_helper")}</p>
             </div>
             <Select.Root type="single" bind:value={pageSettings.monitor_layout_style}>
               <Select.Trigger class="w-full">
@@ -889,10 +891,10 @@
           <Button onclick={() => savePageSettings("display")} disabled={savingDisplaySettings}>
             {#if savingDisplaySettings}
               <Loader class="h-4 w-4 animate-spin" />
-              Saving...
+              {$t("manage.page_detail.saving")}
             {:else}
               <SaveIcon class="h-4 w-4" />
-              Save Preferences
+              {$t("manage.page_detail.save_prefs")}
             {/if}
           </Button>
         </Card.Footer>
@@ -901,9 +903,9 @@
       <!-- Social Preview & SEO Card -->
       <Card.Root>
         <Card.Header>
-          <Card.Title>Social Preview & SEO</Card.Title>
+          <Card.Title>{$t("manage.page_detail.seo_title")}</Card.Title>
           <Card.Description
-            >Optional social preview image and meta tags for this page. Leave empty to use site defaults.</Card.Description
+            >{$t("manage.page_detail.seo_desc")}</Card.Description
           >
         </Card.Header>
         <Card.Content class="space-y-4">
@@ -932,10 +934,10 @@
                 >
                   {#if uploadingSocialPreview}
                     <Loader class="h-4 w-4 animate-spin" />
-                    Uploading...
+                    {$t("manage.page_detail.seo_uploading")}
                   {:else}
                     <UploadIcon class="h-4 w-4" />
-                    Upload Social Preview
+                    {$t("manage.page_detail.seo_upload")}
                   {/if}
                 </Button>
                 <input
@@ -961,24 +963,24 @@
           </div>
 
           <div class="space-y-2">
-            <Label for="page-metaPageTitle">Meta Title</Label>
+            <Label for="page-metaPageTitle">{$t("manage.page_detail.meta_title_label")}</Label>
             <Input
               id="page-metaPageTitle"
               type="text"
               bind:value={pageSettings.metaPageTitle}
-              placeholder="Custom page title for search engines"
+              placeholder={$t("manage.page_detail.meta_title_placeholder")}
             />
-            <p class="text-muted-foreground text-xs">Overrides the default page title in search results</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.page_detail.meta_title_helper")}</p>
           </div>
           <div class="space-y-2">
-            <Label for="page-metaPageDescription">Meta Description</Label>
+            <Label for="page-metaPageDescription">{$t("manage.page_detail.meta_desc_label")}</Label>
             <Textarea
               id="page-metaPageDescription"
               bind:value={pageSettings.metaPageDescription}
-              placeholder="Custom description for search engines"
+              placeholder={$t("manage.page_detail.meta_desc_placeholder")}
               rows={3}
             />
-            <p class="text-muted-foreground text-xs">Shown as the snippet text in search engine results</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.page_detail.meta_desc_helper")}</p>
           </div>
         </Card.Content>
         <Card.Footer class="flex justify-end">
@@ -988,7 +990,7 @@
               Saving...
             {:else}
               <SaveIcon class="h-4 w-4" />
-              Save
+              {$t("manage.page_detail.save_button")}
             {/if}
           </Button>
         </Card.Footer>
@@ -998,14 +1000,14 @@
       {#if currentPage.page_path !== ""}
         <Card.Root class="border-destructive">
           <Card.Header>
-            <Card.Title class="text-destructive">Danger Zone</Card.Title>
-            <Card.Description>Irreversible actions for this page</Card.Description>
+            <Card.Title class="text-destructive">{$t("manage.page_detail.danger_title")}</Card.Title>
+            <Card.Description>{$t("manage.page_detail.danger_desc")}</Card.Description>
           </Card.Header>
           <Card.Content class="space-y-4">
             <div class="space-y-2">
-              <Label for="delete-confirm">Delete Page</Label>
+              <Label for="delete-confirm">{$t("manage.page_detail.delete_label")}</Label>
               <p class="text-muted-foreground text-sm">
-                Once you delete a page, there is no going back. Please be certain.
+                {$t("manage.page_detail.delete_warning")}
               </p>
               <p class="text-muted-foreground text-sm">
                 Type <code class="bg-muted rounded px-1 font-mono">delete {currentPage.page_path || "home"}</code> to confirm:
@@ -1022,10 +1024,10 @@
             <Button variant="destructive" onclick={deletePage} disabled={!canDelete || deleting}>
               {#if deleting}
                 <Loader class="h-4 w-4 animate-spin" />
-                Deleting...
+                {$t("manage.page_detail.deleting")}
               {:else}
                 <TrashIcon class="h-4 w-4" />
-                Delete Page
+                {$t("manage.page_detail.delete_button")}
               {/if}
             </Button>
           </Card.Footer>

@@ -33,6 +33,7 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { getAlertText } from "$lib/alerts/alert-text";
+  import { t } from "$lib/stores/i18n";
 
   let { data } = $props();
   const alertConfigId = $derived(data.alert_config_id);
@@ -284,11 +285,11 @@
   <Breadcrumb.Root>
     <Breadcrumb.List>
       <Breadcrumb.Item>
-        <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/alerts")}>Alerts</Breadcrumb.Link>
+        <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/alerts")}>{$t("manage.alert_detail.breadcrumb")}</Breadcrumb.Link>
       </Breadcrumb.Item>
       <Breadcrumb.Separator />
       <Breadcrumb.Item>
-        <Breadcrumb.Page>{isNew ? "New Alert" : `Edit Alert #${alertConfigId}`}</Breadcrumb.Page>
+        <Breadcrumb.Page>{isNew ? $t("manage.alert_detail.new_title") : `Edit Alert #${alertConfigId}`}</Breadcrumb.Page>
       </Breadcrumb.Item>
     </Breadcrumb.List>
   </Breadcrumb.Root>
@@ -303,13 +304,13 @@
       <Card.Content class="space-y-6 pt-6">
         <!-- Monitor Selection (Searchable Multi-select) -->
         <div class="flex flex-col gap-2">
-          <Label>Monitors</Label>
-          <p class="text-muted-foreground text-xs">Select which monitors this alert applies to</p>
+          <Label>{$t("manage.alert_detail.monitors_label")}</Label>
+          <p class="text-muted-foreground text-xs">{$t("manage.alert_detail.monitors_helper")}</p>
           <Popover.Root bind:open={monitorPopoverOpen}>
             <Popover.Trigger>
               <Button variant="outline" role="combobox" class="w-full justify-between font-normal">
                 {#if form.monitor_tags.length === 0}
-                  Select monitors...
+                  {$t("manage.alert_detail.monitors_placeholder")}
                 {:else if form.monitor_tags.length === 1}
                   {monitors.find((m) => m.tag === form.monitor_tags[0])?.name || form.monitor_tags[0]}
                 {:else}
@@ -322,7 +323,7 @@
               <Command.Root>
                 <Command.Input placeholder="Search monitors..." />
                 <Command.List>
-                  <Command.Empty>No monitors found.</Command.Empty>
+                  <Command.Empty>{$t("manage.alert_detail.no_monitors")}</Command.Empty>
                   <Command.Group>
                     {#each monitors as monitor (monitor.tag)}
                       <Command.Item
@@ -358,7 +359,7 @@
 
         <!-- Alert For -->
         <div class="flex flex-col gap-2">
-          <Label for="alert-for">Alert Type</Label>
+          <Label for="alert-for">{$t("manage.alert_detail.type_label")}</Label>
           <Select.Root
             type="single"
             value={form.alert_for}
@@ -404,27 +405,27 @@
         <!-- Thresholds -->
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
-            <Label for="failure-threshold">Failure Threshold</Label>
+            <Label for="failure-threshold">{$t("manage.alert_detail.failure_threshold_label")}</Label>
             <Input id="failure-threshold" type="number" min="1" bind:value={form.failure_threshold} />
-            <p class="text-muted-foreground text-xs">Consecutive failures before alert</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.alert_detail.failure_threshold_helper")}</p>
           </div>
 
           <div class="flex flex-col gap-2">
-            <Label for="success-threshold">Success Threshold</Label>
+            <Label for="success-threshold">{$t("manage.alert_detail.success_threshold_label")}</Label>
             <Input id="success-threshold" type="number" min="1" bind:value={form.success_threshold} />
-            <p class="text-muted-foreground text-xs">Consecutive successes to resolve</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.alert_detail.success_threshold_helper")}</p>
           </div>
         </div>
 
         <!-- Generated Alert Text -->
         <div class="flex flex-col gap-2">
-          <Label>Details</Label>
+          <Label>{$t("manage.alert_detail.details_label")}</Label>
           <p class="text-muted-foreground bg-muted/40 rounded-md border p-3 text-sm">{alertDescriptionText}</p>
         </div>
 
         <!-- Severity -->
         <div class="flex flex-col gap-2">
-          <Label for="severity">Severity</Label>
+          <Label for="severity">{$t("manage.alert_detail.severity_label")}</Label>
           <Select.Root
             type="single"
             value={form.severity}
@@ -443,7 +444,7 @@
 
         <!-- Create Incident -->
         <div class="flex flex-col gap-2">
-          <Label for="create-incident">Create Incident</Label>
+          <Label for="create-incident">{$t("manage.alert_detail.create_incident_label")}</Label>
           <Select.Root
             type="single"
             value={form.create_incident}
@@ -458,15 +459,15 @@
               {/each}
             </Select.Content>
           </Select.Root>
-          <p class="text-muted-foreground text-xs">Automatically create an incident when this alert triggers</p>
+          <p class="text-muted-foreground text-xs">{$t("manage.alert_detail.create_incident_helper")}</p>
         </div>
 
         <!-- Is Active (only when editing) -->
         {#if !isNew}
           <div class="flex items-center justify-between">
             <div>
-              <Label>Active</Label>
-              <p class="text-muted-foreground text-xs">Enable or disable this alert</p>
+              <Label>{$t("manage.alert_detail.active_label")}</Label>
+              <p class="text-muted-foreground text-xs">{$t("manage.alert_detail.active_helper")}</p>
             </div>
             <Switch
               checked={form.is_active === GC.YES}
@@ -477,10 +478,10 @@
 
         <!-- Description -->
         <div class="flex flex-col gap-2">
-          <Label for="alert-description">Description (optional)</Label>
+          <Label for="alert-description">{$t("manage.alert_detail.description_label")}</Label>
           <Textarea
             id="alert-description"
-            placeholder="Add a description for this alert..."
+            placeholder={$t("manage.alert_detail.description_placeholder")}
             bind:value={form.alert_description}
             rows={2}
           />

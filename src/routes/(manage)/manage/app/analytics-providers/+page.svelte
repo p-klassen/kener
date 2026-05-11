@@ -11,6 +11,7 @@
   import { toast } from "svelte-sonner";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
 
   // Types
   interface AnalyticsRequirement {
@@ -302,12 +303,12 @@
 
 <div class="flex w-full flex-col gap-4 px-4">
   <div>
-    Add your analytics ID/Key here. You can add multiple analytics providers.
+    {$t("manage.analytics.intro")}
     <a
       href="https://kener.ing/docs/v4/analytics"
       target="_blank"
       rel="noopener noreferrer"
-      class="text-primary ml-1 underline underline-offset-2">Learn more</a
+      class="text-primary ml-1 underline underline-offset-2">{$t("manage.analytics.learn_more")}</a
     >.
   </div>
   {#if loading}
@@ -369,7 +370,7 @@
                 </div>
               {/each}
               <div class="flex flex-col gap-2">
-                <Label>Status</Label>
+                <Label>{$t("manage.analytics.status_label")}</Label>
                 <Select.Root
                   type="single"
                   value={selectedAnalytics.isEnabled ? "enabled" : "disabled"}
@@ -379,11 +380,11 @@
                   }}
                 >
                   <Select.Trigger class="w-32">
-                    {selectedAnalytics.isEnabled ? "Enable" : "Disable"}
+                    {selectedAnalytics.isEnabled ? $t("manage.analytics.enable") : $t("manage.analytics.disable")}
                   </Select.Trigger>
                   <Select.Content>
-                    <Select.Item value="enabled">Enable</Select.Item>
-                    <Select.Item value="disabled">Disable</Select.Item>
+                    <Select.Item value="enabled">{$t("manage.analytics.enable")}</Select.Item>
+                    <Select.Item value="disabled">{$t("manage.analytics.disable")}</Select.Item>
                   </Select.Content>
                 </Select.Root>
               </div>
@@ -391,7 +392,7 @@
 
             <div class="mt-4 flex flex-row items-center justify-between">
               <Button type="submit" disabled={saving}>
-                Save Changes for {selectedAnalytics.label}
+                {$t("manage.analytics.save_button")} {selectedAnalytics.label}
                 {#if saving}
                   <Loader class="ml-2 inline size-4 animate-spin" />
                 {/if}

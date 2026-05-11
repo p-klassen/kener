@@ -12,6 +12,8 @@
   import type { PageRecord } from "$lib/server/types/db.js";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
+
 
   interface PageWithMonitors extends PageRecord {
     monitors?: { monitor_tag: string }[];
@@ -53,7 +55,7 @@
   <div class="mb-4 flex justify-end">
     <Button class="cursor-pointer" onclick={() => goto(clientResolver(resolve, "/manage/app/pages/new"))}>
       <Plus class="size-4" />
-      New Page
+      {$t("manage.pages.add_button")}
     </Button>
   </div>
 
@@ -64,7 +66,7 @@
           <Spinner />
         </Item.Media>
         <Item.Content>
-          <Item.Title class="line-clamp-1">Loading Pages....</Item.Title>
+          <Item.Title class="line-clamp-1">{$t("manage.pages.loading")}</Item.Title>
         </Item.Content>
       </Item.Root>
     </div>
@@ -73,15 +75,15 @@
       {error}
     </div>
   {:else if pages.length === 0}
-    <div class="text-muted-foreground py-8 text-center">No pages found. Create your first page to get started.</div>
+    <div class="text-muted-foreground py-8 text-center">{$t("manage.pages.no_pages")}</div>
   {:else}
     <div class="ktable rounded-xl border">
       <Table.Root>
         <Table.Header>
           <Table.Row>
-            <Table.Head class="w-[340px]">Page</Table.Head>
-            <Table.Head class="w-[220px]">Path</Table.Head>
-            <Table.Head class="w-[150px]">Monitors</Table.Head>
+            <Table.Head class="w-[340px]">{$t("manage.pages.col_page")}</Table.Head>
+            <Table.Head class="w-[220px]">{$t("manage.pages.col_path")}</Table.Head>
+            <Table.Head class="w-[150px]">{$t("manage.pages.col_monitors")}</Table.Head>
             <Table.Head class="w-[120px] text-right"></Table.Head>
           </Table.Row>
         </Table.Header>
@@ -119,20 +121,20 @@
                 {#if page.monitors && page.monitors.length > 0}
                   <Badge variant="secondary">{page.monitors.length} monitor{page.monitors.length > 1 ? "s" : ""}</Badge>
                 {:else}
-                  <Badge variant="outline" class="text-muted-foreground">No monitors</Badge>
+                  <Badge variant="outline" class="text-muted-foreground">{$t("manage.pages.no_monitors")}</Badge>
                 {/if}
               </Table.Cell>
 
               <Table.Cell class="text-right">
                 <Button variant="ghost" target="_blank" size="sm" href={clientResolver(resolve, `/${page.page_path}`)}>
-                  View
+                  {$t("manage.pages.view_button")}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onclick={() => goto(clientResolver(resolve, `/manage/app/pages/${page.id}`))}
                 >
-                  Edit
+                  {$t("manage.pages.edit_button")}
                 </Button>
               </Table.Cell>
             </Table.Row>

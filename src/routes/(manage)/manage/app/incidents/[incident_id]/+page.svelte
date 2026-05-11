@@ -35,6 +35,8 @@
   import { markdown } from "@codemirror/lang-markdown";
   import { githubLight, githubDark } from "@uiw/codemirror-theme-github";
   import mdToHTML from "$lib/marked";
+  import { t } from "$lib/stores/i18n";
+
 
   let { params }: PageProps = $props();
   const isNew = $derived(params.incident_id === "new");
@@ -296,7 +298,7 @@
               })
             });
           }
-          toast.success("Incident created successfully");
+          toast.success($t("manage.incident_detail.created_toast"));
           goto(clientResolver(resolve, `/manage/app/incidents/${incidentId}`));
         }
       } else {
@@ -384,11 +386,11 @@
           // Update originalMonitors to reflect current state
           originalMonitors = [...incidentMonitors];
 
-          toast.success("Changes saved successfully");
+          toast.success($t("manage.incident_detail.saved_toast"));
         }
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to save");
+      toast.error($t("manage.incident_detail.save_error"));
     } finally {
       saving = false;
     }
@@ -415,14 +417,14 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Monitor added to incident");
+        toast.success($t("manage.incident_detail.monitor_added_toast"));
         await fetchIncidentMonitors();
         addMonitorDialogOpen = false;
         selectedMonitorTag = "";
         selectedMonitorImpact = "DOWN";
       }
     } catch (e) {
-      toast.error("Failed to add monitor");
+      toast.error($t("manage.incident_detail.monitor_add_error"));
     } finally {
       addingMonitor = false;
     }
@@ -446,11 +448,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Monitor removed from incident");
+        toast.success($t("manage.incident_detail.monitor_removed_toast"));
         await fetchIncidentMonitors();
       }
     } catch {
-      toast.error("Failed to remove monitor");
+      toast.error($t("manage.incident_detail.monitor_remove_error"));
     }
   }
 
@@ -512,7 +514,7 @@
         if (result.error) {
           toast.error(result.error);
         } else {
-          toast.success("Update saved");
+          toast.success($t("manage.incident_detail.update_saved_toast"));
           await fetchComments();
           await fetchIncident();
           cancelEditComment();
@@ -536,14 +538,14 @@
         if (result.error) {
           toast.error(result.error);
         } else {
-          toast.success("Update added");
+          toast.success($t("manage.incident_detail.update_added_toast"));
           await fetchComments();
           await fetchIncident();
           cancelAddComment();
         }
       }
     } catch {
-      toast.error("Failed to save update");
+      toast.error($t("manage.incident_detail.update_save_error"));
     } finally {
       savingComment = false;
     }
@@ -567,11 +569,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Update deleted");
+        toast.success($t("manage.incident_detail.update_deleted_toast"));
         await fetchComments();
       }
     } catch {
-      toast.error("Failed to delete update");
+      toast.error($t("manage.incident_detail.update_delete_error"));
     }
   }
 
@@ -662,11 +664,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Incident deleted successfully");
+        toast.success($t("manage.incident_detail.deleted_toast"));
         window.location.replace(clientResolver(resolve, "/manage/app/incidents"));
       }
     } catch {
-      toast.error("Failed to delete incident");
+      toast.error($t("manage.incident_detail.delete_error"));
     } finally {
       deleting = false;
     }
@@ -684,11 +686,11 @@
     <Breadcrumb.Root>
       <Breadcrumb.List>
         <Breadcrumb.Item>
-          <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/incidents")}>Incidents</Breadcrumb.Link>
+          <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/incidents")}>{$t("manage.incident_detail.breadcrumb")}</Breadcrumb.Link>
         </Breadcrumb.Item>
         <Breadcrumb.Separator />
         <Breadcrumb.Item>
-          <Breadcrumb.Page>{isNew ? "New Incident" : `Edit Incident #${params.incident_id}`}</Breadcrumb.Page>
+          <Breadcrumb.Page>{isNew ? $t("manage.incident_detail.new_title") : `Edit Incident #${params.incident_id}`}</Breadcrumb.Page>
         </Breadcrumb.Item>
       </Breadcrumb.List>
     </Breadcrumb.Root>
@@ -700,7 +702,7 @@
           size="sm"
           href={clientResolver(resolve, `/incidents/${params.incident_id}`)}
         >
-          View
+          {$t("manage.incident_detail.view_button")}
         </Button>
         <Dialog.Root bind:open={deleteDialogOpen} onOpenChange={() => (deleteConfirmText = "")}>
           <Dialog.Trigger>
@@ -713,10 +715,9 @@
           </Dialog.Trigger>
           <Dialog.Content>
             <Dialog.Header>
-              <Dialog.Title>Delete Incident</Dialog.Title>
+              <Dialog.Title>{$t("manage.incident_detail.delete_dialog_title")}</Dialog.Title>
               <Dialog.Description>
-                This action cannot be undone. This will permanently delete the incident, its updates, and remove all
-                associated monitor links.
+                {$t("manage.incident_detail.delete_dialog_desc")}
               </Dialog.Description>
             </Dialog.Header>
             <div class="space-y-4 py-4">
@@ -757,12 +758,12 @@
     <!-- Incident Details -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>{isNew ? "Create New Incident" : "Incident Details"}</Card.Title>
+        <Card.Title>{isNew ? $t("manage.incident_detail.create_card_title") : "Incident Details"}</Card.Title>
         <Card.Description>
           {#if isNew}
-            Create a new incident to track
+            {$t("manage.incident_detail.create_card_desc")}
           {:else}
-            Edit incident details and manage updates
+            {$t("manage.incident_detail.edit_card_desc")}
           {/if}
         </Card.Description>
       </Card.Header>
@@ -780,27 +781,27 @@
 
         <!-- Title -->
         <div class="flex flex-col gap-2">
-          <Label for="incident-title">Title <span class="text-destructive">*</span></Label>
-          <Input id="incident-title" bind:value={incident.title} placeholder="Brief description of the incident" />
+          <Label for="incident-title">{$t("manage.incident_detail.title_label")} <span class="text-destructive">*</span></Label>
+          <Input id="incident-title" bind:value={incident.title} placeholder={$t("manage.incident_detail.title_placeholder")} />
         </div>
 
         <!-- Start Date/Time -->
         <div class="flex flex-col gap-2">
-          <Label for="incident-start">Start Date/Time <span class="text-destructive">*</span></Label>
+          <Label for="incident-start">{$t("manage.incident_detail.start_datetime")} <span class="text-destructive">*</span></Label>
           <Input
             id="incident-start"
             type="datetime-local"
             value={startDateTimeLocal}
             onchange={handleStartDateChange}
           />
-          <p class="text-muted-foreground text-xs">Enter time in your local timezone. It will be stored as UTC.</p>
+          <p class="text-muted-foreground text-xs">{$t("manage.incident_detail.start_datetime_helper")}</p>
         </div>
 
         <!-- Global Visibility -->
         <div class="flex items-center justify-between rounded-md border p-3">
           <div class="flex flex-col gap-1">
-            <Label for="is-global">Global Incident</Label>
-            <p class="text-muted-foreground text-xs">When enabled, this incident will be visible on all status pages</p>
+            <Label for="is-global">{$t("manage.incident_detail.global_label")}</Label>
+            <p class="text-muted-foreground text-xs">{$t("manage.incident_detail.global_helper")}</p>
           </div>
           <Switch
             id="is-global"
@@ -814,7 +815,7 @@
         <!-- First Comment (only for new) -->
         {#if isNew}
           <div class="flex flex-col gap-2">
-            <Label for="first-comment">Initial Update (Optional)</Label>
+            <Label for="first-comment">{$t("manage.incident_detail.initial_update_label")}</Label>
             <div class="overflow-hidden rounded-md border">
               <CodeMirror
                 bind:value={firstComment}
@@ -830,7 +831,7 @@
               />
             </div>
             <p class="text-muted-foreground text-xs">
-              Supports Markdown. This will be added as the first update for this incident.
+              {$t("manage.incident_detail.initial_update_helper")}
             </p>
           </div>
         {/if}
@@ -838,24 +839,24 @@
         <!-- Affected Monitors (for both new and existing incidents) -->
         <div class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
-            <Label>Affected Monitors (Optional)</Label>
+            <Label>{$t("manage.incident_detail.affected_monitors")}</Label>
             <Dialog.Root bind:open={addMonitorDialogOpen}>
               <Dialog.Trigger>
                 {#snippet child({ props })}
                   <Button {...props} size="sm" variant="outline" disabled={unassignedMonitors.length === 0}>
                     <PlusIcon class="size-4" />
-                    Add Monitor
+                    {$t("manage.incident_detail.add_monitor_button")}
                   </Button>
                 {/snippet}
               </Dialog.Trigger>
               <Dialog.Content>
                 <Dialog.Header>
-                  <Dialog.Title>Add Affected Monitor</Dialog.Title>
-                  <Dialog.Description>Select a monitor and its impact level</Dialog.Description>
+                  <Dialog.Title>{$t("manage.incident_detail.add_monitor_dialog_title")}</Dialog.Title>
+                  <Dialog.Description>{$t("manage.incident_detail.add_monitor_dialog_desc")}</Dialog.Description>
                 </Dialog.Header>
                 <div class="space-y-4 py-4">
                   <div class="flex flex-col gap-2">
-                    <Label>Monitor</Label>
+                    <Label>{$t("manage.incident_detail.monitor_label")}</Label>
                     <Select.Root
                       type="single"
                       value={selectedMonitorTag}
@@ -864,7 +865,7 @@
                       }}
                     >
                       <Select.Trigger class="w-full">
-                        {selectedMonitorTag ? getMonitorName(selectedMonitorTag) : "Select a monitor"}
+                        {selectedMonitorTag ? getMonitorName(selectedMonitorTag) : $t("manage.incident_detail.monitor_placeholder")}
                       </Select.Trigger>
                       <Select.Content>
                         {#each unassignedMonitors as monitor}
@@ -874,7 +875,7 @@
                     </Select.Root>
                   </div>
                   <div class="flex flex-col gap-2">
-                    <Label>Impact Level</Label>
+                    <Label>{$t("manage.incident_detail.impact_label")}</Label>
                     <Select.Root
                       type="single"
                       value={selectedMonitorImpact}
@@ -894,13 +895,13 @@
                 </div>
                 <Dialog.Footer>
                   <Button variant="outline" onclick={() => (addMonitorDialogOpen = false)}>Cancel</Button>
-                  <Button onclick={addMonitorToList} disabled={!selectedMonitorTag}>Add Monitor</Button>
+                  <Button onclick={addMonitorToList} disabled={!selectedMonitorTag}>{$t("manage.incident_detail.add_monitor_button")}</Button>
                 </Dialog.Footer>
               </Dialog.Content>
             </Dialog.Root>
           </div>
           {#if incidentMonitors.length === 0}
-            <p class="text-muted-foreground text-sm">No monitors selected</p>
+            <p class="text-muted-foreground text-sm">{$t("manage.incident_detail.no_monitors")}</p>
           {:else}
             <div class="space-y-2">
               {#each incidentMonitors as monitor}
@@ -924,7 +925,7 @@
                       {/snippet}
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end">
-                      <DropdownMenu.Label>Update Impact</DropdownMenu.Label>
+                      <DropdownMenu.Label>{$t("manage.incident_detail.update_impact")}</DropdownMenu.Label>
                       <DropdownMenu.Group>
                         <DropdownMenu.Item
                           class="cursor-pointer"
@@ -959,7 +960,7 @@
                         onclick={() => removeMonitorFromList(monitor.monitor_tag)}
                       >
                         <TrashIcon class="size-4" />
-                        Remove
+                        {$t("manage.incident_detail.remove")}
                       </DropdownMenu.Item>
                     </DropdownMenu.Content>
                   </DropdownMenu.Root>
@@ -976,7 +977,7 @@
           {:else}
             <SaveIcon class="size-4" />
           {/if}
-          {isNew ? "Create Incident" : "Save Changes"}
+          {isNew ? $t("manage.incident_detail.create_button") : $t("manage.incident_detail.save_button")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -987,13 +988,13 @@
         <Card.Header>
           <div class="flex items-center justify-between">
             <div>
-              <Card.Title>Updates</Card.Title>
-              <Card.Description>Timeline of status updates for this incident</Card.Description>
+              <Card.Title>{$t("manage.incident_detail.updates_title")}</Card.Title>
+              <Card.Description>{$t("manage.incident_detail.updates_desc")}</Card.Description>
             </div>
             {#if !addingNewComment}
               <Button size="sm" onclick={startAddComment}>
                 <PlusIcon class="size-4" />
-                Add Update
+                {$t("manage.incident_detail.add_update_button")}
               </Button>
             {/if}
           </div>
@@ -1003,7 +1004,7 @@
           {#if addingNewComment}
             <div class="mb-4 space-y-4 rounded-md border p-4">
               <div class="flex flex-col gap-2">
-                <Label>Update Message</Label>
+                <Label>{$t("manage.incident_detail.update_message_label")}</Label>
                 <div class="overflow-hidden rounded-md border">
                   <CodeMirror
                     bind:value={commentText}
@@ -1018,11 +1019,11 @@
                     }}
                   />
                 </div>
-                <p class="text-muted-foreground text-xs">Supports Markdown formatting</p>
+                <p class="text-muted-foreground text-xs">{$t("manage.incident_detail.update_message_helper")}</p>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-2">
-                  <Label>State</Label>
+                  <Label>{$t("manage.incident_detail.state_label")}</Label>
                   <Select.Root
                     type="single"
                     value={commentState}
@@ -1039,7 +1040,7 @@
                   </Select.Root>
                 </div>
                 <div class="flex flex-col gap-2">
-                  <Label>Date/Time</Label>
+                  <Label>{$t("manage.incident_detail.datetime_label")}</Label>
                   <Input type="datetime-local" bind:value={commentDateTime} />
                 </div>
               </div>
@@ -1049,7 +1050,7 @@
                   {#if savingComment}
                     <Loader class="size-4 animate-spin" />
                   {/if}
-                  Add Update
+                  {$t("manage.incident_detail.add_update_button")}
                 </Button>
               </div>
             </div>
@@ -1060,7 +1061,7 @@
               <Spinner class="size-6" />
             </div>
           {:else if comments.length === 0 && !addingNewComment}
-            <p class="text-muted-foreground py-4 text-center text-sm">No updates yet</p>
+            <p class="text-muted-foreground py-4 text-center text-sm">{$t("manage.incident_detail.no_updates")}</p>
           {:else}
             <div class="space-y-4">
               {#each comments as comment (comment.id)}
@@ -1069,7 +1070,7 @@
                     <!-- Inline edit mode -->
                     <div class="space-y-4">
                       <div class="flex flex-col gap-2">
-                        <Label>Update Message</Label>
+                        <Label>{$t("manage.incident_detail.update_message_label")}</Label>
                         <div class="overflow-hidden rounded-md border">
                           <CodeMirror
                             bind:value={commentText}
@@ -1084,11 +1085,11 @@
                             }}
                           />
                         </div>
-                        <p class="text-muted-foreground text-xs">Supports Markdown formatting</p>
+                        <p class="text-muted-foreground text-xs">{$t("manage.incident_detail.update_message_helper")}</p>
                       </div>
                       <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-2">
-                          <Label>State</Label>
+                          <Label>{$t("manage.incident_detail.state_label")}</Label>
                           <Select.Root
                             type="single"
                             value={commentState}
@@ -1105,7 +1106,7 @@
                           </Select.Root>
                         </div>
                         <div class="flex flex-col gap-2">
-                          <Label>Date/Time</Label>
+                          <Label>{$t("manage.incident_detail.datetime_label")}</Label>
                           <Input type="datetime-local" bind:value={commentDateTime} />
                         </div>
                       </div>

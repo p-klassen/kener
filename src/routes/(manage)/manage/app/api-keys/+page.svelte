@@ -20,6 +20,7 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { page } from "$app/state";
+  import { t } from "$lib/stores/i18n";
   interface ApiKey {
     id: number;
     name: string;

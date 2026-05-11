@@ -19,6 +19,7 @@
   import { toast } from "svelte-sonner";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
 
   // Types
   interface MonitoringData {
@@ -258,7 +259,7 @@
     <div class="flex items-center gap-2">
       <Button variant={showFilters ? "default" : "outline"} size="sm" onclick={() => (showFilters = !showFilters)}>
         <FilterIcon class="size-4" />
-        Filters
+        {$t("manage.monitoring_data.filters_button")}
         {#if hasActiveFilters}
           <Badge variant="secondary" class="ml-1 px-1.5 py-0 text-[10px]">ON</Badge>
         {/if}
@@ -271,7 +272,7 @@
     {#if showFilters}
       <div class="bg-muted/50 flex flex-wrap items-end gap-3 rounded-lg border p-3">
         <div class="flex flex-col gap-1">
-          <Label for="start-datetime" class="text-muted-foreground text-xs font-medium">From</Label>
+          <Label for="start-datetime" class="text-muted-foreground text-xs font-medium">{$t("manage.monitoring_data.from_label")}</Label>
           <Input
             id="start-datetime"
             type="datetime-local"
@@ -281,7 +282,7 @@
           />
         </div>
         <div class="flex flex-col gap-1">
-          <Label for="end-datetime" class="text-muted-foreground text-xs font-medium">To</Label>
+          <Label for="end-datetime" class="text-muted-foreground text-xs font-medium">{$t("manage.monitoring_data.to_label")}</Label>
           <Input
             id="end-datetime"
             type="datetime-local"
@@ -291,13 +292,13 @@
           />
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground text-xs font-medium">Monitor</span>
+          <span class="text-muted-foreground text-xs font-medium">{$t("manage.monitoring_data.monitor_label")}</span>
           <Select.Root type="single" value={monitorTagFilter} onValueChange={handleMonitorChange}>
             <Select.Trigger class="w-48">
-              {monitorTagFilter === "ALL" ? "All Monitors" : monitorTagFilter}
+              {monitorTagFilter === "ALL" ? $t("manage.monitoring_data.all_monitors") : monitorTagFilter}
             </Select.Trigger>
             <Select.Content>
-              <Select.Item value="ALL">All Monitors</Select.Item>
+              <Select.Item value="ALL">{$t("manage.monitoring_data.all_monitors")}</Select.Item>
               {#each monitors as monitor (monitor.tag)}
                 <Select.Item value={monitor.tag}>{monitor.name || monitor.tag}</Select.Item>
               {/each}
@@ -306,21 +307,21 @@
         </div>
         <Button size="sm" onclick={applyFilters}>
           <SearchIcon class="size-4" />
-          Search
+          {$t("manage.monitoring_data.search_button")}
         </Button>
         <Button size="sm" variant="destructive" onclick={openDeleteDialog} disabled={deleting}>
           {#if deleting}
             <Spinner class="size-4" />
-            Deleting...
+            {$t("manage.monitoring_data.deleting")}
           {:else}
             <TrashIcon class="size-4" />
-            Delete
+            {$t("manage.monitoring_data.delete_button")}
           {/if}
         </Button>
         {#if hasActiveFilters}
           <Button variant="ghost" size="sm" onclick={clearFilters}>
             <XIcon class="size-4" />
-            Clear
+            {$t("manage.monitoring_data.clear_button")}
           </Button>
         {/if}
       </div>
@@ -332,18 +333,18 @@
     <Table.Root>
       <Table.Header>
         <Table.Row>
-          <Table.Head>Monitor Tag</Table.Head>
-          <Table.Head class="w-48">Timestamp</Table.Head>
-          <Table.Head class="w-24">Status</Table.Head>
-          <Table.Head class="w-24">Latency</Table.Head>
-          <Table.Head class="w-24">Type</Table.Head>
-          <Table.Head>Error Message</Table.Head>
+          <Table.Head>{$t("manage.monitoring_data.col_tag")}</Table.Head>
+          <Table.Head class="w-48">{$t("manage.monitoring_data.col_timestamp")}</Table.Head>
+          <Table.Head class="w-24">{$t("manage.monitoring_data.col_status")}</Table.Head>
+          <Table.Head class="w-24">{$t("manage.monitoring_data.col_latency")}</Table.Head>
+          <Table.Head class="w-24">{$t("manage.monitoring_data.col_type")}</Table.Head>
+          <Table.Head>{$t("manage.monitoring_data.col_error")}</Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
         {#if monitoringData.length === 0 && !loading}
           <Table.Row>
-            <Table.Cell colspan={6} class="text-muted-foreground py-8 text-center">No monitoring data found</Table.Cell>
+            <Table.Cell colspan={6} class="text-muted-foreground py-8 text-center">{$t("manage.monitoring_data.no_data")}</Table.Cell>
           </Table.Row>
         {:else}
           {#each monitoringData as row (row.monitor_tag + "_" + row.timestamp)}
@@ -435,7 +436,7 @@
 <AlertDialog.Root bind:open={deleteDialogOpen}>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Delete Monitoring Data</AlertDialog.Title>
+      <AlertDialog.Title>{$t("manage.monitoring_data.delete_dialog_title")}</AlertDialog.Title>
       <AlertDialog.Description>
         {#if monitorTagFilter === "ALL"}
           This will delete monitoring data for <strong>all monitors</strong> from {startDateTime} to {endDateTime}.
@@ -447,7 +448,7 @@
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-      <AlertDialog.Action onclick={deleteFilteredData}>Delete</AlertDialog.Action>
+      <AlertDialog.Action onclick={deleteFilteredData}>{$t("manage.monitoring_data.delete_button")}</AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>

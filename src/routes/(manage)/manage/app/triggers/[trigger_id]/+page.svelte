@@ -31,6 +31,8 @@
   import { html } from "@codemirror/lang-html";
   import { githubLight, githubDark } from "@uiw/codemirror-theme-github";
   import type { TriggerMeta } from "$lib/server/types/db";
+  import { t } from "$lib/stores/i18n";
+
 
   let { data } = page;
   // Types
@@ -114,12 +116,12 @@
           }
         };
       } else {
-        toast.error("Trigger not found");
+        toast.error($t("manage.trigger_detail.not_found"));
         goto(clientResolver(resolve, "/manage/app/triggers"));
       }
     } catch (error) {
       console.error("Error fetching trigger:", error);
-      toast.error("Failed to load trigger");
+      toast.error($t("manage.trigger_detail.load_error"));
     } finally {
       loading = false;
     }
@@ -140,32 +142,32 @@
 
     // Validation
     if (!trigger.name.trim()) {
-      invalidFormMessage = "Trigger Name is required";
+      invalidFormMessage = $t("manage.trigger_detail.error_name");
       return;
     }
 
     if (!trigger.trigger_type) {
-      invalidFormMessage = "Trigger Type is required";
+      invalidFormMessage = $t("manage.trigger_detail.error_type");
       return;
     }
 
     if (trigger.trigger_type === "email") {
       if (!trigger.trigger_meta.to.trim()) {
-        invalidFormMessage = "To Email Address is required";
+        invalidFormMessage = $t("manage.trigger_detail.error_email");
         return;
       }
       if (!validateNameEmailPattern(trigger.trigger_meta.from).isValid) {
-        invalidFormMessage = "Invalid Sender. Format: Name <email@example.com>";
+        invalidFormMessage = $t("manage.trigger_detail.error_sender");
         return;
       }
     } else {
       // URL validation for non-email triggers
       if (!trigger.trigger_meta.url.trim()) {
-        invalidFormMessage = "Trigger URL is required";
+        invalidFormMessage = $t("manage.trigger_detail.error_url");
         return;
       }
       if (!IsValidURL(trigger.trigger_meta.url)) {
-        invalidFormMessage = "Invalid URL";
+        invalidFormMessage = $t("manage.trigger_detail.error_invalid_url");
         return;
       }
     }
@@ -191,7 +193,7 @@
       if (result.error) {
         invalidFormMessage = result.error;
       } else {
-        toast.success(trigger.id ? "Trigger updated successfully" : "Trigger created successfully");
+        toast.success(trigger.id ? $t("manage.trigger_detail.updated_toast") : $t("manage.trigger_detail.created_toast"));
         if (isNew) {
           goto(clientResolver(resolve, "/manage/app/triggers"));
         }
@@ -205,7 +207,7 @@
 
   async function testTrigger() {
     if (!trigger.id) {
-      toast.error("Please save the trigger first");
+      toast.error($t("manage.trigger_detail.test_save_first"));
       return;
     }
 
@@ -225,11 +227,11 @@
         toast.error(result.error);
       } else {
         testing = "success";
-        toast.success("Test trigger sent successfully");
+        toast.success($t("manage.trigger_detail.test_success"));
       }
     } catch (error) {
       testing = "error";
-      toast.error("Failed to test trigger");
+      toast.error($t("manage.trigger_detail.test_error"));
     } finally {
       setTimeout(() => {
         testing = "idle";
@@ -284,11 +286,11 @@
   <Breadcrumb.Root>
     <Breadcrumb.List>
       <Breadcrumb.Item>
-        <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/triggers")}>Triggers</Breadcrumb.Link>
+        <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/triggers")}>{$t("manage.trigger_detail.breadcrumb")}</Breadcrumb.Link>
       </Breadcrumb.Item>
       <Breadcrumb.Separator />
       <Breadcrumb.Item>
-        <Breadcrumb.Page>{isNew ? "New Trigger" : trigger.name || "Edit Trigger"}</Breadcrumb.Page>
+        <Breadcrumb.Page>{isNew ? $t("manage.trigger_detail.new_title") : trigger.name || $t("manage.trigger_detail.edit_title")}</Breadcrumb.Page>
       </Breadcrumb.Item>
     </Breadcrumb.List>
   </Breadcrumb.Root>
@@ -300,8 +302,8 @@
   {:else}
     <Card.Root>
       <Card.Header>
-        <Card.Title>{isNew ? "New Trigger" : "Edit Trigger"}</Card.Title>
-        <Card.Description>Configure notification triggers for your monitors</Card.Description>
+        <Card.Title>{isNew ? $t("manage.trigger_detail.new_title") : $t("manage.trigger_detail.edit_title")}</Card.Title>
+        <Card.Description>{$t("manage.trigger_detail.card_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
         <!-- Error Message -->
@@ -311,8 +313,8 @@
 
         <!-- Trigger Type Selection -->
         <div class="space-y-3">
-          <Label>Trigger Type</Label>
-          <p class="text-muted-foreground text-sm">Select the type of notification to send</p>
+          <Label>{$t("manage.trigger_detail.type_label")}</Label>
+          <p class="text-muted-foreground text-sm">{$t("manage.trigger_detail.type_helper")}</p>
           <Select.Root
             type="single"
             value={trigger.trigger_type}
@@ -333,8 +335,8 @@
         <!-- Status Toggle -->
         <div class="flex items-center justify-between rounded-lg border p-4">
           <div>
-            <Label>Status</Label>
-            <p class="text-muted-foreground text-sm">Enable or disable this trigger</p>
+            <Label>{$t("manage.trigger_detail.status_label")}</Label>
+            <p class="text-muted-foreground text-sm">{$t("manage.trigger_detail.status_helper")}</p>
           </div>
           <Switch
             checked={trigger.trigger_status === "ACTIVE"}
@@ -345,15 +347,15 @@
         <!-- Name -->
         <div class="space-y-2">
           <Label for="trigger-name">
-            Name <span class="text-destructive">*</span>
+            {$t("manage.trigger_detail.name_label")} <span class="text-destructive">*</span>
           </Label>
-          <Input id="trigger-name" bind:value={trigger.name} placeholder="My Trigger" />
+          <Input id="trigger-name" bind:value={trigger.name} placeholder={$t("manage.trigger_detail.name_placeholder")} />
         </div>
 
         <!-- Description -->
         <div class="space-y-2">
-          <Label for="trigger-desc">Description</Label>
-          <Input id="trigger-desc" bind:value={trigger.trigger_desc} placeholder="Optional description" />
+          <Label for="trigger-desc">{$t("manage.trigger_detail.desc_label")}</Label>
+          <Input id="trigger-desc" bind:value={trigger.trigger_desc} placeholder={$t("manage.trigger_detail.desc_placeholder")} />
         </div>
 
         <!-- URL (for non-email) -->
@@ -362,8 +364,8 @@
             <Label for="trigger-url">
               URL <span class="text-destructive">*</span>
             </Label>
-            <Input id="trigger-url" bind:value={trigger.trigger_meta.url} placeholder="https://example.com/webhook" />
-            <p class="text-muted-foreground text-xs">The URL to send notifications to</p>
+            <Input id="trigger-url" bind:value={trigger.trigger_meta.url} placeholder={$t("manage.trigger_detail.url_placeholder")} />
+            <p class="text-muted-foreground text-xs">{$t("manage.trigger_detail.url_helper")}</p>
           </div>
         {/if}
 
@@ -371,12 +373,12 @@
         {#if trigger.trigger_type === "webhook"}
           <!-- Headers -->
           <div class="space-y-3">
-            <Label>Headers</Label>
+            <Label>{$t("manage.trigger_detail.headers_label")}</Label>
             <div class="space-y-2">
               {#each trigger.trigger_meta.headers as header, index}
                 <div class="flex gap-2">
-                  <Input bind:value={header.key} placeholder="Header Key" class="flex-1" />
-                  <Input bind:value={header.value} placeholder="Header Value" class="flex-1" />
+                  <Input bind:value={header.key} placeholder={$t("manage.trigger_detail.header_key_placeholder")} class="flex-1" />
+                  <Input bind:value={header.value} placeholder={$t("manage.trigger_detail.header_value_placeholder")} class="flex-1" />
                   <Button variant="ghost" size="icon" onclick={() => removeHeader(index)}>
                     <XIcon class="size-4" />
                   </Button>
@@ -385,15 +387,15 @@
             </div>
             <Button variant="outline" size="sm" onclick={addHeader}>
               <PlusIcon class="size-4" />
-              Add Header
+              {$t("manage.trigger_detail.add_header")}
             </Button>
           </div>
 
           <!-- Custom Body -->
           <div class="space-y-3">
             <div>
-              <Label>Custom Webhook Body</Label>
-              <p class="text-muted-foreground text-sm">Override the default JSON payload</p>
+              <Label>{$t("manage.trigger_detail.webhook_body_label")}</Label>
+              <p class="text-muted-foreground text-sm">{$t("manage.trigger_detail.webhook_body_helper")}</p>
             </div>
             <p class="text-muted-foreground text-xs">
               Use Mustache variables like <code class="bg-muted rounded px-1">{"{{variable}}"}</code>. Available:
@@ -412,8 +414,8 @@
         {#if trigger.trigger_type === "discord"}
           <div class="space-y-3">
             <div>
-              <Label>Custom Discord Payload</Label>
-              <p class="text-muted-foreground text-sm">Override the default Discord message</p>
+              <Label>{$t("manage.trigger_detail.discord_payload_label")}</Label>
+              <p class="text-muted-foreground text-sm">{$t("manage.trigger_detail.discord_payload_helper")}</p>
             </div>
             <p class="text-muted-foreground text-xs">
               Use Mustache variables. Available: alert_id, alert_name, alert_for, alert_value, alert_status,
@@ -432,8 +434,8 @@
         {#if trigger.trigger_type === "slack"}
           <div class="space-y-3">
             <div>
-              <Label>Custom Slack Payload</Label>
-              <p class="text-muted-foreground text-sm">Override the default Slack message</p>
+              <Label>{$t("manage.trigger_detail.slack_payload_label")}</Label>
+              <p class="text-muted-foreground text-sm">{$t("manage.trigger_detail.slack_payload_helper")}</p>
             </div>
             <p class="text-muted-foreground text-xs">
               Use Mustache variables. Available: alert_id, alert_name, alert_for, alert_value, alert_status,
@@ -454,7 +456,7 @@
           {#if page.data.canSendEmail === false}
             <Alert.Root variant="destructive">
               <AlertCircleIcon />
-              <Alert.Title>Email is not setup</Alert.Title>
+              <Alert.Title>{$t("manage.trigger_detail.email_not_setup_title")}</Alert.Title>
               <Alert.Description>
                 <p>
                   Please visit the email set up documentation <a
@@ -467,27 +469,27 @@
           {/if}
           <div class="space-y-2">
             <Label for="email-to">
-              To (comma separated) <span class="text-destructive">*</span>
+              {$t("manage.trigger_detail.email_to_label")} <span class="text-destructive">*</span>
             </Label>
             <Input
               id="email-to"
               bind:value={trigger.trigger_meta.to}
-              placeholder="john@example.com, jane@example.com"
+              placeholder={$t("manage.trigger_detail.email_to_placeholder")}
             />
           </div>
           <div class="space-y-2">
             <Label for="email-from">
-              From <span class="text-destructive">*</span>
+              {$t("manage.trigger_detail.email_from_label")} <span class="text-destructive">*</span>
             </Label>
-            <Input id="email-from" bind:value={trigger.trigger_meta.from} placeholder="Alerts <alert@example.com>" />
-            <p class="text-muted-foreground text-xs">Format: Name &lt;email@example.com&gt;</p>
+            <Input id="email-from" bind:value={trigger.trigger_meta.from} placeholder={$t("manage.trigger_detail.email_from_placeholder")} />
+            <p class="text-muted-foreground text-xs">{$t("manage.trigger_detail.email_from_helper")}</p>
           </div>
 
           <!-- Custom Email Template -->
           <div class="space-y-3">
             <div>
-              <Label>Custom HTML Template</Label>
-              <p class="text-muted-foreground text-sm">Create your own email design</p>
+              <Label>{$t("manage.trigger_detail.email_template_label")}</Label>
+              <p class="text-muted-foreground text-sm">{$t("manage.trigger_detail.email_template_helper")}</p>
             </div>
             <p class="text-muted-foreground text-xs">
               Use Mustache variables. Available: alert_id, alert_name, alert_for, alert_value, alert_status,
@@ -517,7 +519,7 @@
             {:else if testing === "error"}
               <XIcon class="size-4 text-red-500" />
             {/if}
-            Test Trigger
+            {$t("manage.trigger_detail.test_button")}
           </Button>
         {/if}
         <Button onclick={saveTrigger} disabled={saving}>
@@ -526,7 +528,7 @@
           {:else}
             <SaveIcon class="size-4" />
           {/if}
-          {isNew ? "Create" : "Save"} Trigger
+          {isNew ? $t("manage.trigger_detail.create_button") : $t("manage.trigger_detail.save_button")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -535,18 +537,18 @@
     {#if !isNew}
       <Card.Root class="border-destructive">
         <Card.Header>
-          <Card.Title class="text-destructive">Danger Zone</Card.Title>
-          <Card.Description>Permanently delete this trigger. This action cannot be undone.</Card.Description>
+          <Card.Title class="text-destructive">{$t("manage.trigger_detail.danger_title")}</Card.Title>
+          <Card.Description>{$t("manage.trigger_detail.danger_desc")}</Card.Description>
         </Card.Header>
         <Card.Content>
           <p class="text-muted-foreground text-sm">
-            Deleting this trigger will also remove it from all alert configurations that use it.
+            {$t("manage.trigger_detail.danger_warning")}
           </p>
         </Card.Content>
         <Card.Footer class="flex justify-end">
           <Button variant="destructive" onclick={() => (deleteDialogOpen = true)}>
             <Trash2Icon class="size-4" />
-            Delete Trigger
+            {$t("manage.trigger_detail.delete_button")}
           </Button>
         </Card.Footer>
       </Card.Root>
@@ -558,10 +560,9 @@
 <AlertDialog.Root bind:open={deleteDialogOpen}>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Delete Trigger</AlertDialog.Title>
+      <AlertDialog.Title>{$t("manage.trigger_detail.delete_dialog_title")}</AlertDialog.Title>
       <AlertDialog.Description>
-        This action cannot be undone. This will permanently delete the trigger and remove it from all alert
-        configurations.
+        {$t("manage.trigger_detail.delete_dialog_desc")}
       </AlertDialog.Description>
     </AlertDialog.Header>
     <div class="space-y-4 py-4">
@@ -583,7 +584,7 @@
         {:else}
           <Trash2Icon class="size-4" />
         {/if}
-        Delete Trigger
+        {$t("manage.trigger_detail.delete_button")}
       </Button>
     </AlertDialog.Footer>
   </AlertDialog.Content>

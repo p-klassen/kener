@@ -16,6 +16,7 @@
   import { toast } from "svelte-sonner";
   import { mode } from "mode-watcher";
   import constants from "$lib/global-constants";
+  import { t } from "$lib/stores/i18n";
 
   import CodeMirror from "svelte-codemirror-editor";
   import { html } from "@codemirror/lang-html";
@@ -205,7 +206,7 @@
       defaultFooterHTML = `<div class="container relative mt-4 max-w-[655px]">
   <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
     <p class="text-center text-sm leading-loose text-muted-foreground">
-      Made using 
+      Made using
       <a href="https://github.com/rajnandan1/kener" target="_blank" class="font-medium underline underline-offset-4">
         Kener
       </a>
@@ -260,7 +261,7 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Status colors saved successfully");
+        toast.success($t("manage.customizations.colors_save"));
       }
     } catch (e) {
       toast.error("Failed to save colors");
@@ -626,9 +627,9 @@
     <!-- Footer HTML Section -->
     <Card.Root>
       <Card.Header class="border-b">
-        <Card.Title>Site Footer</Card.Title>
+        <Card.Title>{$t("manage.customizations.footer_title")}</Card.Title>
         <Card.Description>
-          Customize the footer HTML of your status page. Use HTML to add links, text, and other content.
+          {$t("manage.customizations.footer_desc")}
         </Card.Description>
       </Card.Header>
       <Card.Content class="pt-6">
@@ -650,12 +651,12 @@
         </div>
       </Card.Content>
       <Card.Footer class="flex justify-between border-t pt-6">
-        <Button variant="outline" onclick={resetFooter}>Reset to Default</Button>
+        <Button variant="outline" onclick={resetFooter}>{$t("manage.customizations.footer_reset")}</Button>
         <Button onclick={saveFooter} disabled={savingFooter}>
           {#if savingFooter}
             <Loader class="h-4 w-4 animate-spin" />
           {/if}
-          Save Footer
+          {$t("manage.customizations.footer_save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -663,10 +664,9 @@
     <!-- Status Colors Section -->
     <Card.Root>
       <Card.Header class="border-b">
-        <Card.Title>Status Colors</Card.Title>
+        <Card.Title>{$t("manage.customizations.colors_title")}</Card.Title>
         <Card.Description
-          >Customize the colors used to represent different monitor statuses. Set separate colors for light and dark
-          themes.</Card.Description
+          >{$t("manage.customizations.colors_desc")}</Card.Description
         >
       </Card.Header>
       <Card.Content class="pt-6">
@@ -674,9 +674,9 @@
           <Table.Root>
             <Table.Header>
               <Table.Row>
-                <Table.Head>Name</Table.Head>
-                <Table.Head>Light</Table.Head>
-                <Table.Head>Dark</Table.Head>
+                <Table.Head>{$t("manage.customizations.colors_col_name")}</Table.Head>
+                <Table.Head>{$t("manage.customizations.colors_col_light")}</Table.Head>
+                <Table.Head>{$t("manage.customizations.colors_col_dark")}</Table.Head>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -839,7 +839,7 @@
           {#if savingColors}
             <Loader class="h-4 w-4 animate-spin" />
           {/if}
-          Save Colors
+          {$t("manage.customizations.colors_save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -848,7 +848,7 @@
     <Card.Root>
       <Card.Header class="border-b">
         <Card.Title class="flex items-center gap-2">
-          Font
+          {$t("manage.customizations.font_title")}
           <Tooltip.Root>
             <Tooltip.Trigger>
               <Info class="text-muted-foreground h-4 w-4" />
@@ -858,16 +858,16 @@
             </Tooltip.Content>
           </Tooltip.Root>
         </Card.Title>
-        <Card.Description>Customize the font used throughout your status page.</Card.Description>
+        <Card.Description>{$t("manage.customizations.font_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="pt-6 flex flex-col gap-6">
 
         <!-- Option A: External CSS URL -->
         <div class="flex flex-col gap-3">
-          <p class="text-sm font-medium">Option A — External CSS URL</p>
+          <p class="text-sm font-medium">{$t("manage.customizations.font_option_a")}</p>
           <div class="grid gap-4 md:grid-cols-2">
             <div>
-              <Label for="font-url">Font CSS URL</Label>
+              <Label for="font-url">{$t("manage.customizations.font_css_url_label")}</Label>
               <Input
                 bind:value={font.cssSrc}
                 oninput={() => { font.fileId = ""; uploadedFontName = ""; }}
@@ -879,15 +879,15 @@
               <p class="text-muted-foreground mt-1 text-xs">URL to a CSS file from Google Fonts, Bunny Fonts, etc.</p>
             </div>
             <div>
-              <Label for="font-family-url">Font Family Name</Label>
+              <Label for="font-family-url">{$t("manage.customizations.font_family_label")}</Label>
               <Input
                 bind:value={font.family}
                 type="text"
                 id="font-family-url"
-                placeholder="Lato"
+                placeholder={$t("manage.customizations.font_family_placeholder")}
                 class="mt-1"
               />
-              <p class="text-muted-foreground mt-1 text-xs">Must match the font-family name in the CSS</p>
+              <p class="text-muted-foreground mt-1 text-xs">{$t("manage.customizations.font_family_helper")}</p>
             </div>
           </div>
           <div class="flex justify-end">
@@ -895,7 +895,7 @@
               {#if savingFont}
                 <Loader class="h-4 w-4 animate-spin" />
               {/if}
-              Save URL Font
+              {$t("manage.customizations.font_save_url")}
             </Button>
           </div>
         </div>
@@ -903,13 +903,13 @@
         <!-- Divider -->
         <div class="relative flex items-center">
           <div class="flex-grow border-t"></div>
-          <span class="text-muted-foreground mx-3 flex-shrink text-xs">or</span>
+          <span class="text-muted-foreground mx-3 flex-shrink text-xs">{$t("manage.customizations.font_or")}</span>
           <div class="flex-grow border-t"></div>
         </div>
 
         <!-- Option B: Upload Font File -->
         <div class="flex flex-col gap-3">
-          <p class="text-sm font-medium">Option B — Upload Font File</p>
+          <p class="text-sm font-medium">{$t("manage.customizations.font_option_b")}</p>
           {#if font.fileId && uploadedFontName}
             <div class="flex items-center gap-2">
               <span class="text-sm">{uploadedFontName}</span>
@@ -925,7 +925,7 @@
             </div>
           {:else}
             <div>
-              <Label for="font-upload">Font File</Label>
+              <Label for="font-upload">{$t("manage.customizations.font_file_label")}</Label>
               <input
                 id="font-upload"
                 type="file"
@@ -934,11 +934,11 @@
                 disabled={uploadingFont}
                 class="mt-1 block w-full text-sm text-muted-foreground file:mr-4 file:rounded file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium"
               />
-              <p class="text-muted-foreground mt-1 text-xs">TTF, OTF, WOFF, or WOFF2. Max 2 MB.</p>
+              <p class="text-muted-foreground mt-1 text-xs">{$t("manage.customizations.font_file_helper")}</p>
             </div>
           {/if}
           <div>
-            <Label for="font-family-file">Font Family Name</Label>
+            <Label for="font-family-file">{$t("manage.customizations.font_family_label")}</Label>
             <Input
               bind:value={font.family}
               type="text"
@@ -951,7 +951,7 @@
           {#if uploadingFont}
             <div class="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader class="h-4 w-4 animate-spin" />
-              Uploading font…
+              {$t("manage.customizations.font_uploading")}
             </div>
           {/if}
         </div>
@@ -962,28 +962,28 @@
     <!-- Theme Configuration Section -->
     <Card.Root>
       <Card.Header class="border-b">
-        <Card.Title>Theme</Card.Title>
-        <Card.Description>Configure the default theme and user preferences for your status page.</Card.Description>
+        <Card.Title>{$t("manage.customizations.theme_title")}</Card.Title>
+        <Card.Description>{$t("manage.customizations.theme_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6 pt-6">
         <div class="space-y-3">
-          <Label>Default Theme</Label>
+          <Label>{$t("manage.customizations.theme_default_label")}</Label>
           <RadioGroup.Root bind:value={theme} class="flex flex-col gap-3">
             <div class="flex items-center space-x-2">
               <RadioGroup.Item value="light" id="theme-light" />
-              <Label for="theme-light" class="cursor-pointer font-normal">Light</Label>
+              <Label for="theme-light" class="cursor-pointer font-normal">{$t("manage.customizations.theme_light")}</Label>
             </div>
             <div class="flex items-center space-x-2">
               <RadioGroup.Item value="dark" id="theme-dark" />
-              <Label for="theme-dark" class="cursor-pointer font-normal">Dark</Label>
+              <Label for="theme-dark" class="cursor-pointer font-normal">{$t("manage.customizations.theme_dark")}</Label>
             </div>
             <div class="flex items-center space-x-2">
               <RadioGroup.Item value="system" id="theme-system" />
-              <Label for="theme-system" class="cursor-pointer font-normal">System</Label>
+              <Label for="theme-system" class="cursor-pointer font-normal">{$t("manage.customizations.theme_system")}</Label>
             </div>
           </RadioGroup.Root>
           <p class="text-muted-foreground text-xs">
-            The theme that will be used by default when users visit your status page.
+            {$t("manage.customizations.theme_default_helper")}
           </p>
         </div>
 
@@ -994,9 +994,9 @@
             onCheckedChange={(checked) => (themeToggle = checked ? "YES" : "NO")}
           />
           <div class="space-y-1">
-            <Label for="theme-toggle" class="cursor-pointer">Allow users to toggle theme</Label>
+            <Label for="theme-toggle" class="cursor-pointer">{$t("manage.customizations.theme_toggle_label")}</Label>
             <p class="text-muted-foreground text-sm">
-              When enabled, users can switch between light and dark themes using a toggle button.
+              {$t("manage.customizations.theme_toggle_helper")}
             </p>
           </div>
         </div>
@@ -1006,7 +1006,7 @@
           {#if savingTheme}
             <Loader class="h-4 w-4 animate-spin" />
           {/if}
-          Save Theme
+          {$t("manage.customizations.theme_save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -1014,17 +1014,17 @@
     <!-- Announcement Section -->
     <Card.Root>
       <Card.Header class="border-b">
-        <Card.Title>Announcement</Card.Title>
-        <Card.Description>Configure a site-wide announcement message shown to visitors.</Card.Description>
+        <Card.Title>{$t("manage.customizations.announcement_title")}</Card.Title>
+        <Card.Description>{$t("manage.customizations.announcement_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4 pt-6">
         <div class="grid gap-4 md:grid-cols-2">
           <div class="space-y-2">
-            <Label for="announcement-title">Title</Label>
-            <Input id="announcement-title" bind:value={announcement.title} placeholder="Scheduled Maintenance" />
+            <Label for="announcement-title">{$t("manage.customizations.announcement_title_label")}</Label>
+            <Input id="announcement-title" bind:value={announcement.title} placeholder={$t("manage.customizations.announcement_title_placeholder")} />
           </div>
           <div class="space-y-2">
-            <Label for="announcement-type">Type</Label>
+            <Label for="announcement-type">{$t("manage.customizations.announcement_type_label")}</Label>
             <Select.Root
               type="single"
               value={announcement.type}
@@ -1041,7 +1041,7 @@
         </div>
 
         <div class="space-y-2">
-          <Label for="announcement-message">Message</Label>
+          <Label for="announcement-message">{$t("manage.customizations.announcement_message_label")}</Label>
           <Textarea
             id="announcement-message"
             bind:value={announcement.message}
@@ -1052,18 +1052,18 @@
 
         <div class="grid gap-4 md:grid-cols-3">
           <div class="space-y-2">
-            <Label for="announcement-reshow">Reshow After (hours)</Label>
+            <Label for="announcement-reshow">{$t("manage.customizations.announcement_reshow_label")}</Label>
             <Input
               id="announcement-reshow"
               type="number"
               min="0"
               bind:value={announcement.reshowAfterInHours}
-              placeholder="Leave empty to never reshow automatically"
+              placeholder={$t("manage.customizations.announcement_reshow_helper")}
             />
             <p class="text-muted-foreground text-xs">Leave empty for null.</p>
           </div>
           <div class="space-y-2">
-            <Label for="announcement-cta">CTA URL (optional)</Label>
+            <Label for="announcement-cta">{$t("manage.customizations.announcement_cta_url_label")}</Label>
             <Input
               id="announcement-cta-url"
               bind:value={announcement.ctaURL}
@@ -1071,8 +1071,8 @@
             />
           </div>
           <div class="space-y-2">
-            <Label for="announcement-cta-text">CTA Text (optional)</Label>
-            <Input id="announcement-cta-text" bind:value={announcement.ctaText} placeholder="Learn more" />
+            <Label for="announcement-cta-text">{$t("manage.customizations.announcement_cta_text_label")}</Label>
+            <Input id="announcement-cta-text" bind:value={announcement.ctaText} placeholder={$t("manage.customizations.announcement_cta_text_placeholder")} />
           </div>
         </div>
 
@@ -1083,8 +1083,8 @@
             onCheckedChange={(checked) => (announcement.cancellable = checked === true)}
           />
           <div class="space-y-1">
-            <Label for="announcement-cancellable" class="cursor-pointer">Cancellable</Label>
-            <p class="text-muted-foreground text-sm">Allow users to dismiss the announcement.</p>
+            <Label for="announcement-cancellable" class="cursor-pointer">{$t("manage.customizations.announcement_cancellable_label")}</Label>
+            <p class="text-muted-foreground text-sm">{$t("manage.customizations.announcement_cancellable_helper")}</p>
           </div>
         </div>
       </Card.Content>
@@ -1093,7 +1093,7 @@
           {#if savingAnnouncement}
             <Loader class="h-4 w-4 animate-spin" />
           {/if}
-          Save Announcement
+          {$t("manage.customizations.announcement_save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -1101,9 +1101,9 @@
     <!-- Page Ordering Section -->
     <Card.Root>
       <Card.Header class="border-b">
-        <Card.Title>Page Ordering</Card.Title>
+        <Card.Title>{$t("manage.customizations.page_ordering_title")}</Card.Title>
         <Card.Description>
-          Control the display order of pages in the page switcher. New pages will appear at the end of the list.
+          {$t("manage.customizations.page_ordering_desc")}
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4 pt-6">
@@ -1114,9 +1114,9 @@
             onCheckedChange={(checked) => (pageOrderingEnabled = checked === true)}
           />
           <div class="space-y-1">
-            <Label for="page-ordering-enabled" class="cursor-pointer">Enable custom page ordering</Label>
+            <Label for="page-ordering-enabled" class="cursor-pointer">{$t("manage.customizations.page_ordering_enable")}</Label>
             <p class="text-muted-foreground text-sm">
-              When enabled, pages will be displayed in the order below instead of the default creation order.
+              {$t("manage.customizations.page_ordering_enable_helper")}
             </p>
           </div>
         </div>
@@ -1126,7 +1126,7 @@
             <Spinner class="h-5 w-5" />
           </div>
         {:else if allPages.length === 0}
-          <p class="text-muted-foreground py-4 text-center text-sm">No pages found.</p>
+          <p class="text-muted-foreground py-4 text-center text-sm">{$t("manage.customizations.page_ordering_empty")}</p>
         {:else}
           <div class="rounded-lg border">
             {#each displayPages as page, index (page.id)}
@@ -1172,7 +1172,7 @@
           {#if savingPageOrdering}
             <Loader class="h-4 w-4 animate-spin" />
           {/if}
-          Save Page Ordering
+          {$t("manage.customizations.page_ordering_save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -1180,7 +1180,7 @@
     <!-- Custom CSS Section -->
     <Card.Root>
       <Card.Header class="border-b">
-        <Card.Title>Custom CSS</Card.Title>
+        <Card.Title>{$t("manage.customizations.css_title")}</Card.Title>
         <Card.Description>
           Add custom CSS to further customize the appearance of your status page. Do not include &lt;style&gt; tags.
           Learn more in the
@@ -1216,7 +1216,7 @@
           {#if savingCSS}
             <Loader class="h-4 w-4 animate-spin" />
           {/if}
-          Save Custom CSS
+          {$t("manage.customizations.css_save")}
         </Button>
       </Card.Footer>
     </Card.Root>

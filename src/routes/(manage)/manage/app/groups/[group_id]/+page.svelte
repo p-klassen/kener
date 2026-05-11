@@ -8,6 +8,8 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { toast } from "svelte-sonner";
+  import { t } from "$lib/stores/i18n";
+
 
   const apiUrl = clientResolver(resolve, "/manage/api");
   const groupId = $derived(Number(page.params.group_id));
@@ -54,7 +56,7 @@
       draftName = group?.name ?? "";
       draftDesc = group?.description ?? "";
     } catch (e) {
-      toast.error("Failed to load group");
+      toast.error($t("manage.group_detail.load_error"));
     } finally {
       loading = false;
     }
@@ -66,7 +68,7 @@
       group = { ...group!, name: draftName, description: draftDesc };
       editingName = false;
     } catch (e) {
-      toast.error("Failed to save group");
+      toast.error($t("manage.group_detail.save_error"));
     }
   }
 
@@ -75,7 +77,7 @@
       await apiCall("addGroupMember", { groupId, userId });
       members = await apiCall("getGroupMembers", { groupId });
     } catch (e) {
-      toast.error("Failed to add member");
+      toast.error($t("manage.group_detail.add_member_error"));
     }
   }
 
@@ -84,7 +86,7 @@
       await apiCall("removeGroupMember", { groupId, userId });
       members = members.filter((m) => m.id !== userId);
     } catch (e) {
-      toast.error("Failed to remove member");
+      toast.error($t("manage.group_detail.remove_member_error"));
     }
   }
 
@@ -93,7 +95,7 @@
       await apiCall("addGroupRole", { groupId, roleId });
       groupRoles = await apiCall("getGroupRoles", { groupId });
     } catch (e) {
-      toast.error("Failed to add role");
+      toast.error($t("manage.group_detail.add_role_error"));
     }
   }
 
@@ -102,7 +104,7 @@
       await apiCall("removeGroupRole", { groupId, roleId });
       groupRoles = groupRoles.filter((r) => r.id !== roleId);
     } catch (e) {
-      toast.error("Failed to remove role");
+      toast.error($t("manage.group_detail.remove_role_error"));
     }
   }
 
@@ -131,9 +133,9 @@
 </script>
 
 {#if loading}
-  <p class="p-6 text-muted-foreground">Loading…</p>
+  <p class="p-6 text-muted-foreground">{$t("manage.group_detail.loading")}</p>
 {:else if !group}
-  <p class="p-6">Group not found.</p>
+  <p class="p-6">{$t("manage.group_detail.not_found")}</p>
 {:else}
   <div class="space-y-4 p-6">
     {#if editingName}
@@ -155,15 +157,15 @@
 
     <Tabs.Root value="members">
       <Tabs.List>
-        <Tabs.Trigger value="members">Members ({members.length})</Tabs.Trigger>
-        <Tabs.Trigger value="roles">Roles ({groupRoles.length})</Tabs.Trigger>
+        <Tabs.Trigger value="members">{$t("manage.group_detail.tab_members")} ({members.length})</Tabs.Trigger>
+        <Tabs.Trigger value="roles">{$t("manage.group_detail.tab_roles")} ({groupRoles.length})</Tabs.Trigger>
       </Tabs.List>
 
       <Tabs.Content value="members" class="space-y-4 pt-4">
         <div>
-          <h3 class="mb-2 text-sm font-medium">Current Members</h3>
+          <h3 class="mb-2 text-sm font-medium">{$t("manage.group_detail.current_members")}</h3>
           {#if members.length === 0}
-            <p class="text-muted-foreground text-sm">No members yet.</p>
+            <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_members")}</p>
           {:else}
             <div class="space-y-1">
               {#each members as m (m.id)}
@@ -172,7 +174,7 @@
                     <span class="font-medium">{m.name}</span>
                     <span class="text-muted-foreground ml-2 text-xs">{m.email}</span>
                   </div>
-                  <Button variant="ghost" size="sm" onclick={() => removeMember(m.id)}>Remove</Button>
+                  <Button variant="ghost" size="sm" onclick={() => removeMember(m.id)}>{$t("manage.group_detail.remove_button")}</Button>
                 </div>
               {/each}
             </div>
@@ -180,8 +182,8 @@
         </div>
 
         <div>
-          <h3 class="mb-2 text-sm font-medium">Add Members</h3>
-          <Input bind:value={memberSearch} placeholder="Search users…" class="mb-2 max-w-xs" />
+          <h3 class="mb-2 text-sm font-medium">{$t("manage.group_detail.add_members")}</h3>
+          <Input bind:value={memberSearch} placeholder={$t("manage.group_detail.search_users")} class="mb-2 max-w-xs" />
           <div class="max-h-48 space-y-1 overflow-y-auto">
             {#each availableUsers as u (u.id)}
               <div class="flex items-center justify-between rounded border px-3 py-2">
@@ -193,7 +195,7 @@
               </div>
             {/each}
             {#if availableUsers.length === 0}
-              <p class="text-muted-foreground text-sm">No more users to add.</p>
+              <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_more_users")}</p>
             {/if}
           </div>
         </div>
@@ -201,18 +203,18 @@
 
       <Tabs.Content value="roles" class="space-y-4 pt-4">
         <div>
-          <h3 class="mb-2 text-sm font-medium">Assigned Roles</h3>
+          <h3 class="mb-2 text-sm font-medium">{$t("manage.group_detail.assigned_roles")}</h3>
           {#if groupRoles.length === 0}
-            <p class="text-muted-foreground text-sm">No roles assigned.</p>
+            <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_roles")}</p>
           {:else}
             <div class="space-y-1">
               {#each groupRoles as r (r.id)}
                 <div class="flex items-center justify-between rounded border px-3 py-2">
                   <div class="flex items-center gap-2">
                     <span class="font-medium">{r.role_name}</span>
-                    {#if r.readonly}<Badge variant="secondary">System</Badge>{/if}
+                    {#if r.readonly}<Badge variant="secondary">{$t("manage.group_detail.system_badge")}</Badge>{/if}
                   </div>
-                  <Button variant="ghost" size="sm" onclick={() => removeRole(r.id)}>Remove</Button>
+                  <Button variant="ghost" size="sm" onclick={() => removeRole(r.id)}>{$t("manage.group_detail.remove_button")}</Button>
                 </div>
               {/each}
             </div>
@@ -220,20 +222,20 @@
         </div>
 
         <div>
-          <h3 class="mb-2 text-sm font-medium">Add Roles</h3>
-          <Input bind:value={roleSearch} placeholder="Search roles…" class="mb-2 max-w-xs" />
+          <h3 class="mb-2 text-sm font-medium">{$t("manage.group_detail.add_roles")}</h3>
+          <Input bind:value={roleSearch} placeholder={$t("manage.group_detail.search_roles")} class="mb-2 max-w-xs" />
           <div class="max-h-48 space-y-1 overflow-y-auto">
             {#each availableRoles as r (r.id)}
               <div class="flex items-center justify-between rounded border px-3 py-2">
                 <div class="flex items-center gap-2">
                   <span class="font-medium">{r.role_name}</span>
-                  {#if r.readonly}<Badge variant="secondary">System</Badge>{/if}
+                  {#if r.readonly}<Badge variant="secondary">{$t("manage.group_detail.system_badge")}</Badge>{/if}
                 </div>
                 <Button variant="outline" size="sm" onclick={() => addRole(r.id)}>Add</Button>
               </div>
             {/each}
             {#if availableRoles.length === 0}
-              <p class="text-muted-foreground text-sm">No more roles to add.</p>
+              <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_more_roles")}</p>
             {/if}
           </div>
         </div>

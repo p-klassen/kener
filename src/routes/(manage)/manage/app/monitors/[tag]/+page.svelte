@@ -19,6 +19,7 @@
   import { toast } from "svelte-sonner";
   import { goto } from "$app/navigation";
   import type { SiteSubMenuOptions } from "$lib/types/site";
+  import { t } from "$lib/stores/i18n";
 
   // Card components
   import GeneralSettingsCard from "./components/GeneralSettingsCard.svelte";
@@ -274,32 +275,32 @@
     <Breadcrumb.Root>
       <Breadcrumb.List>
         <Breadcrumb.Item>
-          <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/monitors")}>Monitors</Breadcrumb.Link>
+          <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/monitors")}>{$t("manage.monitor_detail.breadcrumb")}</Breadcrumb.Link>
         </Breadcrumb.Item>
         <Breadcrumb.Separator />
         <Breadcrumb.Item>
-          <Breadcrumb.Page>{isNew ? "New Monitor" : monitor.name || params.tag}</Breadcrumb.Page>
+          <Breadcrumb.Page>{isNew ? $t("manage.monitor_detail.new_title") : monitor.name || params.tag}</Breadcrumb.Page>
         </Breadcrumb.Item>
       </Breadcrumb.List>
     </Breadcrumb.Root>
     <div class="flex gap-2">
       {#if !isNew}
-        <Button size="sm" variant="outline" onclick={openCloneDialog}>Clone</Button>
+        <Button size="sm" variant="outline" onclick={openCloneDialog}>{$t("manage.monitor_detail.clone_button")}</Button>
       {/if}
       <HoverCard.Root>
         <HoverCard.Trigger>
           <Button size="sm" target="_blank" href={clientResolver(resolve, `/monitors/${params.tag}`)} variant="outline">
-            View
+            {$t("manage.monitor_detail.view_button")}
           </Button>
         </HoverCard.Trigger>
         <HoverCard.Content class="w-80">
           <div class="flex justify-between space-x-4 text-xs">
             {#if monitor.is_hidden === "YES"}
-              <p class="text-destructive">This monitor is hidden and won't appear on status pages.</p>
+              <p class="text-destructive">{$t("manage.monitor_detail.hidden_warning")}</p>
             {:else if monitor.status !== "ACTIVE"}
-              <p class="text-destructive">This monitor is not active and won't appear on status pages.</p>
+              <p class="text-destructive">{$t("manage.monitor_detail.inactive_warning")}</p>
             {:else}
-              <p class="text-success">This monitor is visible on status pages.</p>
+              <p class="text-success">{$t("manage.monitor_detail.visible_success")}</p>
             {/if}
             <p class="text-xs"></p>
           </div>
@@ -323,10 +324,9 @@
     {#if !isNew && monitorPages.length === 0}
       <Alert.Root variant="destructive">
         <AlertTriangleIcon class="size-4" />
-        <Alert.Title>Monitor Not Visible</Alert.Title>
+        <Alert.Title>{$t("manage.monitor_detail.not_visible_title")}</Alert.Title>
         <Alert.Description>
-          This monitor is not added to any page. It won't be visible on your status page until you add it to at least
-          one page.
+          {$t("manage.monitor_detail.not_visible_desc")}
         </Alert.Description>
       </Alert.Root>
     {/if}
@@ -338,7 +338,7 @@
       onValueChange={(value) => (activeAccordionItem = value)}
     >
       <Accordion.Item value="general">
-        <Accordion.Trigger>General Settings</Accordion.Trigger>
+        <Accordion.Trigger>{$t("manage.monitor_detail.section_general")}</Accordion.Trigger>
         <Accordion.Content class="flex flex-col gap-4 text-balance">
           <!-- General Settings Card -->
           <GeneralSettingsCard bind:monitor {typeData} {isNew} />
@@ -346,7 +346,7 @@
       </Accordion.Item>
       {#if !isNew}
         <Accordion.Item value="configuration">
-          <Accordion.Trigger>Configuration</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_config")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Monitor Type Configuration Card -->
             <MonitorTypeCard bind:monitor bind:typeData {availableMonitors} />
@@ -355,7 +355,7 @@
       {/if}
       {#if !isNew}
         <Accordion.Item value="calculation">
-          <Accordion.Trigger>Uptime Calculation</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_uptime")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Uptime Calculation Card -->
             <UptimeSettingsCard {monitor} {typeData} bind:uptimeSettings />
@@ -364,7 +364,7 @@
       {/if}
       {#if !isNew}
         <Accordion.Item value="status-history">
-          <Accordion.Trigger>Status History</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_history")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Status History Days Card -->
 
@@ -374,7 +374,7 @@
       {/if}
       {#if !isNew}
         <Accordion.Item value="logs-recent">
-          <Accordion.Trigger>Recent Logs</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_logs")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Recent Logs Card -->
 
@@ -384,7 +384,7 @@
       {/if}
       {#if !isNew}
         <Accordion.Item value="pages-visibility">
-          <Accordion.Trigger>Page Visibility</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_visibility")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Page Visibility Card -->
 
@@ -394,7 +394,7 @@
       {/if}
       {#if !isNew}
         <Accordion.Item value="sharing-options">
-          <Accordion.Trigger>Sharing Options</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_sharing")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Monitor Sharing Options Card -->
 
@@ -404,7 +404,7 @@
       {/if}
       {#if !isNew}
         <Accordion.Item value="modify-data">
-          <Accordion.Trigger>Modify Data</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_modify")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Modify Data Card -->
 
@@ -414,7 +414,7 @@
       {/if}
       {#if !isNew}
         <Accordion.Item value="danger-zone">
-          <Accordion.Trigger>Danger Zone</Accordion.Trigger>
+          <Accordion.Trigger>{$t("manage.monitor_detail.section_danger")}</Accordion.Trigger>
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Danger Zone Card -->
 
@@ -429,29 +429,29 @@
 <Dialog.Root bind:open={cloneDialogOpen}>
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Clone Monitor</Dialog.Title>
-      <Dialog.Description>Enter a new tag and name for the cloned monitor.</Dialog.Description>
+      <Dialog.Title>{$t("manage.monitor_detail.clone_dialog_title")}</Dialog.Title>
+      <Dialog.Description>{$t("manage.monitor_detail.clone_dialog_desc")}</Dialog.Description>
     </Dialog.Header>
 
     <div class="space-y-4 py-2">
       <div class="space-y-2">
-        <Label for="clone-tag">Tag</Label>
-        <Input id="clone-tag" bind:value={cloneTag} placeholder="my-monitor-copy" />
+        <Label for="clone-tag">{$t("manage.monitor_detail.clone_tag_label")}</Label>
+        <Input id="clone-tag" bind:value={cloneTag} placeholder={$t("manage.monitor_detail.clone_tag_placeholder")} />
       </div>
       <div class="space-y-2">
-        <Label for="clone-name">Name</Label>
-        <Input id="clone-name" bind:value={cloneName} placeholder="Monitor Name Copy" />
+        <Label for="clone-name">{$t("manage.monitor_detail.clone_name_label")}</Label>
+        <Input id="clone-name" bind:value={cloneName} placeholder={$t("manage.monitor_detail.clone_name_placeholder")} />
       </div>
     </div>
 
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (cloneDialogOpen = false)} disabled={cloning}>Cancel</Button>
+      <Button variant="outline" onclick={() => (cloneDialogOpen = false)} disabled={cloning}>{$t("manage.common.cancel")}</Button>
       <Button onclick={cloneMonitor} disabled={cloning || !cloneTag.trim() || !cloneName.trim()}>
         {#if cloning}
           <Spinner class="size-4" />
-          Cloning...
+          {$t("manage.monitor_detail.cloning")}
         {:else}
-          Clone
+          {$t("manage.monitor_detail.clone_button")}
         {/if}
       </Button>
     </Dialog.Footer>

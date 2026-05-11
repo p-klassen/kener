@@ -29,6 +29,7 @@
   import { rrulestr } from "rrule";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
 
   let { params }: PageProps = $props();
   const isNew = $derived(params.id === "new");
@@ -84,12 +85,12 @@
 
   // Sample RRULE patterns
   const sampleRrules = [
-    { label: "Every Sunday", value: "FREQ=WEEKLY;BYDAY=SU" },
-    { label: "Every Day", value: "FREQ=DAILY" },
-    { label: "Weekdays", value: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR" },
-    { label: "Every Monday", value: "FREQ=WEEKLY;BYDAY=MO" },
-    { label: "Bi-weekly Monday", value: "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO" },
-    { label: "First of Month", value: "FREQ=MONTHLY;BYMONTHDAY=1" }
+    { labelKey: "manage.maintenance_detail.pattern_every_sunday", value: "FREQ=WEEKLY;BYDAY=SU" },
+    { labelKey: "manage.maintenance_detail.pattern_every_day", value: "FREQ=DAILY" },
+    { labelKey: "manage.maintenance_detail.pattern_weekdays", value: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR" },
+    { labelKey: "manage.maintenance_detail.pattern_every_monday", value: "FREQ=WEEKLY;BYDAY=MO" },
+    { labelKey: "manage.maintenance_detail.pattern_biweekly", value: "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO" },
+    { labelKey: "manage.maintenance_detail.pattern_first_of_month", value: "FREQ=MONTHLY;BYMONTHDAY=1" }
   ];
 
   // Monitor selection
@@ -330,7 +331,7 @@
         if (result.error) {
           toast.error(result.error);
         } else {
-          toast.success("Maintenance created successfully");
+          toast.success($t("manage.maintenance_detail.created_toast"));
           goto(clientResolver(resolve, `/manage/app/maintenances/${result.maintenance_id}`));
         }
       } else {
@@ -355,7 +356,7 @@
         if (result.error) {
           toast.error(result.error);
         } else {
-          toast.success("Maintenance updated successfully");
+          toast.success($t("manage.maintenance_detail.updated_toast"));
         }
       }
     } catch (e) {
@@ -367,7 +368,7 @@
 
   // Delete maintenance
   async function deleteMaintenance() {
-    if (!confirm("Are you sure you want to delete this maintenance? All events will also be deleted.")) return;
+    if (!confirm($t("manage.maintenance_detail.delete_confirm"))) return;
 
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
@@ -379,11 +380,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Maintenance deleted");
+        toast.success($t("manage.maintenance_detail.deleted_toast"));
         goto(clientResolver(resolve, "/manage/app/maintenances"));
       }
     } catch {
-      toast.error("Failed to delete maintenance");
+      toast.error($t("manage.maintenance_detail.delete_error"));
     }
   }
 
@@ -401,7 +402,7 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Event deleted");
+        toast.success($t("manage.maintenance_detail.event_deleted_toast"));
         await fetchEvents();
       }
     } catch {
@@ -424,7 +425,7 @@
     // Check if currently ongoing
     if (isWithinInterval(now, { start: startDate, end: endDate })) {
       return {
-        label: "Ongoing",
+        label: $t("manage.maintenance_detail.event_ongoing"),
         variant: "default",
         icon: "play"
       };
@@ -443,7 +444,7 @@
     // If in the past (completed)
     if (isPast(endDate)) {
       return {
-        label: "Completed",
+        label: $t("manage.maintenance_detail.event_completed"),
         variant: "secondary",
         icon: "check"
       };
@@ -451,7 +452,7 @@
 
     // Fallback
     return {
-      label: "Scheduled",
+      label: $t("manage.maintenance_detail.event_scheduled"),
       variant: "outline",
       icon: "clock"
     };
@@ -490,11 +491,11 @@
     <Breadcrumb.Root>
       <Breadcrumb.List>
         <Breadcrumb.Item>
-          <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/maintenances")}>Maintenances</Breadcrumb.Link>
+          <Breadcrumb.Link href={clientResolver(resolve, "/manage/app/maintenances")}>{$t("manage.maintenance_detail.breadcrumb")}</Breadcrumb.Link>
         </Breadcrumb.Item>
         <Breadcrumb.Separator />
         <Breadcrumb.Item>
-          <Breadcrumb.Page>{isNew ? "New Maintenance" : `Edit #${params.id}`}</Breadcrumb.Page>
+          <Breadcrumb.Page>{isNew ? $t("manage.maintenance_detail.new_title") : `Edit #${params.id}`}</Breadcrumb.Page>
         </Breadcrumb.Item>
       </Breadcrumb.List>
     </Breadcrumb.Root>
@@ -507,7 +508,7 @@
           class="mr-2"
           href={clientResolver(resolve, `/maintenances/${maintenance.id}?type=maintenance`)}
         >
-          View
+          {$t("manage.maintenance_detail.view_button")}
         </Button>
       {/if}
     </div>
@@ -530,32 +531,32 @@
     <!-- Main Details Card -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>{isNew ? "Create New Maintenance" : "Maintenance Details"}</Card.Title>
+        <Card.Title>{isNew ? $t("manage.maintenance_detail.create_card_title") : "Maintenance Details"}</Card.Title>
         <Card.Description>
           {#if isNew}
-            Schedule a new maintenance window using iCalendar RRULE format
+            {$t("manage.maintenance_detail.create_card_desc")}
           {:else}
-            Edit maintenance details
+            {$t("manage.maintenance_detail.edit_card_desc")}
           {/if}
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
         <!-- Schedule Type Selection -->
         <div class="flex flex-col gap-3">
-          <Label>Schedule Type <span class="text-destructive">*</span></Label>
+          <Label>{$t("manage.maintenance_detail.schedule_type")} <span class="text-destructive">*</span></Label>
           <RadioGroup.Root bind:value={scheduleType} class="flex gap-6">
             <div class="flex items-center gap-2">
               <RadioGroup.Item value="ONE_TIME" id="type-onetime" />
               <Label for="type-onetime" class="flex cursor-pointer items-center gap-2 font-normal">
                 <CalendarIcon class="size-4" />
-                One-Time
+                {$t("manage.maintenance_detail.one_time")}
               </Label>
             </div>
             <div class="flex items-center gap-2">
               <RadioGroup.Item value="RECURRING" id="type-recurring" />
               <Label for="type-recurring" class="flex cursor-pointer items-center gap-2 font-normal">
                 <RepeatIcon class="size-4" />
-                Recurring
+                {$t("manage.maintenance_detail.recurring")}
               </Label>
             </div>
           </RadioGroup.Root>
@@ -563,17 +564,17 @@
 
         <!-- Title -->
         <div class="flex flex-col gap-2">
-          <Label for="title">Title <span class="text-destructive">*</span></Label>
-          <Input id="title" bind:value={maintenance.title} placeholder="Scheduled maintenance window" />
+          <Label for="title">{$t("manage.maintenance_detail.title_label")} <span class="text-destructive">*</span></Label>
+          <Input id="title" bind:value={maintenance.title} placeholder={$t("manage.maintenance_detail.title_placeholder")} />
         </div>
 
         <!-- Description -->
         <div class="flex flex-col gap-2">
-          <Label for="description">Description</Label>
+          <Label for="description">{$t("manage.maintenance_detail.description_label")}</Label>
           <Textarea
             id="description"
             bind:value={maintenance.description}
-            placeholder="Details about the maintenance..."
+            placeholder={$t("manage.maintenance_detail.description_placeholder")}
             rows={3}
           />
         </div>
@@ -581,9 +582,9 @@
         <!-- Global Visibility -->
         <div class="flex items-center justify-between rounded-md border p-3">
           <div class="flex flex-col gap-1">
-            <Label for="is-global">Global Maintenance</Label>
+            <Label for="is-global">{$t("manage.maintenance_detail.global_label")}</Label>
             <p class="text-muted-foreground text-xs">
-              When enabled, this maintenance will be visible on all status pages
+              {$t("manage.maintenance_detail.global_desc")}
             </p>
           </div>
           <Switch
@@ -598,28 +599,28 @@
         <!-- Start Date/Time -->
         <div class="flex flex-col gap-2">
           <Label for="start-time">
-            {scheduleType === "ONE_TIME" ? "Start Date/Time" : "First Occurrence Date/Time"}
+            {scheduleType === "ONE_TIME" ? $t("manage.maintenance_detail.start_datetime") : $t("manage.maintenance_detail.first_occurrence")}
             <span class="text-destructive">*</span>
           </Label>
           <Input id="start-time" type="datetime-local" bind:value={startDateTimeLocal} />
           {#if scheduleType === "RECURRING"}
             <p class="text-muted-foreground text-xs">
-              Recurring maintenances will occur at this same time of day. The date pattern is configured below.
+              {$t("manage.maintenance_detail.recurring_time_note")}
             </p>
           {/if}
         </div>
 
         <!-- Duration -->
         <div class="flex flex-col gap-2">
-          <Label>Duration <span class="text-destructive">*</span></Label>
+          <Label>{$t("manage.maintenance_detail.duration_label")} <span class="text-destructive">*</span></Label>
           <div class="flex items-center gap-2">
             <div class="flex items-center gap-1">
               <Input type="number" min={0} max={72} class="w-20" bind:value={durationHours} />
-              <span class="text-muted-foreground text-sm">hours</span>
+              <span class="text-muted-foreground text-sm">{$t("manage.maintenance_detail.hours")}</span>
             </div>
             <div class="flex items-center gap-1">
               <Input type="number" min={0} max={59} class="w-20" bind:value={durationMinutes} />
-              <span class="text-muted-foreground text-sm">minutes</span>
+              <span class="text-muted-foreground text-sm">{$t("manage.maintenance_detail.minutes")}</span>
             </div>
           </div>
           <p class="text-muted-foreground text-xs">
@@ -632,23 +633,23 @@
           <Card.Header class="pb-3">
             <Card.Title class="flex items-center gap-2 text-base">
               <InfoIcon class="size-4" />
-              {scheduleType === "ONE_TIME" ? "Schedule Pattern" : "Recurrence Pattern (RRULE)"}
+              {scheduleType === "ONE_TIME" ? $t("manage.maintenance_detail.schedule_pattern_title") : $t("manage.maintenance_detail.rrule_section_title")}
             </Card.Title>
           </Card.Header>
           <Card.Content class="space-y-4">
             {#if scheduleType === "ONE_TIME"}
               <!-- One-time: Show readonly RRULE -->
               <div class="flex flex-col gap-2">
-                <Label class="text-muted-foreground text-xs">iCalendar RRULE (auto-generated)</Label>
+                <Label class="text-muted-foreground text-xs">{$t("manage.maintenance_detail.rrule_auto_label")}</Label>
                 <Input value="FREQ=MINUTELY;COUNT=1" disabled class="bg-muted font-mono text-sm" />
                 <p class="text-muted-foreground text-xs">
-                  One-time maintenance uses a fixed RRULE that triggers only once.
+                  {$t("manage.maintenance_detail.rrule_one_time_note")}
                 </p>
               </div>
             {:else}
               <!-- Recurring: Editable RRULE -->
               <div class="flex flex-col gap-2">
-                <Label for="rrule">iCalendar RRULE <span class="text-destructive">*</span></Label>
+                <Label for="rrule">{$t("manage.maintenance_detail.rrule_label")} <span class="text-destructive">*</span></Label>
                 <Input
                   id="rrule"
                   bind:value={customRrule}
@@ -663,7 +664,7 @@
               <!-- Sample Patterns -->
               {#if isNew}
                 <div class="flex flex-col gap-2">
-                  <Label class="text-muted-foreground text-xs">Quick Patterns:</Label>
+                  <Label class="text-muted-foreground text-xs">{$t("manage.maintenance_detail.quick_patterns")}</Label>
                   <div class="flex flex-wrap gap-2">
                     {#each sampleRrules as sample}
                       <Button
@@ -671,7 +672,7 @@
                         size="sm"
                         onclick={() => (customRrule = sample.value)}
                       >
-                        {sample.label}
+                        {$t(sample.labelKey)}
                       </Button>
                     {/each}
                   </div>
@@ -681,7 +682,7 @@
               <!-- Preview Dates -->
               {#if previewDates.length > 0}
                 <div class="bg-background rounded-md border p-3">
-                  <Label class="text-muted-foreground text-xs">Upcoming Occurrences:</Label>
+                  <Label class="text-muted-foreground text-xs">{$t("manage.maintenance_detail.upcoming_occurrences")}</Label>
                   <ul class="mt-2 space-y-1 text-sm">
                     {#each previewDates as date}
                       <li class="flex items-center gap-2">
@@ -698,11 +699,11 @@
 
         <!-- Monitor Selection -->
         <div class="flex flex-col gap-3">
-          <Label>Affected Monitors</Label>
+          <Label>{$t("manage.maintenance_detail.affected_monitors")}</Label>
 
           <!-- Available monitors to add -->
           <div class="rounded-md border p-3">
-            <Label class="text-muted-foreground mb-2 block text-xs">Select monitors to add:</Label>
+            <Label class="text-muted-foreground mb-2 block text-xs">{$t("manage.maintenance_detail.select_monitors_label")}</Label>
             <div class="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto">
               {#each availableMonitors as monitor}
                 <div class="flex items-center gap-2">
@@ -717,7 +718,7 @@
                 </div>
               {/each}
               {#if availableMonitors.length === 0}
-                <p class="text-muted-foreground col-span-2 text-sm">No monitors available</p>
+                <p class="text-muted-foreground col-span-2 text-sm">{$t("manage.maintenance_detail.no_monitors")}</p>
               {/if}
             </div>
           </div>
@@ -725,7 +726,7 @@
           <!-- Selected monitors with status -->
           {#if selectedMonitors.length > 0}
             <div class="rounded-md border p-3">
-              <Label class="text-muted-foreground mb-2 block text-xs">Monitor status during maintenance:</Label>
+              <Label class="text-muted-foreground mb-2 block text-xs">{$t("manage.maintenance_detail.monitor_status_label")}</Label>
               <div class="space-y-2">
                 {#each selectedMonitors as selectedMonitor, index}
                   {@const currentStatus = selectedMonitor.status}
@@ -757,14 +758,14 @@
             </div>
           {/if}
           <p class="text-muted-foreground text-xs">
-            Select monitors and set their status during the maintenance window
+            {$t("manage.maintenance_detail.status_during_note")}
           </p>
         </div>
 
         <!-- Status Toggle (only for existing) -->
         {#if !isNew}
           <div class="flex flex-col gap-2">
-            <Label>Status</Label>
+            <Label>{$t("manage.maintenance_detail.status_label")}</Label>
             <div class="flex gap-2">
               <Button
                 variant={maintenance.status === "ACTIVE" ? "default" : "outline"}
@@ -788,7 +789,7 @@
         {#if !isNew}
           <Button variant="destructive" onclick={deleteMaintenance}>
             <TrashIcon class="size-4" />
-            Delete
+            {$t("manage.maintenance_detail.delete_button")}
           </Button>
         {/if}
         <Button onclick={saveMaintenance} disabled={saving || !isValid}>
@@ -797,7 +798,7 @@
           {:else}
             <SaveIcon class="size-4" />
           {/if}
-          {isNew ? "Create Maintenance" : "Save Changes"}
+          {isNew ? $t("manage.maintenance_detail.create_button") : $t("manage.maintenance_detail.save_button")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -807,8 +808,8 @@
       <Card.Root>
         <Card.Header>
           <div>
-            <Card.Title>Maintenance Events</Card.Title>
-            <Card.Description>Pre-generated maintenance windows for the next 7 days</Card.Description>
+            <Card.Title>{$t("manage.maintenance_detail.events_title")}</Card.Title>
+            <Card.Description>{$t("manage.maintenance_detail.events_desc")}</Card.Description>
           </div>
         </Card.Header>
         <Card.Content>
@@ -818,7 +819,7 @@
             </div>
           {:else if events.length === 0}
             <p class="text-muted-foreground py-4 text-center text-sm">
-              No events scheduled. Events are generated automatically when maintenance is created or updated.
+              {$t("manage.maintenance_detail.no_events")}
             </p>
           {:else}
             <div class="space-y-3">

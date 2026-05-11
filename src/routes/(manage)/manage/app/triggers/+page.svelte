@@ -12,6 +12,7 @@
   import SettingsIcon from "@lucide/svelte/icons/settings";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
 
   // Types
   interface Trigger {
