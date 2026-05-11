@@ -4,8 +4,7 @@ import striptags from "striptags";
 import { Resend, type CreateEmailOptions } from "resend";
 import type { SMTPConfiguration } from "./types.js";
 import getSMTPTransport from "./smtps.js";
-import { GetSMTPConfig } from "../controllers/commonController.js";
-import { IsResendSetup } from "../controllers/emailController.js";
+import { GetResendConfig, GetSMTPConfig } from "../controllers/commonController.js";
 
 export default async function send(
   emailBody: string,
@@ -35,37 +34,34 @@ export default async function send(
   const textBody = emailTextBody ? Mustache.render(emailTextBody, variables) : striptags(htmlBody);
 
   try {
-    let isResend = IsResendSetup();
     let mySMTPData = await GetSMTPConfig();
-    if (!isResend && !mySMTPData) {
+    let resendConfig = await GetResendConfig();
+    if (!mySMTPData && !resendConfig) {
       throw new Error("Email not configured properly. Please check SMTP or Resend configuration.");
     }
-    if (isResend) {
-      //check if triggerRecord is of type ResendAPIConfiguration
-      const resend = new Resend(process.env.RESEND_API_KEY || "");
-      const emailBody: CreateEmailOptions = {
-        from: from || process.env.RESEND_SENDER_EMAIL || "",
-        to: to,
-        subject: subject,
+    if (mySMTPData) {
+      const transport = getSMTPTransport(mySMTPData as SMTPConfiguration);
+      return await transport.sendMail({
+        from: from || mySMTPData.smtp_sender,
+        to,
+        subject,
+        text: textBody,
+        html: htmlBody,
+      });
+    } else if (resendConfig) {
+      const resend = new Resend(resendConfig.resend_api_key);
+      const emailOptions: CreateEmailOptions = {
+        from: from || resendConfig.resend_sender_email,
+        to,
+        subject,
         html: htmlBody,
         text: textBody,
       };
-      let resp = await resend.emails.send(emailBody);
-      if (!!resp.error) {
+      const resp = await resend.emails.send(emailOptions);
+      if (resp.error) {
         throw new Error(`Resend API error: ${resp.error.message}`);
       }
       return resp;
-    } else if (mySMTPData) {
-      // SMTP Configuration
-      const transport = getSMTPTransport(mySMTPData as SMTPConfiguration);
-      const mailOptions = {
-        from: from || mySMTPData.smtp_sender, // sender address
-        to: to, // recipient address(es)
-        subject: subject, // email subject
-        text: textBody, // plain text body
-        html: htmlBody, // HTML body (if any)
-      };
-      return await transport.sendMail(mailOptions);
     } else {
       throw new Error("No valid email configuration found. Please check your SMTP or Resend settings.");
     }

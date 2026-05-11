@@ -118,10 +118,13 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   getSiteDataByKey: "settings.read",
   getSubscriptionsConfig: "settings.read",
   getSmtpStatus: "settings.read",
+  getResendStatus: "settings.read",
   storeSiteData: "settings.write",
   updateSubscriptionsConfig: "settings.write",
   saveSmtpConfig: "settings.write",
   testSmtp: "settings.write",
+  saveResendConfig: "settings.write",
+  testResend: "settings.write",
 
   // Users
   getUsers: "users.read",
@@ -300,6 +303,9 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
 
   // Subscribers
   "/(manage)/manage/app/subscriptions": "subscribers.read",
+
+  // Email Settings
+  "/(manage)/manage/app/email-settings": "settings.read",
 
   // Email Templates
   "/(manage)/manage/app/templates": "email_templates.read",

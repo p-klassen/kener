@@ -27,6 +27,7 @@
   import Columns3CogIcon from "@lucide/svelte/icons/columns-3-cog";
   import SiteHeader from "./manage/site-header.svelte";
   import TemplateIcon from "@lucide/svelte/icons/layout-template";
+  import MailSettingsIcon from "@lucide/svelte/icons/mail-open";
   import clientResolver from "$lib/client/resolver.js";
   import DatabaseIcon from "@lucide/svelte/icons/database";
   import { t } from "$lib/stores/i18n";
@@ -54,6 +55,7 @@
     { title: $t("manage.nav.groups"), url: "/manage/app/groups", icon: UsersRoundIcon },
     { title: $t("manage.nav.roles"), url: "/manage/app/roles", icon: ShieldIcon },
     { title: $t("manage.nav.triggers"), url: "/manage/app/triggers", icon: MailboxIcon },
+    { title: $t("manage.nav.email_settings"), url: "/manage/app/email-settings", icon: MailSettingsIcon },
     { title: $t("manage.nav.templates"), url: "/manage/app/templates", icon: TemplateIcon },
     { title: $t("manage.nav.badges"), url: "/manage/app/badges", icon: BadgeIcon },
     { title: $t("manage.nav.embed"), url: "/manage/app/embed", icon: CodeIcon },

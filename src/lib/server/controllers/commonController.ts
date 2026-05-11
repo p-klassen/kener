@@ -42,6 +42,11 @@ export const VerifyPassword = async (plainTextPassword: string, hashedPassword: 
 import type { TokenPayload } from "$lib/server/types/auth.js";
 import type { SMTPConfiguration } from "../notification/types";
 
+export interface ResendConfiguration {
+  resend_api_key: string;
+  resend_sender_email: string;
+}
+
 export const VerifyToken = async (token: string): Promise<TokenPayload | undefined> => {
   try {
     const decoded = jwt.verify(token, process.env.KENER_SECRET_KEY || DUMMY_SECRET);
@@ -85,6 +90,26 @@ export const GetSMTPConfig = async (): Promise<SMTPConfiguration | null> => {
   if (!row?.value) return null;
   try {
     return JSON.parse(row.value) as SMTPConfiguration;
+  } catch {
+    return null;
+  }
+};
+
+export const GetResendFromENV = (): ResendConfiguration | null => {
+  if (!process.env.RESEND_API_KEY || !process.env.RESEND_SENDER_EMAIL) return null;
+  return {
+    resend_api_key: process.env.RESEND_API_KEY,
+    resend_sender_email: process.env.RESEND_SENDER_EMAIL,
+  };
+};
+
+export const GetResendConfig = async (): Promise<ResendConfiguration | null> => {
+  const fromEnv = GetResendFromENV();
+  if (fromEnv) return fromEnv;
+  const row = await db.getSiteDataByKey("resend");
+  if (!row?.value) return null;
+  try {
+    return JSON.parse(row.value) as ResendConfiguration;
   } catch {
     return null;
   }

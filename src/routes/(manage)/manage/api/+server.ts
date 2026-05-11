@@ -149,7 +149,8 @@ import {
 import type { SiteDataForNotification } from "$lib/server/notification/types";
 import type { SMTPConfiguration } from "$lib/server/notification/types.js";
 import { alertToVariables, siteDataToVariables } from "$lib/server/notification/notification_utils";
-import { GetSMTPConfig, GetSMTPFromENV } from "$lib/server/controllers/commonController.js";
+import { GetResendConfig, GetResendFromENV, GetSMTPConfig, GetSMTPFromENV } from "$lib/server/controllers/commonController.js";
+import type { ResendConfiguration } from "$lib/server/controllers/commonController.js";
 import getSMTPTransport from "$lib/server/notification/smtps.js";
 import type { TriggerMeta } from "$lib/server/types/db.js";
 import sendWebhook from "$lib/server/notification/webhook_notification.js";
@@ -758,6 +759,63 @@ export async function POST({ request, cookies }) {
         subject: "Kener SMTP test",
         text: "This is a test email from Kener. Your SMTP configuration is working correctly.",
         html: "<p>This is a test email from Kener. Your SMTP configuration is working correctly.</p>",
+      });
+      resp = { ok: true };
+    } else if (action === "getResendStatus") {
+      const envConfig = GetResendFromENV();
+      if (envConfig) {
+        resp = { source: "env", config: { resend_sender_email: envConfig.resend_sender_email } };
+      } else {
+        const dbRow = await db.getSiteDataByKey("resend");
+        if (dbRow?.value) {
+          try {
+            const parsed = JSON.parse(dbRow.value) as ResendConfiguration;
+            resp = { source: "db", config: { resend_sender_email: parsed.resend_sender_email } };
+          } catch {
+            resp = { source: "none", config: null };
+          }
+        } else {
+          resp = { source: "none", config: null };
+        }
+      }
+    } else if (action === "saveResendConfig") {
+      const { resend_api_key, resend_sender_email } = data as ResendConfiguration;
+      if (GetResendFromENV()) {
+        throw new Error("Resend is configured via environment variables and cannot be overridden");
+      }
+      if (!resend_sender_email) {
+        throw new Error("resend_sender_email is required");
+      }
+      let finalKey = resend_api_key;
+      if (!finalKey) {
+        const existing = await db.getSiteDataByKey("resend");
+        if (existing?.value) {
+          try {
+            const parsed = JSON.parse(existing.value) as ResendConfiguration;
+            finalKey = parsed.resend_api_key || "";
+          } catch {
+            finalKey = "";
+          }
+        }
+      }
+      if (!finalKey) {
+        throw new Error("resend_api_key is required");
+      }
+      await InsertKeyValue("resend", JSON.stringify({ resend_api_key: finalKey, resend_sender_email }));
+      resp = { success: true };
+    } else if (action === "testResend") {
+      const resendConfig = await GetResendConfig();
+      if (!resendConfig) {
+        throw new Error("Resend is not configured");
+      }
+      const { Resend } = await import("resend");
+      const resend = new Resend(resendConfig.resend_api_key);
+      await resend.emails.send({
+        from: resendConfig.resend_sender_email,
+        to: [userDB.email],
+        subject: "Kener Resend test",
+        text: "This is a test email from Kener. Your Resend configuration is working correctly.",
+        html: "<p>This is a test email from Kener. Your Resend configuration is working correctly.</p>",
       });
       resp = { ok: true };
     } else if (action == "getRoles") {

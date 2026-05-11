@@ -8,15 +8,16 @@ import {
 import { Resend } from "resend";
 import getSMTPTransport from "../notification/smtps.js";
 
-import { GetSMTPConfig } from "./commonController.js";
+import { GetResendConfig, GetSMTPConfig } from "./commonController.js";
 
-export const IsResendSetup = () => {
-  return !!process.env.RESEND_API_KEY && !!process.env.RESEND_SENDER_EMAIL;
+export const IsResendSetup = async (): Promise<boolean> => {
+  return !!(await GetResendConfig());
 };
 
 export const IsEmailSetup = async (): Promise<boolean> => {
-  return !!(await GetSMTPConfig()) || IsResendSetup();
+  return !!(await GetSMTPConfig()) || !!(await GetResendConfig());
 };
+
 export const SendEmailWithTemplate = async (
   template: string,
   data: Record<string, string>,
@@ -24,7 +25,6 @@ export const SendEmailWithTemplate = async (
   subject: string,
   emailText: string,
 ): Promise<unknown> => {
-  //for each key in data, replace the key in template with value
   for (const key in data) {
     if (Object.hasOwnProperty.call(data, key)) {
       const value = data[key];
@@ -32,36 +32,32 @@ export const SendEmailWithTemplate = async (
     }
   }
 
-  const senderEmail = process.env.RESEND_SENDER_EMAIL || "";
-  const resendKey = process.env.RESEND_API_KEY;
-
-  let mail = {
-    from: senderEmail,
-    to: [email],
-    subject: subject,
-    text: emailText,
-    html: template,
-  };
-
-  let smtpData = await GetSMTPConfig();
+  const smtpData = await GetSMTPConfig();
 
   try {
-    if (!!smtpData) {
+    if (smtpData) {
       const transporter = getSMTPTransport(smtpData);
-      const mailOptions = {
+      return await transporter.sendMail({
         from: smtpData.smtp_sender,
         to: email,
-        subject: mail.subject,
-        html: mail.html,
-        text: mail.text,
-      };
-      return await transporter.sendMail(mailOptions);
+        subject,
+        html: template,
+        text: emailText,
+      });
     } else {
-      const resend = new Resend(resendKey);
-      return await resend.emails.send(mail);
+      const resendConfig = await GetResendConfig();
+      if (!resendConfig) throw new Error("No email provider configured");
+      const resend = new Resend(resendConfig.resend_api_key);
+      return await resend.emails.send({
+        from: resendConfig.resend_sender_email,
+        to: [email],
+        subject,
+        html: template,
+        text: emailText,
+      });
     }
   } catch (error) {
-    console.error("Error sending email via SMTP", error);
-    throw new Error("Error sending email via SMTP");
+    console.error("Error sending email", error);
+    throw new Error("Error sending email");
   }
 };
