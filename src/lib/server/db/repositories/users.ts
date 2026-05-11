@@ -204,6 +204,14 @@ export class UsersRepository extends BaseRepository {
     });
   }
 
+  async updateUserEmail(id: number, email: string): Promise<number> {
+    return await this.knex("users").where({ id }).update({
+      email: email.toLowerCase().trim(),
+      is_verified: 0,
+      updated_at: this.knex.fn.now(),
+    });
+  }
+
   // ============ API Keys ============
 
   async createNewApiKey(data: ApiKeyRecordInsert): Promise<number[]> {

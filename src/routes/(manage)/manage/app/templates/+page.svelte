@@ -136,7 +136,13 @@
   }
 
   function formatTemplateId(id: string): string {
-    // Convert snake_case or kebab-case to Title Case
+    const dotIdx = id.lastIndexOf(".");
+    if (dotIdx !== -1) {
+      const base = id.slice(0, dotIdx);
+      const locale = id.slice(dotIdx + 1).toUpperCase();
+      const title = base.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      return `${title} (${locale})`;
+    }
     return id.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
   }
 

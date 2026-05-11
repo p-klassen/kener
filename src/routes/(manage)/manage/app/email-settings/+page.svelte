@@ -6,6 +6,7 @@
   import MailIcon from "@lucide/svelte/icons/mail";
   import SendIcon from "@lucide/svelte/icons/send";
   import Loader from "@lucide/svelte/icons/loader";
+  import SaveIcon from "@lucide/svelte/icons/save";
   import Eye from "@lucide/svelte/icons/eye";
   import EyeOff from "@lucide/svelte/icons/eye-off";
   import { toast } from "svelte-sonner";
@@ -222,7 +223,7 @@
       </div>
       <div class="mt-4 flex items-center gap-2">
         <Button onclick={saveSmtp} disabled={savingSmtp || smtpSource === "env"} size="sm">
-          {#if savingSmtp}<Loader class="mr-2 h-4 w-4 animate-spin" />{/if}
+          {#if savingSmtp}<Loader class="mr-2 h-4 w-4 animate-spin" />{:else}<SaveIcon class="mr-2 h-4 w-4" />{/if}
           {$t("manage.email_settings.save_button")}
         </Button>
         <Button onclick={testSmtp} disabled={testingSmtp || smtpSource === "none"} variant="outline" size="sm">
@@ -289,7 +290,7 @@
       </div>
       <div class="mt-4 flex items-center gap-2">
         <Button onclick={saveResend} disabled={savingResend || resendSource === "env"} size="sm">
-          {#if savingResend}<Loader class="mr-2 h-4 w-4 animate-spin" />{/if}
+          {#if savingResend}<Loader class="mr-2 h-4 w-4 animate-spin" />{:else}<SaveIcon class="mr-2 h-4 w-4" />{/if}
           {$t("manage.email_settings.save_button")}
         </Button>
         <Button onclick={testResend} disabled={testingResend || resendSource === "none"} variant="outline" size="sm">

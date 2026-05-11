@@ -55,6 +55,8 @@
   let maintenanceMonitorSelections = $state<Record<string, boolean>>({});
   let incidentScopeError = $state("");
   let maintenanceScopeError = $state("");
+  let savingIncidentScope = $state(false);
+  let savingMaintenanceScope = $state(false);
 
   $effect(() => {
     if (open) {
@@ -278,6 +280,9 @@
       }
     }
 
+    if (type === "incidents") savingIncidentScope = true;
+    else savingMaintenanceScope = true;
+
     try {
       const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
         method: "POST",
@@ -286,9 +291,14 @@
       });
       if (!response.ok) {
         setError($t("Failed to save scope"));
+      } else {
+        trackEvent("subscribe_pref_toggled", { source: "subscribe_menu", type, scope });
       }
     } catch (_err) {
       setError($t("Network error. Please try again."));
+    } finally {
+      if (type === "incidents") savingIncidentScope = false;
+      else savingMaintenanceScope = false;
     }
   }
 </script>
@@ -454,27 +464,15 @@
                   />
                 </div>
                 {#if incidentsEnabled && availableMonitors.length > 0}
-                  <div class="bg-muted/50 ml-8 space-y-2 rounded-md p-3">
+                  <div class="bg-muted/50 ml-8 space-y-3 rounded-md p-3">
                     <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
                     <div class="flex flex-col gap-1">
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="incident-scope"
-                          value="all"
-                          bind:group={incidentScope}
-                          onchange={() => saveMonitorScope("incidents")}
-                        />
+                        <input type="radio" name="incident-scope" value="all" bind:group={incidentScope} />
                         {$t("All monitors")}
                       </label>
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="incident-scope"
-                          value="specific"
-                          bind:group={incidentScope}
-                          onchange={() => saveMonitorScope("incidents")}
-                        />
+                        <input type="radio" name="incident-scope" value="specific" bind:group={incidentScope} />
                         {$t("Specific monitors")}
                       </label>
                     </div>
@@ -482,11 +480,7 @@
                       <div class="ml-4 flex flex-col gap-1 pt-1">
                         {#each availableMonitors as monitor (monitor.tag)}
                           <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              bind:checked={incidentMonitorSelections[monitor.tag]}
-                              onchange={() => saveMonitorScope("incidents")}
-                            />
+                            <input type="checkbox" bind:checked={incidentMonitorSelections[monitor.tag]} />
                             {monitor.name}
                           </label>
                         {/each}
@@ -495,6 +489,12 @@
                     {#if incidentScopeError}
                       <p class="text-destructive text-xs">{incidentScopeError}</p>
                     {/if}
+                    <Button size="sm" class="w-full" onclick={() => saveMonitorScope("incidents")} disabled={savingIncidentScope}>
+                      {#if savingIncidentScope}
+                        <Loader2 class="mr-2 h-3 w-3 animate-spin" />
+                      {/if}
+                      {$t("Save")}
+                    </Button>
                   </div>
                 {/if}
               </div>
@@ -516,27 +516,15 @@
                   />
                 </div>
                 {#if maintenancesEnabled && availableMonitors.length > 0}
-                  <div class="bg-muted/50 ml-8 space-y-2 rounded-md p-3">
+                  <div class="bg-muted/50 ml-8 space-y-3 rounded-md p-3">
                     <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
                     <div class="flex flex-col gap-1">
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="maintenance-scope"
-                          value="all"
-                          bind:group={maintenanceScope}
-                          onchange={() => saveMonitorScope("maintenances")}
-                        />
+                        <input type="radio" name="maintenance-scope" value="all" bind:group={maintenanceScope} />
                         {$t("All monitors")}
                       </label>
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="maintenance-scope"
-                          value="specific"
-                          bind:group={maintenanceScope}
-                          onchange={() => saveMonitorScope("maintenances")}
-                        />
+                        <input type="radio" name="maintenance-scope" value="specific" bind:group={maintenanceScope} />
                         {$t("Specific monitors")}
                       </label>
                     </div>
@@ -544,11 +532,7 @@
                       <div class="ml-4 flex flex-col gap-1 pt-1">
                         {#each availableMonitors as monitor (monitor.tag)}
                           <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              bind:checked={maintenanceMonitorSelections[monitor.tag]}
-                              onchange={() => saveMonitorScope("maintenances")}
-                            />
+                            <input type="checkbox" bind:checked={maintenanceMonitorSelections[monitor.tag]} />
                             {monitor.name}
                           </label>
                         {/each}
@@ -557,6 +541,12 @@
                     {#if maintenanceScopeError}
                       <p class="text-destructive text-xs">{maintenanceScopeError}</p>
                     {/if}
+                    <Button size="sm" class="w-full" onclick={() => saveMonitorScope("maintenances")} disabled={savingMaintenanceScope}>
+                      {#if savingMaintenanceScope}
+                        <Loader2 class="mr-2 h-3 w-3 animate-spin" />
+                      {/if}
+                      {$t("Save")}
+                    </Button>
                   </div>
                 {/if}
               </div>

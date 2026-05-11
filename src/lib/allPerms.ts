@@ -111,6 +111,8 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   updateUser: null,
   updatePassword: null,
   updateUserLocale: null,
+  changeOwnEmail: null,
+  adminResetPassword: "users.write",
   sendVerificationEmail: null, // controller has its own self-vs-other check
 
   // Settings
@@ -258,6 +260,10 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   getRoleMonitors: "resource_access.read",
   setRoleMonitors: "resource_access.write",
   getUserEffectiveAccess: "resource_access.read",
+
+  // Export / Import
+  exportData: "settings.read",
+  importData: "settings.write",
 };
 
 export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
@@ -316,4 +322,10 @@ export const ROUTE_PERMISSION_MAP: Record<string, string | null> = {
   // Groups
   "/(manage)/manage/app/groups": "groups.read",
   "/(manage)/manage/app/groups/[group_id]": "groups.read",
+
+  // Export / Import
+  "/(manage)/manage/app/export-import": "settings.read",
+
+  // API Docs (no auth beyond login — any logged-in user can view)
+  "/(manage)/manage/app/api-docs": null,
 };

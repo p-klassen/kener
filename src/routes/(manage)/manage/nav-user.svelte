@@ -46,6 +46,11 @@
   let myName = $state(user.name);
   let myPassword = $state("");
   let plainPassword = $state("");
+  let newEmail = $state("");
+  let emailCurrentPassword = $state("");
+  let changingEmail = $state(false);
+  let emailError = $state("");
+  let emailSuccess = $state(false);
   let savingName = $state(false);
   let resettingPass = $state(false);
   let nameError = $state("");
@@ -134,14 +139,45 @@
     }
   }
 
+  async function changeEmail() {
+    changingEmail = true;
+    emailError = "";
+    emailSuccess = false;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "changeOwnEmail", data: { newEmail, currentPassword: emailCurrentPassword } }),
+      });
+      const resp = await response.json();
+      if (resp.error) {
+        emailError = resp.error;
+      } else {
+        user.email = newEmail;
+        newEmail = "";
+        emailCurrentPassword = "";
+        emailSuccess = true;
+        setTimeout(() => (emailSuccess = false), 3000);
+      }
+    } catch {
+      emailError = "Error changing email";
+    } finally {
+      changingEmail = false;
+    }
+  }
+
   function openAccountDialog() {
     myName = user.name;
     myPassword = "";
     plainPassword = "";
+    newEmail = "";
+    emailCurrentPassword = "";
     nameError = "";
     passwordError = "";
+    emailError = "";
     nameSuccess = false;
     passwordSuccess = false;
+    emailSuccess = false;
     accountDialogOpen = true;
   }
 
@@ -315,6 +351,43 @@
           <p class="text-destructive text-sm">{localeError}</p>
         {/if}
       </div>
+
+      <!-- Email Change Section -->
+      <form
+        class="flex flex-col gap-3"
+        onsubmit={(e) => { e.preventDefault(); changeEmail(); }}
+      >
+        <Label for="new-email">{$t("manage.user_menu.change_email")}</Label>
+        <Input
+          id="new-email"
+          type="email"
+          bind:value={newEmail}
+          placeholder={$t("manage.user_menu.new_email_placeholder")}
+          disabled={changingEmail}
+        />
+        <Input
+          id="email-current-password"
+          type="password"
+          bind:value={emailCurrentPassword}
+          placeholder={$t("manage.user_menu.current_password_placeholder")}
+          disabled={changingEmail}
+        />
+        <Button type="submit" disabled={changingEmail || !newEmail.trim() || !emailCurrentPassword}>
+          {#if changingEmail}
+            <LoaderIcon class="size-4 animate-spin" />
+          {:else if emailSuccess}
+            <CheckIcon class="size-4" />
+          {:else}
+            {$t("manage.user_menu.update_email")}
+          {/if}
+        </Button>
+        {#if emailSuccess}
+          <p class="text-sm text-green-600">{$t("manage.user_menu.email_changed_verify")}</p>
+        {/if}
+        {#if emailError}
+          <p class="text-destructive text-sm">{emailError}</p>
+        {/if}
+      </form>
 
       <hr />
 

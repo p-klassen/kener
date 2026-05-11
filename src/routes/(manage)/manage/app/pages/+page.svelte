@@ -8,6 +8,8 @@
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import Plus from "@lucide/svelte/icons/plus";
   import SettingsIcon from "@lucide/svelte/icons/settings";
+  import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
+  import PencilIcon from "@lucide/svelte/icons/pencil";
   import * as Item from "$lib/components/ui/item/index.js";
   import type { PageRecord } from "$lib/server/types/db.js";
   import { resolve } from "$app/paths";
@@ -127,6 +129,7 @@
 
               <Table.Cell class="text-right">
                 <Button variant="ghost" target="_blank" size="sm" href={clientResolver(resolve, `/${page.page_path}`)}>
+                  <ExternalLinkIcon class="mr-1 h-4 w-4" />
                   {$t("manage.pages.view_button")}
                 </Button>
                 <Button
@@ -134,6 +137,7 @@
                   size="sm"
                   onclick={() => goto(clientResolver(resolve, `/manage/app/pages/${page.id}`))}
                 >
+                  <PencilIcon class="mr-1 h-4 w-4" />
                   {$t("manage.pages.edit_button")}
                 </Button>
               </Table.Cell>

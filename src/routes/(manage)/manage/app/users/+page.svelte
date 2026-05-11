@@ -17,6 +17,7 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SettingsIcon from "@lucide/svelte/icons/settings";
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
+  import ShieldIcon from "@lucide/svelte/icons/shield";
   import CheckCheckIcon from "@lucide/svelte/icons/check-check";
   import MailWarningIcon from "@lucide/svelte/icons/mail-warning";
   import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
@@ -91,6 +92,8 @@
   let toEditUser = $state<EditUser | null>(null);
   let manualUpdateError = $state("");
   let manualSuccess = $state("");
+  let passwordResetReason = $state("");
+  let resettingPassword = $state(false);
   let sendingSelfVerification = $state(false);
 
   // Effective access sheet state
@@ -258,6 +261,7 @@
     };
     manualUpdateError = "";
     manualSuccess = "";
+    passwordResetReason = "";
     showSettingsSheet = true;
   }
 
@@ -336,6 +340,31 @@
       }
     } catch (error) {
       manualUpdateError = "Error while updating user";
+    }
+  }
+
+  async function adminResetPassword() {
+    if (!toEditUser || !passwordResetReason.trim()) return;
+    resettingPassword = true;
+    manualUpdateError = "";
+    manualSuccess = "";
+    try {
+      const res = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "adminResetPassword", data: { targetUserId: toEditUser.id, reason: passwordResetReason.trim() } }),
+      });
+      const result = await res.json();
+      if (result.error) {
+        manualUpdateError = result.error;
+      } else {
+        passwordResetReason = "";
+        manualSuccess = "Password reset forced. User notified by email.";
+      }
+    } catch {
+      manualUpdateError = "Error resetting password";
+    } finally {
+      resettingPassword = false;
     }
   }
 
@@ -504,8 +533,9 @@
               <Table.Cell class="text-center">
                 <div class="flex items-center justify-center gap-1">
                   {#if hasPermission("users.write") && currentUser.id !== user.id}
-                    <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => openSettingsSheet(user)}>
-                      <SettingsIcon class="h-4 w-4" />
+                    <Button variant="outline" size="sm" onclick={() => openSettingsSheet(user)}>
+                      <SettingsIcon class="mr-1 h-4 w-4" />
+                      Settings
                     </Button>
                   {:else if currentUser.id === user.id && !currentUser.is_verified}
                     <Button
@@ -521,6 +551,7 @@
                     </Button>
                   {/if}
                   <Button variant="outline" size="sm" onclick={() => openEffectiveAccess(user.id)}>
+                    <ShieldIcon class="mr-1 h-4 w-4" />
                     Access
                   </Button>
                 </div>
@@ -765,6 +796,40 @@
                     <Spinner class="size-4" />
                   {/if}
                   Activate User
+                </Button>
+              </Card.Content>
+            </Card.Root>
+          {/if}
+
+          <!-- Admin Password Reset -->
+          {#if hasPermission("users.write") && currentUser.id !== toEditUser.id}
+            <Card.Root class="border-amber-500/50">
+              <Card.Content class="p-4">
+                <p class="mb-3 text-sm font-medium">Force Password Reset</p>
+                <p class="mb-3 text-muted-foreground text-xs">
+                  The user will be required to change their password on next login. They will be notified by email with your reason.
+                </p>
+                <div class="mb-3 space-y-2">
+                  <Label for="reset-reason" class="text-xs">Reason <span class="text-destructive">*</span></Label>
+                  <Input
+                    id="reset-reason"
+                    bind:value={passwordResetReason}
+                    placeholder="Enter reason for password reset..."
+                    disabled={resettingPassword}
+                    class="text-sm"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="border-amber-500 text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950"
+                  disabled={resettingPassword || !passwordResetReason.trim()}
+                  onclick={adminResetPassword}
+                >
+                  {#if resettingPassword}
+                    <Spinner class="size-4" />
+                  {/if}
+                  Force Password Reset
                 </Button>
               </Card.Content>
             </Card.Root>

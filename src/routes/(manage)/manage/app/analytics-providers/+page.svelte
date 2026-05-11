@@ -7,6 +7,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import Loader from "@lucide/svelte/icons/loader";
+  import SaveIcon from "@lucide/svelte/icons/save";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
   import { resolve } from "$app/paths";
@@ -392,10 +393,12 @@
 
             <div class="mt-4 flex flex-row items-center justify-between">
               <Button type="submit" disabled={saving}>
-                {$t("manage.analytics.save_button")} {selectedAnalytics.label}
                 {#if saving}
-                  <Loader class="ml-2 inline size-4 animate-spin" />
+                  <Loader class="mr-2 size-4 animate-spin" />
+                {:else}
+                  <SaveIcon class="mr-2 size-4" />
                 {/if}
+                {$t("manage.analytics.save_button")} {selectedAnalytics.label}
               </Button>
             </div>
           </div>

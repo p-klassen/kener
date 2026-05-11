@@ -4,6 +4,12 @@ import maintenanceUpdateTemplate from "../src/lib/server/templates/general/maint
 import forgotPasswordTemplate from "../src/lib/server/templates/general/forgot_password_template.ts";
 import inviteUserTemplate from "../src/lib/server/templates/general/invite_user_template.ts";
 import verifyEmailTemplate from "../src/lib/server/templates/general/verify_email_template.ts";
+import forgotPasswordDeTemplate from "../src/lib/server/templates/general/forgot_password_de_template.ts";
+import inviteUserDeTemplate from "../src/lib/server/templates/general/invite_user_de_template.ts";
+import verifyEmailDeTemplate from "../src/lib/server/templates/general/verify_email_de_template.ts";
+import subscriptionAccountCodeDeTemplate from "../src/lib/server/templates/general/subscription_account_code_de_template.ts";
+import adminPasswordResetTemplate from "../src/lib/server/templates/general/admin_password_reset_template.ts";
+import adminPasswordResetDeTemplate from "../src/lib/server/templates/general/admin_password_reset_de_template.ts";
 import type { Knex } from "knex";
 
 export async function seed(knex: Knex): Promise<void> {
@@ -83,5 +89,37 @@ export async function seed(knex: Knex): Promise<void> {
       template_html_body: verifyEmailTemplate.template_html_body,
       template_text_body: verifyEmailTemplate.template_text_body,
     });
+  }
+
+  // Admin password reset templates (EN + DE)
+  for (const t of [adminPasswordResetTemplate, adminPasswordResetDeTemplate]) {
+    const c = await knex("general_email_templates")
+      .where({ template_id: t.template_id })
+      .count("template_id as CNT")
+      .first();
+    if (c && c.CNT == 0) {
+      await knex("general_email_templates").insert({
+        template_id: t.template_id,
+        template_subject: t.template_subject,
+        template_html_body: t.template_html_body,
+        template_text_body: t.template_text_body,
+      });
+    }
+  }
+
+  // German (DE) locale variants
+  for (const t of [forgotPasswordDeTemplate, inviteUserDeTemplate, verifyEmailDeTemplate, subscriptionAccountCodeDeTemplate]) {
+    const c = await knex("general_email_templates")
+      .where({ template_id: t.template_id })
+      .count("template_id as CNT")
+      .first();
+    if (c && c.CNT == 0) {
+      await knex("general_email_templates").insert({
+        template_id: t.template_id,
+        template_subject: t.template_subject,
+        template_html_body: t.template_html_body,
+        template_text_body: t.template_text_body,
+      });
+    }
   }
 }

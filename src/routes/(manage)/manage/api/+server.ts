@@ -35,6 +35,8 @@ import {
   GetLoggedInSession,
   UpdateUserData,
   UpdatePassword,
+  ChangeOwnEmail,
+  AdminResetPassword,
   SendInvitationEmail,
   SendVerificationEmail,
   ResendInvitationEmail,
@@ -160,6 +162,7 @@ import sendSlack from "$lib/server/notification/slack_notification.js";
 import heicConvert from "heic-convert";
 import serverResolver from "$lib/server/resolver.js";
 import { ACTION_PERMISSION_MAP } from "$lib/allPerms.js";
+import { exportData, importData } from "$lib/server/controllers/exportImportController.js";
 
 export async function POST({ request, cookies }) {
   const payload = await request.json();
@@ -210,6 +213,20 @@ export async function POST({ request, cookies }) {
     } else if (action == "updatePassword") {
       data.userID = userDB.id;
       resp = await UpdatePassword(data);
+    } else if (action == "changeOwnEmail") {
+      const { newEmail, currentPassword } = data;
+      if (!newEmail || !currentPassword) {
+        throw new Error("New email and current password are required");
+      }
+      await ChangeOwnEmail(userDB.id, newEmail, currentPassword);
+      resp = { success: true };
+    } else if (action == "adminResetPassword") {
+      const { targetUserId, reason } = data;
+      if (!targetUserId || !reason) {
+        throw new Error("Target user ID and reason are required");
+      }
+      await AdminResetPassword(userDB.id, parseInt(String(targetUserId)), reason);
+      resp = { success: true };
     } else if (action == "createNewUser") {
       await SendInvitationEmail(data.email, data.role_ids, data.name);
       resp = await GetUserByEmail(data.email);
@@ -879,6 +896,10 @@ export async function POST({ request, cookies }) {
       resp = { success: true };
     } else if (action == "getUserEffectiveAccess") {
       resp = await GetUserEffectiveAccess(data.userId);
+    } else if (action == "exportData") {
+      resp = await exportData(data.scope);
+    } else if (action == "importData") {
+      resp = await importData(data.payload);
     }
   } catch (error: unknown) {
     console.log(error);

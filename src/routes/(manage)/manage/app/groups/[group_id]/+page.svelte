@@ -9,6 +9,7 @@
   import clientResolver from "$lib/client/resolver.js";
   import { toast } from "svelte-sonner";
   import { t } from "$lib/stores/i18n";
+  import SaveIcon from "@lucide/svelte/icons/save";
 
 
   const apiUrl = clientResolver(resolve, "/manage/api");
@@ -142,7 +143,10 @@
       <div class="flex items-center gap-2">
         <Input bind:value={draftName} class="max-w-xs text-xl font-bold" />
         <Input bind:value={draftDesc} placeholder="Description" class="max-w-sm" />
-        <Button onclick={saveGroupName}>Save</Button>
+        <Button onclick={saveGroupName}>
+          <SaveIcon class="mr-1 h-4 w-4" />
+          {$t("manage.common.save")}
+        </Button>
         <Button variant="outline" onclick={() => (editingName = false)}>Cancel</Button>
       </div>
     {:else}

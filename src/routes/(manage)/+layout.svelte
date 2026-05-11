@@ -30,6 +30,8 @@
   import MailSettingsIcon from "@lucide/svelte/icons/mail-open";
   import clientResolver from "$lib/client/resolver.js";
   import DatabaseIcon from "@lucide/svelte/icons/database";
+  import ArrowLeftRightIcon from "@lucide/svelte/icons/arrow-left-right";
+  import BookTextIcon from "@lucide/svelte/icons/book-text";
   import { t } from "$lib/stores/i18n";
 
   import { Toaster } from "$lib/components/ui/sonner/index.js";
@@ -60,6 +62,8 @@
     { title: $t("manage.nav.badges"), url: "/manage/app/badges", icon: BadgeIcon },
     { title: $t("manage.nav.embed"), url: "/manage/app/embed", icon: CodeIcon },
     { title: $t("manage.nav.api_keys"), url: "/manage/app/api-keys", icon: KeyIcon },
+    { title: $t("manage.nav.export_import"), url: "/manage/app/export-import", icon: ArrowLeftRightIcon },
+    { title: $t("manage.nav.api_docs"), url: "/manage/app/api-docs", icon: BookTextIcon },
   ]);
 
   const navItems = $derived(

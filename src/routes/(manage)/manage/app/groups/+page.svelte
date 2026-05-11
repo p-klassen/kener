@@ -4,11 +4,17 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import * as Table from "$lib/components/ui/table/index.js";
+  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { toast } from "svelte-sonner";
   import { t } from "$lib/stores/i18n";
+  import PlusIcon from "@lucide/svelte/icons/plus";
+  import PencilIcon from "@lucide/svelte/icons/pencil";
+  import TrashIcon from "@lucide/svelte/icons/trash-2";
 
   type Group = {
     id: number;
@@ -84,49 +90,69 @@
   onMount(loadGroups);
 </script>
 
-<div class="space-y-4 p-6">
-  <div class="flex items-center justify-between">
+<div class="flex w-full flex-col gap-4 p-4">
+  <div class="mb-4 flex items-center justify-between">
     <h1 class="text-2xl font-bold">{$t("manage.groups.title")}</h1>
-    <Button onclick={() => (showCreate = true)}>{$t("manage.groups.add_button")}</Button>
+    <Button onclick={() => (showCreate = true)}>
+      <PlusIcon class="mr-1 h-4 w-4" />
+      {$t("manage.groups.add_button")}
+    </Button>
   </div>
 
   {#if loading}
-    <p class="text-muted-foreground">Loading…</p>
+    <div class="text-muted-foreground flex items-center gap-2 py-8">
+      <Spinner class="h-4 w-4" />
+      Loading…
+    </div>
   {:else if groups.length === 0}
-    <p class="text-muted-foreground">{$t("manage.groups.no_groups")}</p>
+    <p class="text-muted-foreground py-8 text-center">{$t("manage.groups.no_groups")}</p>
   {:else}
-    <div class="rounded-md border">
-      <table class="w-full text-sm">
-        <thead class="bg-muted/50">
-          <tr>
-            <th class="px-4 py-2 text-left font-medium">{$t("manage.groups.col_name")}</th>
-            <th class="px-4 py-2 text-left font-medium">{$t("manage.groups.col_description")}</th>
-            <th class="px-4 py-2 text-right font-medium">{$t("manage.groups.col_members")}</th>
-            <th class="px-4 py-2 text-right font-medium">{$t("manage.groups.col_roles")}</th>
-            <th class="px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody>
+    <div class="ktable overflow-hidden rounded-xl border">
+      <Table.Root>
+        <Table.Header>
+          <Table.Row>
+            <Table.Head>{$t("manage.groups.col_name")}</Table.Head>
+            <Table.Head>{$t("manage.groups.col_description")}</Table.Head>
+            <Table.Head class="text-right">{$t("manage.groups.col_members")}</Table.Head>
+            <Table.Head class="text-right">{$t("manage.groups.col_roles")}</Table.Head>
+            <Table.Head class="text-right"></Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {#each groups as group (group.id)}
-            <tr
-              class="hover:bg-muted/30 cursor-pointer border-t"
-              onclick={() => goto(clientResolver(resolve, `/manage/app/groups/${group.id}`))}
-            >
-              <td class="px-4 py-2 font-medium">{group.name}</td>
-              <td class="text-muted-foreground px-4 py-2">{group.description ?? "—"}</td>
-              <td class="px-4 py-2 text-right">{group.member_count}</td>
-              <td class="px-4 py-2 text-right">{group.role_count}</td>
-              <td class="px-4 py-2 text-right">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onclick={(e) => { e.stopPropagation(); deleteTarget = group; }}
-                >{$t("manage.common.delete")}</Button>
-              </td>
-            </tr>
+            <Table.Row class="cursor-pointer" onclick={() => goto(clientResolver(resolve, `/manage/app/groups/${group.id}`))}>
+              <Table.Cell class="font-medium">{group.name}</Table.Cell>
+              <Table.Cell class="text-muted-foreground">{group.description ?? "—"}</Table.Cell>
+              <Table.Cell class="text-right">
+                <Badge variant="secondary">{group.member_count}</Badge>
+              </Table.Cell>
+              <Table.Cell class="text-right">
+                <Badge variant="outline">{group.role_count}</Badge>
+              </Table.Cell>
+              <Table.Cell class="text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onclick={(e) => { e.stopPropagation(); goto(clientResolver(resolve, `/manage/app/groups/${group.id}`)); }}
+                  >
+                    <PencilIcon class="mr-1 h-4 w-4" />
+                    {$t("manage.common.edit")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onclick={(e) => { e.stopPropagation(); deleteTarget = group; }}
+                  >
+                    <TrashIcon class="mr-1 h-4 w-4 text-destructive" />
+                    {$t("manage.common.delete")}
+                  </Button>
+                </div>
+              </Table.Cell>
+            </Table.Row>
           {/each}
-        </tbody>
-      </table>
+        </Table.Body>
+      </Table.Root>
     </div>
   {/if}
 </div>

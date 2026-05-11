@@ -21,6 +21,7 @@
   import TrashIcon from "@lucide/svelte/icons/trash-2";
   import UserMinusIcon from "@lucide/svelte/icons/user-minus";
   import UserPlusIcon from "@lucide/svelte/icons/user-plus";
+  import EyeIcon from "@lucide/svelte/icons/eye";
   import { toast } from "svelte-sonner";
   import { onMount } from "svelte";
   import { resolve } from "$app/paths";
@@ -539,13 +540,13 @@
                       Users
                     </Button>
                     <Button variant="outline" size="sm" onclick={() => openVisibility(role.id)}>
+                      <EyeIcon class="mr-1 h-4 w-4" />
                       Visibility
                     </Button>
                     {#if hasPermission("roles.write")}
                       <Button
                         variant="ghost"
                         size="sm"
-                        title={$t("manage.roles.duplicate")}
                         onclick={() =>
                           openCreateDialog({
                             role_id: role.id + "-copy",
@@ -553,12 +554,14 @@
                             cloneFromRoleId: role.id
                           })}
                       >
-                        <CopyIcon class="h-4 w-4" />
+                        <CopyIcon class="mr-1 h-4 w-4" />
+                        {$t("manage.roles.duplicate")}
                       </Button>
                     {/if}
                     {#if role.readonly !== 1 && hasPermission("roles.write")}
                       <Button variant="ghost" size="sm" onclick={() => openEditDialog(role)}>
-                        <PencilIcon class="h-4 w-4" />
+                        <PencilIcon class="mr-1 h-4 w-4" />
+                        {$t("manage.common.edit")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -570,7 +573,8 @@
                           showDeleteDialog = true;
                         }}
                       >
-                        <TrashIcon class="text-destructive h-4 w-4" />
+                        <TrashIcon class="text-destructive mr-1 h-4 w-4" />
+                        {$t("manage.common.delete")}
                       </Button>
                     {/if}
                   </div>
@@ -925,82 +929,105 @@
 <!-- Visibility Sheet -->
 {#if visibilityRoleId !== null}
   <Sheet.Root open={true} onOpenChange={(v) => { if (!v) visibilityRoleId = null; }}>
-    <Sheet.Content class="w-[600px] overflow-y-auto sm:max-w-[600px]">
-      <Sheet.Header>
+    <Sheet.Content class="flex w-[520px] flex-col overflow-hidden sm:max-w-[520px]">
+      <Sheet.Header class="px-6 pt-6">
         <Sheet.Title>Resource Visibility</Sheet.Title>
         <Sheet.Description>
-          Assign Pages and Monitors this role can access.
+          Assign which pages and monitors this role can access.
         </Sheet.Description>
       </Sheet.Header>
 
       {#if visLoading}
-        <p class="mt-4 text-muted-foreground">Loading…</p>
+        <div class="flex flex-1 items-center justify-center">
+          <Spinner class="h-6 w-6" />
+        </div>
       {:else}
-        <div class="mt-4 grid grid-cols-2 gap-6">
-          <!-- Pages panel -->
-          <div>
-            <h3 class="mb-2 text-sm font-semibold">Pages</h3>
-            <div class="space-y-2">
-              {#each allPagesForVis as p (p.id)}
-                <div class="rounded border p-2">
-                  <label class="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={isPageAssigned(p.id)}
-                      onchange={() => togglePage(p.id)}
-                    />
-                    <span class="text-sm font-medium">{p.page_title}</span>
-                    <span class="text-muted-foreground text-xs">/{p.page_path}</span>
-                  </label>
-                  {#if isPageAssigned(p.id)}
-                    <label class="ml-5 mt-1 flex cursor-pointer items-center gap-1 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={getPageInherit(p.id)}
-                        onchange={() => toggleInherit(p.id)}
-                      />
-                      Inherit monitors ({p.monitors.length})
-                    </label>
-                  {/if}
-                </div>
-              {/each}
-              {#if allPagesForVis.length === 0}
-                <p class="text-muted-foreground text-xs">No pages.</p>
-              {/if}
+        <div class="flex-1 space-y-6 overflow-y-auto px-6 py-4">
+
+          <!-- Pages section -->
+          <div class="space-y-3">
+            <div>
+              <h3 class="text-sm font-semibold">Pages</h3>
+              <p class="text-muted-foreground text-xs">Select which pages are visible to this role.</p>
             </div>
+            {#if allPagesForVis.length === 0}
+              <p class="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">No pages configured yet.</p>
+            {:else}
+              <div class="space-y-2">
+                {#each allPagesForVis as p (p.id)}
+                  <div class="rounded-lg border p-3 transition-colors {isPageAssigned(p.id) ? 'border-primary/40 bg-primary/5' : ''}">
+                    <label class="flex cursor-pointer items-start gap-3">
+                      <Checkbox.Root
+                        checked={isPageAssigned(p.id)}
+                        onCheckedChange={() => togglePage(p.id)}
+                        class="mt-0.5"
+                      />
+                      <div class="min-w-0 flex-1">
+                        <span class="text-sm font-medium">{p.page_title}</span>
+                        <span class="text-muted-foreground ml-1.5 font-mono text-xs">/{p.page_path}</span>
+                        {#if p.monitors.length > 0}
+                          <p class="text-muted-foreground text-xs">{p.monitors.length} monitor{p.monitors.length !== 1 ? 's' : ''}</p>
+                        {/if}
+                      </div>
+                    </label>
+                    {#if isPageAssigned(p.id) && p.monitors.length > 0}
+                      <label class="mt-2 flex cursor-pointer items-center gap-2 pl-7">
+                        <input
+                          type="checkbox"
+                          checked={getPageInherit(p.id)}
+                          onchange={() => toggleInherit(p.id)}
+                          class="accent-primary h-3.5 w-3.5"
+                        />
+                        <span class="text-muted-foreground text-xs">Grant access to all {p.monitors.length} monitors on this page</span>
+                      </label>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
 
-          <!-- Monitors panel -->
-          <div>
-            <h3 class="mb-2 text-sm font-semibold">Direct Monitors</h3>
-            <p class="text-muted-foreground mb-2 text-xs">Monitors covered via page inheritance are shown as covered.</p>
-            <div class="space-y-1">
-              {#each allPagesForVis.flatMap((p) => p.monitors) as m (m.monitor_tag)}
-                {#if !isMonitorCoveredByPage(m.monitor_tag)}
-                  <label class="flex cursor-pointer items-center gap-2 rounded border px-2 py-1">
-                    <input
-                      type="checkbox"
-                      checked={isMonitorDirectlyAssigned(m.monitor_tag)}
-                      onchange={() => toggleMonitor(m.monitor_tag)}
-                    />
-                    <span class="text-sm">{m.name ?? m.monitor_tag}</span>
-                  </label>
-                {:else}
-                  <div class="text-muted-foreground flex items-center gap-2 rounded border border-dashed px-2 py-1 opacity-50">
-                    <span class="text-xs">✓ {m.name ?? m.monitor_tag}</span>
-                    <span class="text-xs">(via page)</span>
+          <!-- Monitors section -->
+          {#if allPagesForVis.flatMap((p) => p.monitors).length > 0}
+            {@const allMonitors = allPagesForVis.flatMap((p) => p.monitors)}
+            <div class="space-y-3">
+              <div>
+                <h3 class="text-sm font-semibold">Direct Monitor Access</h3>
+                <p class="text-muted-foreground text-xs">Grant access to individual monitors, regardless of page assignment.</p>
+              </div>
+              <div class="space-y-1.5">
+                {#each allMonitors as m (m.monitor_tag)}
+                  {@const coveredByPage = isMonitorCoveredByPage(m.monitor_tag)}
+                  <div class="flex items-center gap-3 rounded-lg border px-3 py-2 {coveredByPage ? 'border-dashed opacity-60' : ''}">
+                    {#if coveredByPage}
+                      <div class="text-primary flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-xs">✓</div>
+                    {:else}
+                      <Checkbox.Root
+                        checked={isMonitorDirectlyAssigned(m.monitor_tag)}
+                        onCheckedChange={() => toggleMonitor(m.monitor_tag)}
+                      />
+                    {/if}
+                    <span class="text-sm {coveredByPage ? 'text-muted-foreground' : ''}">{m.name ?? m.monitor_tag}</span>
+                    {#if coveredByPage}
+                      <span class="text-muted-foreground ml-auto text-xs">via page</span>
+                    {/if}
                   </div>
-                {/if}
-              {/each}
+                {/each}
+              </div>
             </div>
-          </div>
+          {/if}
+
         </div>
 
-        <div class="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onclick={() => (visibilityRoleId = null)}>Cancel</Button>
-          <Button onclick={saveVisibility} disabled={visSaving}>
-            {visSaving ? "Saving…" : "Save"}
-          </Button>
+        <!-- Footer -->
+        <div class="border-t px-6 py-4">
+          <div class="flex justify-end gap-2">
+            <Button variant="outline" onclick={() => (visibilityRoleId = null)}>Cancel</Button>
+            <Button onclick={saveVisibility} disabled={visSaving}>
+              {#if visSaving}<Spinner class="mr-2 h-4 w-4" />{/if}
+              Save
+            </Button>
+          </div>
         </div>
       {/if}
     </Sheet.Content>

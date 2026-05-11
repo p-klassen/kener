@@ -16,6 +16,21 @@ export async function GetGeneralEmailTemplateById(templateId: string): Promise<G
 }
 
 /**
+ * Get a general email template by ID with locale fallback.
+ * Tries `{templateId}.{locale}` first, then falls back to `{templateId}`.
+ */
+export async function GetGeneralEmailTemplateByIdAndLocale(
+  templateId: string,
+  locale: string | null | undefined,
+): Promise<GeneralEmailTemplateRecord | undefined> {
+  if (locale && locale !== "en") {
+    const localized = await db.getEmailTemplateById(`${templateId}.${locale}`);
+    if (localized) return localized;
+  }
+  return await db.getEmailTemplateById(templateId);
+}
+
+/**
  * Update a general email template
  */
 export async function UpdateGeneralEmailTemplate(

@@ -2,7 +2,7 @@ import { HashPassword, GenerateToken, VerifyToken, GetAllSiteData } from "$lib/s
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import db from "$lib/server/db/db.js";
-import { GetGeneralEmailTemplateById } from "$lib/server/controllers/generalTemplateController";
+import { GetGeneralEmailTemplateByIdAndLocale } from "$lib/server/controllers/generalTemplateController";
 import { siteDataToVariables } from "$lib/server/notification/notification_utils";
 import sendEmail from "$lib/server/notification/email_notification.js";
 
@@ -31,7 +31,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const siteUrl = siteVars.site_url || "";
   let link = `${siteUrl}account/forgot?view=confirm_token&token=${token}`;
 
-  const template = await GetGeneralEmailTemplateById("forgot_password");
+  const template = await GetGeneralEmailTemplateByIdAndLocale("forgot_password", userDB.preferred_locale);
   if (!template) {
     return json({ error: "Email template not found" }, { status: 404 });
   }

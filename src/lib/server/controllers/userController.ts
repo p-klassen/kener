@@ -1,12 +1,12 @@
 import db from "../db/db.js";
 import type { PaginationInput } from "$lib/types/common";
-import { GenerateToken, HashPassword, ValidatePassword, VerifyToken } from "./commonController.js";
+import { GenerateToken, HashPassword, ValidatePassword, VerifyPassword, VerifyToken } from "./commonController.js";
 import type { Cookies } from "@sveltejs/kit";
 import type { UserRecordPublic, UserRecordDashboard, RoleRecord } from "../types/db.js";
 import { GetAllSiteData } from "./controller.js";
 import { siteDataToVariables } from "../notification/notification_utils.js";
 import sendEmail from "../notification/email_notification.js";
-import { GetGeneralEmailTemplateById } from "./generalTemplateController.js";
+import { GetGeneralEmailTemplateById, GetGeneralEmailTemplateByIdAndLocale } from "./generalTemplateController.js";
 
 export interface UserUpdateInput {
   userID: number;
@@ -242,6 +242,83 @@ export const UpdatePassword = async (data: PasswordUpdateInput): Promise<number>
   });
 };
 
+export const ChangeOwnEmail = async (userId: number, newEmail: string, currentPassword: string): Promise<void> => {
+  const normalizedEmail = validateEmailOrThrow(newEmail);
+
+  const existing = await db.getUserByEmail(normalizedEmail);
+  if (existing && existing.id !== userId) {
+    throw new Error("This email address is already in use");
+  }
+
+  const passwordData = await db.getUserPasswordHashById(userId);
+  if (!passwordData || !passwordData.password_hash) {
+    throw new Error("Could not verify current password");
+  }
+  const passwordValid = await VerifyPassword(currentPassword, passwordData.password_hash);
+  if (!passwordValid) {
+    throw new Error("Current password is incorrect");
+  }
+
+  await db.updateUserEmail(userId, normalizedEmail);
+
+  // Trigger verification email for the new address
+  const user = await db.getUserById(userId);
+  if (user) {
+    const token = await GenerateToken({ email: normalizedEmail, validTill: Date.now() + 24 * 60 * 60 * 1000 });
+    const siteData = await GetAllSiteData();
+    const siteVars = siteDataToVariables(siteData);
+    const verificationLink = `${siteVars.site_url || ""}account/verify?view=confirm_token&token=${token}`;
+    const template = await GetGeneralEmailTemplateByIdAndLocale("verify_email", user.preferred_locale);
+    if (template) {
+      await sendEmail(
+        template.template_html_body || "",
+        template.template_subject || "Verify Your Email",
+        { ...siteVars, verification_link: verificationLink },
+        [normalizedEmail],
+        undefined,
+        template.template_text_body || "",
+      );
+    }
+  }
+};
+
+export const AdminResetPassword = async (
+  adminId: number,
+  targetUserId: number,
+  reason: string,
+): Promise<void> => {
+  if (!reason?.trim()) {
+    throw new Error("A reason is required for admin password reset");
+  }
+
+  const targetUser = await db.getUserById(targetUserId);
+  if (!targetUser) {
+    throw new Error("Target user not found");
+  }
+
+  if (targetUser.is_owner === "YES") {
+    throw new Error("Cannot reset the owner's password");
+  }
+
+  await db.updateMustChangePassword(targetUserId, 1);
+
+  const siteData = await GetAllSiteData();
+  const siteVars = siteDataToVariables(siteData);
+  const loginLink = `${siteVars.site_url || ""}account/login`;
+
+  const template = await GetGeneralEmailTemplateByIdAndLocale("admin_password_reset", targetUser.preferred_locale);
+  if (template) {
+    await sendEmail(
+      template.template_html_body || "",
+      template.template_subject || "Your Password Has Been Reset",
+      { ...siteVars, reset_reason: reason.trim(), login_link: loginLink },
+      [targetUser.email],
+      undefined,
+      template.template_text_body || "",
+    );
+  }
+};
+
 export const ManualUpdateUserData = async (forUserId: number, data: ManualUserUpdateInput): Promise<number | void> => {
   let forUser = await db.getUserById(forUserId);
   if (!forUser) {
@@ -454,7 +531,7 @@ export const SendVerificationEmail = async (toUserId: number, currentUserId: num
     verification_link: verificationLink,
   };
 
-  const template = await GetGeneralEmailTemplateById("verify_email");
+  const template = await GetGeneralEmailTemplateByIdAndLocale("verify_email", user.preferred_locale);
   if (!template) {
     throw new Error("Verify email template not found");
   }

@@ -27,6 +27,7 @@
               <img src={clientResolver(resolve, "/logo96.png")} class="size-5!" alt="Kener Logo" />
               <span class="text-base font-semibold"> Kener </span>
               <span class="text-muted-foreground pt-0.5 text-xs font-medium"> v{appVersion} </span>
+              <span class="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">WOBCOM</span>
             </a>
           {/snippet}
         </Sidebar.MenuButton>

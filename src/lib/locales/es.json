@@ -919,5 +919,23 @@
     "manage.email_settings.resend_load_error": "Failed to load Resend configuration.",
     "manage.email_settings.test_success": "Test email sent successfully.",
     "manage.email_settings.test_error": "Failed to send test email."
-  }
+  },
+  "manage.nav.export_import": "Export / Import",
+  "manage.export_import.title": "Export / Import",
+  "manage.export_import.description": "Export your configuration to a JSON file or import from a previously exported file.",
+  "manage.export_import.tab_config": "Configuration",
+  "manage.export_import.tab_users": "Users, Groups & Roles",
+  "manage.export_import.tab_everything": "Everything",
+  "manage.export_import.desc_config": "Exports site settings, monitors, pages, and triggers.",
+  "manage.export_import.desc_users": "Exports users (without passwords), groups, and roles.",
+  "manage.export_import.desc_everything": "Exports all configuration including users, groups, and roles.",
+  "manage.export_import.export_button": "Export",
+  "manage.export_import.import_button": "Import",
+  "manage.export_import.export_success": "Export downloaded successfully.",
+  "manage.export_import.import_success": "Import completed successfully.",
+  "manage.export_import.import_result_title": "Import Results",
+  "manage.nav.api_docs": "API Reference",
+  "manage.api_docs.title": "API Reference",
+  "manage.api_docs.description": "Interactive REST API documentation for Kener.",
+  "manage.api_docs.open_full": "Open in new tab"
 }
