@@ -1,0 +1,279 @@
+# =============================================================================
+# Kener v4 — Vollständiges Beispiel docker-compose.yml
+#
+# Alle verfügbaren Umgebungsvariablen sind hier dokumentiert und kommentiert.
+# Pflichtangaben sind mit "REQUIRED" gekennzeichnet.
+# Optionale Variablen können auskommentiert bleiben — Kener verwendet dann
+# sinnvolle Standardwerte.
+#
+# Verwendung:
+#   1. Diese Datei nach "docker-compose.yml" kopieren
+#   2. Alle "REQUIRED"-Variablen mit echten Werten befüllen
+#   3. docker compose up -d
+#
+# Image-Varianten:
+#   rajnandan1/kener:latest          # Alpine (empfohlen, kleinste Größe)
+#   rajnandan1/kener:debian          # Debian Slim (bessere Kompatibilität)
+#   rajnandan1/kener:latest-status   # Alpine, Basispfad /status voreingestellt
+#   rajnandan1/kener:debian-status   # Debian, Basispfad /status voreingestellt
+#
+# Lokaler Build aus Quellcode:
+#   docker build -t kener-local .
+#   # image: in kener-Service auf "kener-local" ändern
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Redis — Pflicht
+  # Kener verwendet Redis für BullMQ-Jobwarteschlangen, den Monitor-Scheduler
+  # und für Caching. Redis 6+ wird unterstützt; Redis 7 wird empfohlen.
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: kener-redis
+
+    # Neustart-Richtlinie: always | unless-stopped | on-failure | no
+    restart: unless-stopped
+
+    # Persistenz: Redis-Daten auf einem Volume speichern, damit Warteschlangen
+    # bei einem Neustart des Containers erhalten bleiben.
+    volumes:
+      - redis_data:/data
+
+    # Redis kann optional mit Passwort abgesichert werden:
+    # command: ["redis-server", "--requirepass", "dein-redis-passwort"]
+    # In diesem Fall REDIS_URL auf redis://:dein-redis-passwort@redis:6379 setzen.
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Kener — Status-Page-Anwendung
+  # ---------------------------------------------------------------------------
+  kener:
+    # ── Image ────────────────────────────────────────────────────────────────
+    # Veröffentlichtes Image von Docker Hub:
+    image: rajnandan1/kener:latest
+    # Für Debian-Variante:
+    # image: rajnandan1/kener:debian
+    # Für lokalen Build:
+    # image: kener-local
+
+    container_name: kener
+    restart: unless-stopped
+
+    # ── Port-Mapping ──────────────────────────────────────────────────────────
+    # Format: "HOST_PORT:CONTAINER_PORT"
+    # Kener lauscht standardmäßig auf Port 3000 im Container.
+    # Zum Betrieb hinter einem Reverse Proxy (nginx, Traefik usw.) kann der
+    # Host-Port auf einen internen Port (z. B. 127.0.0.1:3000:3000) beschränkt
+    # werden, sodass kein direkter Zugriff von außen möglich ist.
+    ports:
+      - "3000:3000"
+      # Nur lokal erreichbar (für Reverse-Proxy-Setups):
+      # - "127.0.0.1:3000:3000"
+
+    # ── Volumes ───────────────────────────────────────────────────────────────
+    # SQLite-Datenbankdatei persistieren. Bei Verwendung von PostgreSQL oder
+    # MySQL wird dieses Volume zwar nicht für die Hauptdatenbank benötigt,
+    # aber es kann trotzdem für temporäre Dateien nützlich sein.
+    volumes:
+      - kener_db:/app/database
+
+    # ── Abhängigkeiten ────────────────────────────────────────────────────────
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    environment:
+
+      # ══════════════════════════════════════════════════════════════════════
+      # PFLICHTANGABEN — ohne diese startet Kener nicht korrekt
+      # ══════════════════════════════════════════════════════════════════════
+
+      # REQUIRED: Geheimer Schlüssel für JWT-Token-Signierung und CSRF-Schutz.
+      # Muss ein langer, zufälliger String sein. Einmal gesetzt nie ändern,
+      # da sonst alle aktiven Sitzungen und Links ungültig werden.
+      # Generieren: openssl rand -base64 32
+      KENER_SECRET_KEY: "ersetze-dies-durch-einen-starken-zufaelligen-schluessel"
+
+      # REQUIRED: Öffentliche URL unter der Kener erreichbar ist (inkl. Protokoll,
+      # ohne abschließenden Slash). Wird für OAuth-Callbacks, E-Mail-Links und
+      # CSRF-Validierung benötigt.
+      # Beispiele:
+      #   https://status.meine-domain.de
+      #   http://localhost:3000
+      #   https://meine-domain.de/status  ← wenn KENER_BASE_PATH=/status gesetzt ist
+      ORIGIN: "http://localhost:3000"
+
+      # REQUIRED: Redis-Verbindungs-URL.
+      # Format: redis://[user:password@]host[:port][/db]
+      # Beispiele:
+      #   redis://redis:6379                       ← Standard (kein Passwort)
+      #   redis://:mein-passwort@redis:6379        ← mit Passwort
+      #   redis://user:passwort@redis:6379/0       ← mit User, Passwort und DB
+      #   rediss://redis:6380                      ← TLS-verschlüsselt
+      REDIS_URL: "redis://redis:6379"
+
+      # ══════════════════════════════════════════════════════════════════════
+      # DATENBANK
+      # Standard: SQLite (Datei unter /app/database/kener.sqlite.db)
+      # Für Produktionseinsatz mit mehreren Instanzen empfiehlt sich PostgreSQL.
+      # ══════════════════════════════════════════════════════════════════════
+
+      # SQLite (Standard — kein separater Datenbankserver notwendig):
+      # DATABASE_URL: "sqlite://./database/kener.sqlite.db"
+
+      # PostgreSQL:
+      # DATABASE_URL: "postgresql://kener:sicheres-passwort@postgres:5432/kener"
+      # DATABASE_URL: "postgresql://kener:sicheres-passwort@postgres:5432/kener?sslmode=require"
+
+      # MySQL / MariaDB:
+      # DATABASE_URL: "mysql://kener:sicheres-passwort@mysql:3306/kener"
+
+      # ══════════════════════════════════════════════════════════════════════
+      # ERSTER ADMIN-BENUTZER (optional, nur für automatische Ersteinrichtung)
+      # Wenn beide Variablen gesetzt sind, erstellt Kener beim ersten Start
+      # automatisch einen Admin-Benutzer. Nach der ersten erfolgreichen
+      # Erstellung können diese Variablen entfernt werden.
+      # ══════════════════════════════════════════════════════════════════════
+
+      # KENER_ADMIN_EMAIL: "admin@meine-domain.de"
+      # KENER_ADMIN_PASSWORD: "sicheres-admin-passwort"  # Min. 8 Zeichen, Groß-/Kleinbuchstaben, Zahl
+
+      # ══════════════════════════════════════════════════════════════════════
+      # E-MAIL-VERSAND (optional)
+      # Kener unterstützt zwei Methoden: Resend (API) oder direktes SMTP.
+      # Wird für Einladungs-E-Mails, Passwort-Reset, E-Mail-Bestätigung,
+      # Benachrichtigungen und Abonnements benötigt.
+      # ══════════════════════════════════════════════════════════════════════
+
+      # ── Option A: Resend (https://resend.com) ─────────────────────────────
+      # Resend ist ein moderner E-Mail-Dienst mit großzügigem Free-Tier.
+      # RESEND_API_KEY: "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      # RESEND_SENDER_EMAIL: "kener@meine-domain.de"
+
+      # ── Option B: SMTP ────────────────────────────────────────────────────
+      # Direkter SMTP-Versand, z. B. über Gmail, Postfix oder einen SMTP-Relay.
+      #
+      # SMTP-Server-Adresse:
+      # SMTP_HOST: "smtp.gmail.com"
+      #
+      # SMTP-Port:
+      #   587  → STARTTLS (empfohlen)
+      #   465  → SSL/TLS
+      #   25   → unverschlüsselt (nicht empfohlen)
+      # SMTP_PORT: "587"
+      #
+      # Authentifizierung (leer lassen, wenn keine Auth benötigt wird):
+      # SMTP_USER: "kener@meine-domain.de"
+      # SMTP_PASSWORD: "app-passwort-oder-smtp-passwort"
+      # SMTP_PASS: "alternative-variable-fuer-smtp-passwort"  # Alias für SMTP_PASSWORD
+      #
+      # Verschlüsselung:
+      #   0 → STARTTLS verwenden (Port 587, Standard)
+      #   1 → direkt SSL/TLS verwenden (Port 465)
+      # SMTP_SECURE: "0"
+      #
+      # Absenderadresse im "Von:"-Feld (Standard: SMTP_USER):
+      # SMTP_SENDER: "Kener Status <kener@meine-domain.de>"
+      # SMTP_FROM_EMAIL: "kener@meine-domain.de"  # Alias für SMTP_SENDER
+
+      # ══════════════════════════════════════════════════════════════════════
+      # SERVER & ROUTING
+      # ══════════════════════════════════════════════════════════════════════
+
+      # Port auf dem der eingebettete HTTP-Server lauscht (Standard: 3000).
+      # Nur ändern wenn Kener hinter einem Reverse-Proxy auf einem
+      # anderen internen Port laufen soll.
+      # PORT: "3000"
+
+      # Basispfad wenn Kener unter einem Unterpfad betrieben wird, z. B. /status.
+      # Leer lassen wenn Kener unter "/" läuft (Standard).
+      # Wichtig: ORIGIN muss dann ebenfalls den Pfad enthalten, z. B.:
+      #   ORIGIN: "https://meine-domain.de/status"
+      #   KENER_BASE_PATH: "/status"
+      # KENER_BASE_PATH: ""
+
+      # Maximale Anfragegröße (für Datei-Uploads). Standard: 3M.
+      # Erhöhen wenn große Dateien (z. B. Schriftarten) hochgeladen werden sollen.
+      # BODY_SIZE_LIMIT: "3M"
+
+      # ══════════════════════════════════════════════════════════════════════
+      # LAUFZEITUMGEBUNG
+      # ══════════════════════════════════════════════════════════════════════
+
+      # Node.js-Umgebung (bereits im Image gesetzt, nicht ändern außer zu Debug-Zwecken):
+      # NODE_ENV: "production"
+
+      # Zeitzone des Containers. Beeinflusst Zeitstempel in Logs und geplante
+      # Aufgaben. Standardmäßig UTC. Gültige Werte: IANA-Zeitzonennamen,
+      # z. B. Europe/Berlin, America/New_York, Asia/Tokyo.
+      # TZ: "UTC"
+      # TZ: "Europe/Berlin"
+
+  # ---------------------------------------------------------------------------
+  # Optional: PostgreSQL
+  # Auskommentieren und DATABASE_URL oben auf postgresql://... setzen.
+  # ---------------------------------------------------------------------------
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: kener-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: kener
+  #     POSTGRES_PASSWORD: sicheres-datenbankpasswort   # starkes Passwort verwenden
+  #     POSTGRES_DB: kener
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U kener"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Optional: MySQL / MariaDB
+  # Auskommentieren und DATABASE_URL oben auf mysql://... setzen.
+  # ---------------------------------------------------------------------------
+  # mysql:
+  #   image: mariadb:11
+  #   container_name: kener-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_USER: kener
+  #     MYSQL_PASSWORD: sicheres-datenbankpasswort      # starkes Passwort verwenden
+  #     MYSQL_DATABASE: kener
+  #     MYSQL_RANDOM_ROOT_PASSWORD: "true"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #   healthcheck:
+  #     test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+# =============================================================================
+# Volumes
+# Named Volumes sorgen dafür, dass Daten Container-Neustarts überleben.
+# =============================================================================
+volumes:
+  # Kener-Datenbankdateien (SQLite oder temporäre Dateien bei externer DB)
+  kener_db:
+    name: kener_db
+
+  # Redis-Persistenzdaten (BullMQ-Warteschlangen, Scheduler-Status)
+  redis_data:
+    name: kener_redis
+
+  # PostgreSQL-Daten (nur bei Nutzung von PostgreSQL):
+  # postgres_data:
+  #   name: kener_postgres
+
+  # MySQL/MariaDB-Daten (nur bei Nutzung von MySQL):
+  # mysql_data:
+  #   name: kener_mysql
