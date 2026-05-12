@@ -1021,6 +1021,10 @@
     "manage.groups.edit_sheet_desc": "Update the group name and description.",
     "manage.groups.save_button": "Save changes",
     "manage.groups.save_success": "Group saved",
-    "manage.groups.open_detail_button": "Open detail"
+    "manage.groups.open_detail_button": "Open detail",
+    "manage.groups.error_load": "Failed to load groups",
+    "manage.groups.error_create": "Failed to create group",
+    "manage.groups.error_delete": "Failed to delete group",
+    "manage.groups.error_save": "Failed to save group"
   }
 }

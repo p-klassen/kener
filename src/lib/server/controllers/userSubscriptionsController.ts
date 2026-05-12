@@ -644,7 +644,7 @@ export async function LoginWithAccount(
     linked_user_id: userId,
   };
 
-  const token = await GenerateTokenWithExpiry(tokenPayload, "1y");
+  const token = await GenerateTokenWithExpiry(tokenPayload, "30d");
   return { success: true, token };
 }
 

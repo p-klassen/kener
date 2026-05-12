@@ -67,7 +67,7 @@
     try {
       groups = await apiCall("getGroups");
     } catch (e) {
-      toast.error("Failed to load groups");
+      toast.error($t("manage.groups.error_load"));
     } finally {
       loading = false;
     }
@@ -83,7 +83,7 @@
       newDesc = "";
       goto(clientResolver(resolve, `/manage/app/groups/${g.id}`));
     } catch (e) {
-      toast.error("Failed to create group");
+      toast.error($t("manage.groups.error_create"));
     } finally {
       creating = false;
     }
@@ -97,7 +97,7 @@
       deleteTarget = null;
       await loadGroups();
     } catch (e) {
-      toast.error("Failed to delete group");
+      toast.error($t("manage.groups.error_delete"));
     } finally {
       deleting = false;
     }
@@ -130,7 +130,7 @@
       showEditSheet = false;
       toast.success($t("manage.groups.save_success"));
     } catch (e: unknown) {
-      saveError = e instanceof Error ? e.message : "Failed to save";
+      saveError = e instanceof Error ? e.message : $t("manage.groups.error_save");
     } finally {
       saving = false;
     }

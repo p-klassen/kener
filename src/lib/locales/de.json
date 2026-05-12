@@ -1021,6 +1021,10 @@
     "manage.groups.edit_sheet_desc": "Name und Beschreibung der Gruppe aktualisieren.",
     "manage.groups.save_button": "Speichern",
     "manage.groups.save_success": "Gruppe gespeichert",
-    "manage.groups.open_detail_button": "Detailseite öffnen"
+    "manage.groups.open_detail_button": "Detailseite öffnen",
+    "manage.groups.error_load": "Gruppen konnten nicht geladen werden",
+    "manage.groups.error_create": "Gruppe konnte nicht erstellt werden",
+    "manage.groups.error_delete": "Gruppe konnte nicht gelöscht werden",
+    "manage.groups.error_save": "Gruppe konnte nicht gespeichert werden"
   }
 }
