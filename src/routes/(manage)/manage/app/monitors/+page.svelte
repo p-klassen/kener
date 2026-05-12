@@ -125,7 +125,7 @@
       <div class="flex items-center gap-2">
         <Button variant={showFilters ? "default" : "outline"} size="sm" onclick={() => (showFilters = !showFilters)}>
           <FilterIcon class="size-4" />
-          Filters
+          {$t("manage.monitors.filters_button")}
           {#if hasActiveFilters}
             <Badge variant="secondary" class="ml-1 px-1.5 py-0 text-[10px]">ON</Badge>
           {/if}
@@ -143,11 +143,11 @@
     {#if showFilters}
       <div class="bg-muted/50 flex flex-wrap items-end gap-3 rounded-lg border p-3">
         <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground text-xs font-medium">Search</span>
-          <Input type="text" placeholder="Search by name or tag..." bind:value={searchQuery} class="w-60" />
+          <span class="text-muted-foreground text-xs font-medium">{$t("manage.common.search")}</span>
+          <Input type="text" placeholder={$t("manage.monitors.search_placeholder")} bind:value={searchQuery} class="w-60" />
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground text-xs font-medium">Status</span>
+          <span class="text-muted-foreground text-xs font-medium">{$t("manage.common.status")}</span>
           <Select.Root
             type="single"
             value={statusFilter}
@@ -166,7 +166,7 @@
           </Select.Root>
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-muted-foreground text-xs font-medium">Type</span>
+          <span class="text-muted-foreground text-xs font-medium">{$t("manage.common.type")}</span>
           <Select.Root
             type="single"
             value={typeFilter}
@@ -186,12 +186,12 @@
         </div>
         <Button size="sm" onclick={applyFilters}>
           <SearchIcon class="size-4" />
-          Search
+          {$t("manage.common.search")}
         </Button>
         {#if hasActiveFilters}
           <Button variant="ghost" size="sm" onclick={clearFilters}>
             <XIcon class="size-4" />
-            Clear
+            {$t("manage.common.clear")}
           </Button>
         {/if}
       </div>
@@ -216,7 +216,7 @@
   {:else if monitors.length === 0}
     <div class="text-muted-foreground py-8 text-center">{$t("manage.monitors.no_monitors")}</div>
   {:else}
-    <div class="ktable rounded-xl border">
+    <div class="ktable overflow-hidden rounded-xl border">
       <Table.Root>
         <Table.Header>
           <Table.Row>
@@ -225,7 +225,7 @@
             <Table.Head class="w-[130px]">{$t("manage.monitors.col_type")}</Table.Head>
             <Table.Head class="w-[120px]">{$t("manage.monitors.col_status")}</Table.Head>
             <Table.Head class="w-[120px]">{$t("manage.monitors.col_hidden")}</Table.Head>
-            <Table.Head class="w-[180px]">Cron</Table.Head>
+            <Table.Head class="w-[180px]">{$t("manage.monitors.col_cron")}</Table.Head>
             <Table.Head class="w-[120px] text-right"></Table.Head>
           </Table.Row>
         </Table.Header>
@@ -267,7 +267,7 @@
               <Table.Cell class="text-right">
                 <Button variant="outline" size="sm" href={clientResolver(resolve, `/manage/app/monitors/${data.tag}`)}>
                   <SettingsIcon class="mr-1 size-4" />
-                  Configure
+                  {$t("manage.monitors.configure_button")}
                 </Button>
               </Table.Cell>
             </Table.Row>
@@ -280,7 +280,7 @@
     {#if totalPages > 0}
       <div class="flex items-center justify-between">
         <p class="text-muted-foreground text-sm">
-          Showing {(pageNo - 1) * limit + 1} - {Math.min(pageNo * limit, totalCount)} of {totalCount} monitors
+          {$t("manage.common.showing")} {(pageNo - 1) * limit + 1} - {Math.min(pageNo * limit, totalCount)} {$t("manage.common.of")} {totalCount} {$t("manage.monitors.count_unit")}
         </p>
         {#if totalPages > 1}
           <div class="flex items-center gap-2">

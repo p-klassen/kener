@@ -210,12 +210,12 @@
 <Dialog.Root bind:open={showCreate}>
   <Dialog.Content>
     <Dialog.Header><Dialog.Title>{$t("manage.groups.create_dialog_title")}</Dialog.Title></Dialog.Header>
-    <div class="space-y-3">
-      <div>
+    <div class="space-y-4">
+      <div class="space-y-1.5">
         <Label>{$t("manage.groups.name_label")}</Label>
         <Input bind:value={newName} placeholder={$t("manage.groups.name_placeholder")} />
       </div>
-      <div>
+      <div class="space-y-1.5">
         <Label>{$t("manage.groups.desc_label")}</Label>
         <Input bind:value={newDesc} placeholder={$t("manage.groups.desc_placeholder")} />
       </div>
@@ -232,8 +232,10 @@
 <!-- Delete dialog -->
 <Dialog.Root open={!!deleteTarget} onOpenChange={(v) => { if (!v) deleteTarget = null; }}>
   <Dialog.Content>
-    <Dialog.Header><Dialog.Title>{$t("manage.groups.delete_dialog_title")}</Dialog.Title></Dialog.Header>
-    <p>{$t("manage.groups.delete_confirm")} <strong>{deleteTarget?.name}</strong></p>
+    <Dialog.Header>
+      <Dialog.Title>{$t("manage.groups.delete_dialog_title")}</Dialog.Title>
+      <Dialog.Description>{$t("manage.groups.delete_confirm")} <strong>{deleteTarget?.name}</strong></Dialog.Description>
+    </Dialog.Header>
     <Dialog.Footer>
       <Button variant="outline" onclick={() => (deleteTarget = null)}>{$t("manage.common.cancel")}</Button>
       <Button variant="destructive" onclick={deleteGroup} disabled={deleting}>

@@ -192,7 +192,7 @@
     <div class="flex items-center gap-3">
       <Button onclick={createNewMaintenance}>
         <PlusIcon class="size-4" />
-        New Maintenance
+        {$t("manage.maintenances.add_button")}
       </Button>
     </div>
   </div>
@@ -200,24 +200,33 @@
   <!-- Filters -->
 
   <!-- Maintenances Table -->
-  <div class="ktable rounded-xl border">
+  <div class="ktable overflow-hidden rounded-xl border">
     <Table.Root>
       <Table.Header>
         <Table.Row>
-          <Table.Head class="w-16">ID</Table.Head>
+          <Table.Head class="w-16">{$t("manage.common.id")}</Table.Head>
           <Table.Head>{$t("manage.maintenances.col_title")}</Table.Head>
-          <Table.Head class="w-32">Type</Table.Head>
-          <Table.Head class="w-40">Duration</Table.Head>
-          <Table.Head class="w-24">Monitors</Table.Head>
-          <Table.Head class="w-40">Next Event</Table.Head>
-          <Table.Head class="w-24">Status</Table.Head>
-          <Table.Head class="w-24 text-right">Actions</Table.Head>
+          <Table.Head class="w-32">{$t("manage.common.type")}</Table.Head>
+          <Table.Head class="w-40">{$t("manage.maintenances.col_duration")}</Table.Head>
+          <Table.Head class="w-24">{$t("manage.maintenances.col_monitors")}</Table.Head>
+          <Table.Head class="w-40">{$t("manage.maintenances.col_next_event")}</Table.Head>
+          <Table.Head class="w-24">{$t("manage.common.status")}</Table.Head>
+          <Table.Head class="w-24 text-right">{$t("manage.common.actions")}</Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
-        {#if maintenances.length === 0 && !loading}
+        {#if loading && maintenances.length === 0}
           <Table.Row>
-            <Table.Cell colspan={8} class="text-muted-foreground py-8 text-center">No maintenances found</Table.Cell>
+            <Table.Cell colspan={8} class="py-8 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <Spinner class="size-4" />
+                <span class="text-muted-foreground text-sm">{$t("manage.common.loading")}</span>
+              </div>
+            </Table.Cell>
+          </Table.Row>
+        {:else if maintenances.length === 0}
+          <Table.Row>
+            <Table.Cell colspan={8} class="text-muted-foreground py-8 text-center">{$t("manage.maintenances.no_maintenances")}</Table.Cell>
           </Table.Row>
         {:else}
           {#each maintenances as maintenance}
@@ -240,10 +249,10 @@
                 <Badge variant="outline" class="gap-1">
                   {#if isOneTime(maintenance.rrule)}
                     <CalendarIcon class="size-3" />
-                    One-Time
+                    {$t("manage.maintenances.type_one_time")}
                   {:else}
                     <RepeatIcon class="size-3" />
-                    Recurring
+                    {$t("manage.maintenances.type_recurring")}
                   {/if}
                 </Badge>
               </Table.Cell>
@@ -291,7 +300,7 @@
                     </Tooltip.Content>
                   </Tooltip.Root>
                 {:else}
-                  <span class="text-muted-foreground text-sm">None</span>
+                  <span class="text-muted-foreground text-sm">{$t("manage.maintenances.none")}</span>
                 {/if}
               </Table.Cell>
               <Table.Cell>
@@ -317,7 +326,7 @@
                     </Tooltip.Content>
                   </Tooltip.Root>
                 {:else}
-                  <span class="text-muted-foreground text-sm">No events</span>
+                  <span class="text-muted-foreground text-sm">{$t("manage.maintenances.no_events")}</span>
                 {/if}
               </Table.Cell>
               <Table.Cell>
@@ -334,7 +343,7 @@
                     openMaintenance(maintenance.id);
                   }}
                 >
-                  <PencilIcon class="size-4" /> Edit
+                  <PencilIcon class="mr-1 size-4" />{$t("manage.common.edit")}
                 </Button>
               </Table.Cell>
             </Table.Row>
@@ -349,7 +358,7 @@
     {@const startItem = (pageNo - 1) * limit + 1}
     {@const endItem = Math.min(pageNo * limit, totalCount)}
     <div class="flex items-center justify-between">
-      <span class="text-muted-foreground text-sm">Showing {startItem}-{endItem} of {totalCount}</span>
+      <span class="text-muted-foreground text-sm">{$t("manage.common.showing")} {startItem}-{endItem} {$t("manage.common.of")} {totalCount}</span>
       {#if totalPages > 1}
         <div class="flex items-center gap-2">
           <Button variant="outline" size="icon" disabled={pageNo === 1} onclick={() => goToPage(pageNo - 1)}>

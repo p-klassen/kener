@@ -481,7 +481,7 @@
           fetchUsers();
         }}
       >
-        Active
+        {$t("manage.common.active")}
       </Button>
       <Button
         variant={statusFilter === "INACTIVE" ? "default" : "outline"}
@@ -492,7 +492,7 @@
           fetchUsers();
         }}
       >
-        Inactive
+        {$t("manage.common.inactive")}
       </Button>
     </div>
     <div class="flex items-center gap-2">
@@ -518,7 +518,7 @@
   </div>
 
   <!-- Users Table -->
-  <div class="ktable rounded-xl border">
+  <div class="ktable overflow-hidden rounded-xl border">
     <Table.Root>
       <Table.Header>
         <Table.Row>
@@ -615,7 +615,7 @@
                   {/if}
                   <Button variant="outline" size="sm" onclick={() => openEffectiveAccess(user.id)}>
                     <ShieldIcon class="mr-1 h-4 w-4" />
-                    Access
+                    {$t("manage.users.access_button")}
                   </Button>
                 </div>
               </Table.Cell>
@@ -734,7 +734,7 @@
           {#if creatingUser}
             <Spinner class="size-4" />
           {/if}
-          Add User
+          {$t("manage.users.add_button")}
         </Button>
       </Dialog.Footer>
     </form>
@@ -771,7 +771,7 @@
             <Card.Root>
               <Card.Content class="">
                 <p class="mb-3 text-sm">
-                  This user hasn't set their password yet. Resend the invitation email to {toEditUser.email}.
+                  {$t("manage.users.resend_invitation_desc")} ({toEditUser.email})
                 </p>
                 {#if !canSendEmail}
                   <Alert.Root variant="destructive" class="mb-4">
@@ -792,7 +792,7 @@
                   {#if toEditUser.actions.resendingInvitation}
                     <Spinner class="size-4" />
                   {/if}
-                  Resend Invitation
+                  {$t("manage.users.resend_invitation_button")}
                 </Button>
               </Card.Content>
             </Card.Root>
@@ -802,7 +802,7 @@
           <Card.Root>
             <Card.Content class="p-4">
               <p class="mb-3 text-sm">
-                Change the roles of the user. The user will have different permissions based on assigned roles.
+                {$t("manage.users.update_roles_desc")}
               </p>
               <div class="space-y-2">
                 {#each activeRoles as role (role.id)}
@@ -835,7 +835,7 @@
                 {#if toEditUser.actions.updatingRole}
                   <Spinner class="size-4" />
                 {/if}
-                Update Roles
+                {$t("manage.users.update_roles_button")}
               </Button>
             </Card.Content>
           </Card.Root>
@@ -845,7 +845,7 @@
             <Card.Root class="border-destructive">
               <Card.Content class="p-4">
                 <p class="mb-3 text-sm">
-                  Deactivate User. The user will not be able to login. Existing session will get invalidated.
+                  {$t("manage.users.deactivate_sheet_desc")}
                 </p>
                 <Button
                   variant="destructive"
@@ -861,7 +861,7 @@
                   {#if toEditUser.actions.deactivatingUser}
                     <Spinner class="size-4" />
                   {/if}
-                  Deactivate User
+                  {$t("manage.users.deactivate_sheet_button")}
                 </Button>
               </Card.Content>
             </Card.Root>
@@ -883,7 +883,7 @@
                   {#if toEditUser.actions.activatingUser}
                     <Spinner class="size-4" />
                   {/if}
-                  Activate User
+                  {$t("manage.users.activate_sheet_button")}
                 </Button>
               </Card.Content>
             </Card.Root>
@@ -893,16 +893,16 @@
           {#if hasPermission("users.write") && currentUser.id !== toEditUser.id}
             <Card.Root class="border-amber-500/50">
               <Card.Content class="p-4">
-                <p class="mb-3 text-sm font-medium">Force Password Reset</p>
+                <p class="mb-3 text-sm font-medium">{$t("manage.users.force_reset_title")}</p>
                 <p class="mb-3 text-muted-foreground text-xs">
-                  The user will be required to change their password on next login. They will be notified by email with your reason.
+                  {$t("manage.users.force_reset_desc")}
                 </p>
                 <div class="mb-3 space-y-2">
-                  <Label for="reset-reason" class="text-xs">Reason <span class="text-destructive">*</span></Label>
+                  <Label for="reset-reason" class="text-xs">{$t("manage.users.reset_reason_label")} <span class="text-destructive">*</span></Label>
                   <Input
                     id="reset-reason"
                     bind:value={passwordResetReason}
-                    placeholder="Enter reason for password reset..."
+                    placeholder={$t("manage.users.reset_reason_placeholder")}
                     disabled={resettingPassword}
                     class="text-sm"
                   />
@@ -917,7 +917,7 @@
                   {#if resettingPassword}
                     <Spinner class="size-4" />
                   {/if}
-                  Force Password Reset
+                  {$t("manage.users.force_reset_title")}
                 </Button>
               </Card.Content>
             </Card.Root>
@@ -945,21 +945,21 @@
   <Sheet.Root open={true} onOpenChange={(v) => { if (!v) effectiveAccessUserId = null; }}>
     <Sheet.Content class="w-[560px] overflow-y-auto sm:max-w-[560px]">
       <Sheet.Header>
-        <Sheet.Title>Effective Access</Sheet.Title>
-        <Sheet.Description>Resources this user can access, grouped by source.</Sheet.Description>
+        <Sheet.Title>{$t("manage.users.eff_access_title")}</Sheet.Title>
+        <Sheet.Description>{$t("manage.users.eff_access_desc")}</Sheet.Description>
       </Sheet.Header>
 
       {#if accessLoading}
-        <p class="mt-4 text-muted-foreground">Loading…</p>
+        <p class="mt-4 text-muted-foreground">{$t("manage.users.eff_access_loading")}</p>
       {:else if effectiveAccess.length === 0}
-        <p class="mt-4 text-muted-foreground text-sm">This user has no resource-scoped access yet.</p>
+        <p class="mt-4 text-muted-foreground text-sm">{$t("manage.users.eff_access_empty")}</p>
       {:else}
         <div class="mt-4 space-y-4">
           {#each effectiveAccess as entry (entry.role_id + (entry.group_name ?? "direct"))}
             <div class="rounded border p-3">
               <div class="mb-2 flex items-center gap-2">
                 {#if entry.source === "direct"}
-                  <span class="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">Direct</span>
+                  <span class="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">{$t("manage.users.eff_access_direct")}</span>
                 {:else}
                   <span class="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">Group: {entry.group_name}</span>
                 {/if}
@@ -974,7 +974,7 @@
                   {#if p.inherit_monitors && p.monitors.length > 0}
                     <div class="ml-4 mt-0.5 flex flex-wrap gap-1">
                       {#each p.monitors as m (m.monitor_tag)}
-                        <span class="rounded bg-muted px-1.5 py-0.5 text-xs">{m.monitor_name} <span class="text-muted-foreground">(inherited)</span></span>
+                        <span class="rounded bg-muted px-1.5 py-0.5 text-xs">{m.monitor_name} <span class="text-muted-foreground">{$t("manage.users.eff_access_inherited")}</span></span>
                       {/each}
                     </div>
                   {/if}
@@ -983,7 +983,7 @@
 
               {#if entry.direct_monitors.length > 0}
                 <div class="ml-2 mt-1">
-                  <span class="text-muted-foreground text-xs">Direct monitors:</span>
+                  <span class="text-muted-foreground text-xs">{$t("manage.users.eff_access_direct_monitors")}</span>
                   <div class="mt-0.5 flex flex-wrap gap-1">
                     {#each entry.direct_monitors as m (m.monitor_tag)}
                       <span class="rounded bg-muted px-1.5 py-0.5 text-xs">📡 {m.monitor_name}</span>
@@ -993,7 +993,7 @@
               {/if}
 
               {#if entry.pages.length === 0 && entry.direct_monitors.length === 0}
-                <p class="text-muted-foreground ml-2 text-xs">No resources assigned to this role yet.</p>
+                <p class="text-muted-foreground ml-2 text-xs">{$t("manage.users.eff_access_no_resources")}</p>
               {/if}
             </div>
           {/each}

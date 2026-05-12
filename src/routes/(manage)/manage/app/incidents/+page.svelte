@@ -28,13 +28,13 @@
   let stateFilter = $state("ALL");
   const limit = 10;
 
-  const stateOptions = [
-    { value: "ALL", label: "All States" },
-    { value: GC.INVESTIGATING, label: "Investigating" },
-    { value: GC.IDENTIFIED, label: "Identified" },
-    { value: GC.MONITORING, label: "Monitoring" },
-    { value: GC.RESOLVED, label: "Resolved" }
-  ];
+  const stateOptions = $derived([
+    { value: "ALL", label: $t("manage.incidents.filter_all_states") },
+    { value: GC.INVESTIGATING, label: $t("manage.incidents.state_investigating") },
+    { value: GC.IDENTIFIED, label: $t("manage.incidents.state_identified") },
+    { value: GC.MONITORING, label: $t("manage.incidents.state_monitoring") },
+    { value: GC.RESOLVED, label: $t("manage.incidents.state_resolved") }
+  ]);
 
   // Fetch incidents
   async function fetchData() {
@@ -140,7 +140,7 @@
     <div class="flex items-center gap-3">
       <Select.Root type="single" value={stateFilter} onValueChange={handleStateFilterChange}>
         <Select.Trigger class="w-44">
-          {stateOptions.find((o) => o.value === stateFilter)?.label || "All States"}
+          {stateOptions.find((o) => o.value === stateFilter)?.label || $t("manage.incidents.filter_all_states")}
         </Select.Trigger>
         <Select.Content>
           {#each stateOptions as option}
@@ -161,22 +161,31 @@
   </div>
 
   <!-- Events Table -->
-  <div class="ktable rounded-2xl border">
+  <div class="ktable overflow-hidden rounded-xl border">
     <Table.Root>
       <Table.Header>
         <Table.Row>
-          <Table.Head class="w-16">ID</Table.Head>
+          <Table.Head class="w-16">{$t("manage.common.id")}</Table.Head>
           <Table.Head>{$t("manage.incidents.col_title")}</Table.Head>
-          <Table.Head class="w-32">Duration</Table.Head>
-          <Table.Head class="w-36">State</Table.Head>
-          <Table.Head class="w-40">Affects</Table.Head>
-          <Table.Head class="w-24 text-right">Actions</Table.Head>
+          <Table.Head class="w-32">{$t("manage.incidents.col_duration")}</Table.Head>
+          <Table.Head class="w-36">{$t("manage.incidents.col_state")}</Table.Head>
+          <Table.Head class="w-40">{$t("manage.incidents.col_affects")}</Table.Head>
+          <Table.Head class="w-24 text-right">{$t("manage.common.actions")}</Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
-        {#if incidents.length === 0 && !loading}
+        {#if loading && incidents.length === 0}
           <Table.Row>
-            <Table.Cell colspan={6} class="text-muted-foreground py-8 text-center">No incidents found</Table.Cell>
+            <Table.Cell colspan={6} class="py-8 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <Spinner class="size-4" />
+                <span class="text-muted-foreground text-sm">{$t("manage.common.loading")}</span>
+              </div>
+            </Table.Cell>
+          </Table.Row>
+        {:else if incidents.length === 0}
+          <Table.Row>
+            <Table.Cell colspan={6} class="text-muted-foreground py-8 text-center">{$t("manage.incidents.no_incidents")}</Table.Cell>
           </Table.Row>
         {:else}
           {#each incidents as incident}
@@ -240,7 +249,7 @@
                     </Tooltip.Content>
                   </Tooltip.Root>
                 {:else}
-                  <span class="text-muted-foreground text-sm">None</span>
+                  <span class="text-muted-foreground text-sm">{$t("manage.incidents.affects_none")}</span>
                 {/if}
               </Table.Cell>
               <Table.Cell class="text-right">
@@ -252,7 +261,7 @@
                     openIncident(incident.id);
                   }}
                 >
-                  <PencilIcon class="size-4" /> Edit
+                  <PencilIcon class="mr-1 size-4" />{$t("manage.common.edit")}
                 </Button>
               </Table.Cell>
             </Table.Row>
@@ -266,7 +275,7 @@
   {#if totalPages > 0}
     <div class="flex items-center justify-between">
       <p class="text-muted-foreground text-sm">
-        Showing {(pageNo - 1) * limit + 1} - {Math.min(pageNo * limit, totalCount)} of {totalCount} incidents
+        {$t("manage.common.showing")} {(pageNo - 1) * limit + 1} - {Math.min(pageNo * limit, totalCount)} {$t("manage.common.of")} {totalCount} {$t("manage.incidents.count_unit")}
       </p>
       {#if totalPages > 1}
         <div class="flex items-center gap-2">

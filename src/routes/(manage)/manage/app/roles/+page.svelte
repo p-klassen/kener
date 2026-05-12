@@ -482,7 +482,7 @@
       <h2 class="text-xl font-semibold">{$t("manage.roles.title")}</h2>
     </div>
     {#if hasPermission("roles.write")}
-      <Button size="sm" onclick={() => openCreateDialog()}>
+      <Button onclick={() => openCreateDialog()}>
         <PlusIcon class="mr-1 h-4 w-4" />
         {$t("manage.roles.add_button")}
       </Button>
@@ -523,7 +523,7 @@
                   {#if role.readonly === 1}
                     <Badge variant="outline">
                       <LockIcon class="mr-1 h-3 w-3" />
-                      Readonly
+                      {$t("manage.roles.readonly_badge")}
                     </Badge>
                   {:else}
                     <Badge variant="outline">{$t("manage.roles.custom_badge")}</Badge>
@@ -533,15 +533,15 @@
                   <div class="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="sm" onclick={() => openPermissions(role)}>
                       <KeyIcon class="mr-1 h-4 w-4" />
-                      Permissions
+                      {$t("manage.roles.permissions_button")}
                     </Button>
                     <Button variant="ghost" size="sm" onclick={() => openUsers(role)}>
                       <UsersIcon class="mr-1 h-4 w-4" />
-                      Users
+                      {$t("manage.roles.users_button")}
                     </Button>
                     <Button variant="outline" size="sm" onclick={() => openVisibility(role.id)}>
                       <EyeIcon class="mr-1 h-4 w-4" />
-                      Visibility
+                      {$t("manage.roles.visibility_button")}
                     </Button>
                     {#if hasPermission("roles.write")}
                       <Button
@@ -634,20 +634,20 @@
   <Dialog.Content>
     <Dialog.Header>
       <Dialog.Title>{$t("manage.roles.create_dialog_title")}</Dialog.Title>
-      <Dialog.Description>Create a new custom role with its own permissions.</Dialog.Description>
+      <Dialog.Description>{$t("manage.roles.create_dialog_desc")}</Dialog.Description>
     </Dialog.Header>
     <div class="grid gap-4 py-4">
       <div class="grid gap-2">
         <Label for="role-id">{$t("manage.roles.create_id_label")}</Label>
         <Input id="role-id" placeholder={$t("manage.roles.create_id_placeholder")} bind:value={newRole.role_id} />
-        <p class="text-muted-foreground text-xs">Lowercase letters, numbers, underscores, hyphens only.</p>
+        <p class="text-muted-foreground text-xs">{$t("manage.roles.create_id_hint")}</p>
       </div>
       <div class="grid gap-2">
         <Label for="role-name">{$t("manage.roles.create_name_label")}</Label>
         <Input id="role-name" placeholder={$t("manage.roles.create_name_placeholder")} bind:value={newRole.name} />
       </div>
       <div class="grid gap-2">
-        <Label>Permissions</Label>
+        <Label>{$t("manage.roles.create_permissions_label")}</Label>
         <div class="flex gap-2">
           <Button
             variant={createPermissionMode === "pick" ? "default" : "outline"}
@@ -657,26 +657,26 @@
               cloneFromRoleId = "";
             }}
           >
-            Pick after creation
+            {$t("manage.roles.create_pick_after")}
           </Button>
           <Button
             variant={createPermissionMode === "clone" ? "default" : "outline"}
             size="sm"
             onclick={() => (createPermissionMode = "clone")}
           >
-            Clone from existing role
+            {$t("manage.roles.create_clone_from_button")}
           </Button>
         </div>
       </div>
       {#if createPermissionMode === "clone"}
         <div class="grid gap-2">
-          <Label for="clone-role">Clone permissions from</Label>
+          <Label for="clone-role">{$t("manage.roles.create_clone_label")}</Label>
           <select
             id="clone-role"
             class="border-input flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm"
             bind:value={cloneFromRoleId}
           >
-            <option value="">Select a role...</option>
+            <option value="">{$t("manage.roles.select_role_placeholder")}</option>
             {#each roles.filter((r) => r.status === "ACTIVE") as r (r.id)}
               <option value={r.id}>{r.role_name}</option>
             {/each}
@@ -703,40 +703,40 @@
 <Dialog.Root bind:open={showDeleteDialog}>
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>Delete Role</Dialog.Title>
+      <Dialog.Title>{$t("manage.roles.delete_dialog_title")}</Dialog.Title>
       <Dialog.Description>
-        Are you sure you want to delete <span class="font-semibold">{roleToDelete?.role_name}</span>?
+        {$t("manage.roles.delete_dialog_desc")} <span class="font-semibold">{roleToDelete?.role_name}</span>?
       </Dialog.Description>
     </Dialog.Header>
     <div class="grid gap-4 py-4">
       <div class="grid gap-2">
-        <Label>What should happen to users in this role?</Label>
+        <Label>{$t("manage.roles.delete_users_label")}</Label>
         <div class="flex gap-2">
           <Button
             variant={deleteAction === "remove" ? "default" : "outline"}
             size="sm"
             onclick={() => (deleteAction = "remove")}
           >
-            Remove assignments
+            {$t("manage.roles.delete_remove_action")}
           </Button>
           <Button
             variant={deleteAction === "migrate" ? "default" : "outline"}
             size="sm"
             onclick={() => (deleteAction = "migrate")}
           >
-            Migrate to another role
+            {$t("manage.roles.delete_migrate_action")}
           </Button>
         </div>
       </div>
       {#if deleteAction === "migrate"}
         <div class="grid gap-2">
-          <Label for="target-role">Target Role</Label>
+          <Label for="target-role">{$t("manage.roles.delete_target_label")}</Label>
           <select
             id="target-role"
             class="border-input flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm"
             bind:value={deleteTargetRoleId}
           >
-            <option value="">Select a role...</option>
+            <option value="">{$t("manage.roles.select_role_placeholder")}</option>
             {#each roles.filter((r) => r.id !== roleToDelete?.id && r.status === "ACTIVE") as r (r.id)}
               <option value={r.id}>{r.role_name}</option>
             {/each}
@@ -745,7 +745,7 @@
       {/if}
     </div>
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (showDeleteDialog = false)}>Cancel</Button>
+      <Button variant="outline" onclick={() => (showDeleteDialog = false)}>{$t("manage.common.cancel")}</Button>
       <Button
         variant="destructive"
         onclick={handleDeleteRole}
@@ -754,7 +754,7 @@
         {#if deletingRole}
           <Spinner class="mr-2 h-4 w-4" />
         {/if}
-        Delete
+        {$t("manage.common.delete")}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
@@ -762,16 +762,16 @@
 
 <!-- Permissions Sheet -->
 <Sheet.Root bind:open={showPermissionsSheet}>
-  <Sheet.Content side="right" class="w-full overflow-y-auto sm:max-w-lg">
+  <Sheet.Content side="right" class="w-full overflow-y-auto sm:max-w-xl">
     <Sheet.Header>
       <Sheet.Title>
-        Permissions — {permissionsRole?.role_name}
+        {$t("manage.roles.perm_sheet_title")} — {permissionsRole?.role_name}
       </Sheet.Title>
       <Sheet.Description>
         {#if permissionsRole?.readonly === 1}
-          This is a readonly role. Permissions cannot be modified.
+          {$t("manage.roles.perm_sheet_readonly_desc")}
         {:else}
-          Toggle permissions for this role.
+          {$t("manage.roles.perm_sheet_editable_desc")}
         {/if}
       </Sheet.Description>
     </Sheet.Header>
@@ -826,12 +826,12 @@
 
         {#if permissionsRole?.readonly !== 1 && hasPermission("roles.assign_permissions")}
           <div class="flex justify-end gap-2 p-4">
-            <Button variant="outline" onclick={() => (showPermissionsSheet = false)}>Cancel</Button>
+            <Button variant="outline" onclick={() => (showPermissionsSheet = false)}>{$t("manage.common.cancel")}</Button>
             <Button onclick={savePermissions} disabled={savingPermissions}>
               {#if savingPermissions}
                 <Spinner class="mr-2 h-4 w-4" />
               {/if}
-              Save Permissions
+              {$t("manage.roles.perm_save_button")}
             </Button>
           </div>
         {/if}
@@ -842,12 +842,12 @@
 
 <!-- Users Sheet -->
 <Sheet.Root bind:open={showUsersSheet}>
-  <Sheet.Content side="right" class="w-full overflow-y-auto sm:max-w-lg">
+  <Sheet.Content side="right" class="w-full overflow-y-auto sm:max-w-xl">
     <Sheet.Header>
       <Sheet.Title>
-        Users — {usersRole?.role_name}
+        {$t("manage.roles.users_sheet_title")} — {usersRole?.role_name}
       </Sheet.Title>
-      <Sheet.Description>Manage users assigned to this role.</Sheet.Description>
+      <Sheet.Description>{$t("manage.roles.users_sheet_desc")}</Sheet.Description>
     </Sheet.Header>
 
     {#if loadingUsers}
@@ -857,9 +857,9 @@
     {:else}
       <!-- Current users in role -->
       <div class="p-4">
-        <h4 class="mb-2 text-sm font-medium">Current Users ({roleUsers.length})</h4>
+        <h4 class="mb-2 text-sm font-medium">{$t("manage.roles.current_users_header")} ({roleUsers.length})</h4>
         {#if roleUsers.length === 0}
-          <p class="text-muted-foreground text-sm">No users assigned to this role.</p>
+          <p class="text-muted-foreground text-sm">{$t("manage.roles.no_users_in_role")}</p>
         {:else}
           <div class="flex flex-col gap-2">
             {#each roleUsers as user (user.id)}
@@ -893,9 +893,9 @@
 
         <!-- Add users -->
         <div class="p-4">
-          <h4 class="mb-2 text-sm font-medium">Add Users</h4>
+          <h4 class="mb-2 text-sm font-medium">{$t("manage.roles.add_users_header")}</h4>
           {#if availableUsersToAdd.length === 0}
-            <p class="text-muted-foreground text-sm">All users are already in this role.</p>
+            <p class="text-muted-foreground text-sm">{$t("manage.roles.all_users_in_role")}</p>
           {:else}
             <div class="flex max-h-64 flex-col gap-2 overflow-y-auto">
               {#each availableUsersToAdd as user (user.id)}
@@ -931,9 +931,9 @@
   <Sheet.Root open={true} onOpenChange={(v) => { if (!v) visibilityRoleId = null; }}>
     <Sheet.Content class="flex w-[520px] flex-col overflow-hidden sm:max-w-[520px]">
       <Sheet.Header class="px-6 pt-6">
-        <Sheet.Title>Resource Visibility</Sheet.Title>
+        <Sheet.Title>{$t("manage.roles.vis_sheet_title")}</Sheet.Title>
         <Sheet.Description>
-          Assign which pages and monitors this role can access.
+          {$t("manage.roles.vis_sheet_desc")}
         </Sheet.Description>
       </Sheet.Header>
 
@@ -947,11 +947,11 @@
           <!-- Pages section -->
           <div class="space-y-3">
             <div>
-              <h3 class="text-sm font-semibold">Pages</h3>
-              <p class="text-muted-foreground text-xs">Select which pages are visible to this role.</p>
+              <h3 class="text-sm font-semibold">{$t("manage.roles.vis_pages_header")}</h3>
+              <p class="text-muted-foreground text-xs">{$t("manage.roles.vis_pages_desc")}</p>
             </div>
             {#if allPagesForVis.length === 0}
-              <p class="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">No pages configured yet.</p>
+              <p class="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">{$t("manage.roles.vis_no_pages")}</p>
             {:else}
               <div class="space-y-2">
                 {#each allPagesForVis as p (p.id)}
@@ -992,8 +992,8 @@
             {@const allMonitors = allPagesForVis.flatMap((p) => p.monitors)}
             <div class="space-y-3">
               <div>
-                <h3 class="text-sm font-semibold">Direct Monitor Access</h3>
-                <p class="text-muted-foreground text-xs">Grant access to individual monitors, regardless of page assignment.</p>
+                <h3 class="text-sm font-semibold">{$t("manage.roles.vis_monitors_header")}</h3>
+                <p class="text-muted-foreground text-xs">{$t("manage.roles.vis_monitors_desc")}</p>
               </div>
               <div class="space-y-1.5">
                 {#each allMonitors as m (m.monitor_tag)}
@@ -1009,7 +1009,7 @@
                     {/if}
                     <span class="text-sm {coveredByPage ? 'text-muted-foreground' : ''}">{m.name ?? m.monitor_tag}</span>
                     {#if coveredByPage}
-                      <span class="text-muted-foreground ml-auto text-xs">via page</span>
+                      <span class="text-muted-foreground ml-auto text-xs">{$t("manage.roles.vis_via_page")}</span>
                     {/if}
                   </div>
                 {/each}
@@ -1022,10 +1022,10 @@
         <!-- Footer -->
         <div class="border-t px-6 py-4">
           <div class="flex justify-end gap-2">
-            <Button variant="outline" onclick={() => (visibilityRoleId = null)}>Cancel</Button>
+            <Button variant="outline" onclick={() => (visibilityRoleId = null)}>{$t("manage.common.cancel")}</Button>
             <Button onclick={saveVisibility} disabled={visSaving}>
               {#if visSaving}<Spinner class="mr-2 h-4 w-4" />{/if}
-              Save
+              {$t("manage.common.save")}
             </Button>
           </div>
         </div>
