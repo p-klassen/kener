@@ -104,6 +104,7 @@ export const actions: Actions = {
       return fail(400, { error: "Username and password are required", values: { ldap_username: username } });
     }
 
+    let ldapRedirect: string;
     try {
       const userDB = await AuthenticateWithLdap(username, password);
       const token = await GenerateToken(userDB);
@@ -116,12 +117,12 @@ export const actions: Actions = {
         sameSite: cookieConfig.sameSite,
       });
       const ldapPermissions = await GetUserPermissions(userDB.id);
-      throw redirect(302, serverResolve(ldapPermissions.size > 0 ? "/manage/app/site-configurations" : "/"));
+      ldapRedirect = serverResolve(ldapPermissions.size > 0 ? "/manage/app/site-configurations" : "/");
     } catch (e: unknown) {
-      if (e instanceof Response) throw e;
       const msg = e instanceof Error ? e.message : "LDAP authentication failed";
       return fail(401, { error: msg, values: { ldap_username: username } });
     }
+    throw redirect(302, ldapRedirect);
   },
   signup: async ({ request, cookies }) => {
     const formData = await request.formData();
@@ -158,11 +159,10 @@ export const actions: Actions = {
         secure: cookieConfig.secure,
         sameSite: cookieConfig.sameSite,
       });
-
-      throw redirect(302, serverResolve("/manage/app/site-configurations"));
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "An error occurred during signup";
       return fail(400, { error: errorMessage, values: { name, email } });
     }
+    throw redirect(302, serverResolve("/manage/app/site-configurations"));
   },
 };

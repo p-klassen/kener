@@ -602,17 +602,25 @@ export async function LoginWithAccount(
       status: "ACTIVE",
       linked_user_id: userId,
     });
-  } else if (user.linked_user_id !== userId || user.status !== "ACTIVE") {
-    await db.updateSubscriberUser(user.id, {
-      linked_user_id: userId,
-      status: "ACTIVE",
-    });
-    // Re-fetch to get updated record
-    user = (await db.getSubscriberUserById(user.id))!;
+  } else {
+    // Sync any changes to linked_user_id, status, or email
+    const needsUpdate =
+      user.linked_user_id !== userId ||
+      user.status !== "ACTIVE" ||
+      user.email !== normalizedEmail;
+    if (needsUpdate) {
+      await db.updateSubscriberUser(user.id, {
+        linked_user_id: userId,
+        status: "ACTIVE",
+        email: normalizedEmail,
+      });
+      user = (await db.getSubscriberUserById(user.id))!;
+    }
   }
 
-  // Find or create email method
-  let method = await db.getSubscriberMethodByUserAndType(user.id, "email", normalizedEmail);
+  // Find or update the email method — look up by user ID only, then check value
+  const existingMethods = await db.getSubscriberMethodsByUserId(user.id);
+  let method = existingMethods.find((m) => m.method_type === "email");
   if (!method) {
     method = await db.createSubscriberMethod({
       subscriber_user_id: user.id,
@@ -620,8 +628,11 @@ export async function LoginWithAccount(
       method_value: normalizedEmail,
       status: "ACTIVE",
     });
-  } else if (method.status !== "ACTIVE") {
-    await db.updateSubscriberMethod(method.id, { status: "ACTIVE" });
+  } else if (method.method_value !== normalizedEmail || method.status !== "ACTIVE") {
+    await db.updateSubscriberMethod(method.id, {
+      method_value: normalizedEmail,
+      status: "ACTIVE",
+    });
     method = (await db.getSubscriberMethodById(method.id))!;
   }
 
@@ -662,8 +673,15 @@ export async function UpdateSubscriberPreferences(
   const allowedTags = new Set(publicMonitors.map((m) => m.tag));
   if (verifyResult.linked_user_id) {
     const accessible = await db.getAccessibleResources(verifyResult.linked_user_id);
-    for (const tag of accessible.monitorTags) {
-      allowedTags.add(tag);
+    if (accessible.monitorTags.size > 0) {
+      const roleMonitors = await GetMonitorsParsed({
+        status: "ACTIVE",
+        is_hidden: "NO",
+        tags: [...accessible.monitorTags],
+      });
+      for (const m of roleMonitors) {
+        allowedTags.add(m.tag);
+      }
     }
   }
   const filterTags = (tags: string[]) => tags.filter((t) => allowedTags.has(t));
