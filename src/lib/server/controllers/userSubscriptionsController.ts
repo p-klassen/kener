@@ -406,12 +406,14 @@ import sendEmail from "../notification/email_notification.js";
 import { GetAllSiteData } from "./controller.js";
 import { siteDataToVariables } from "../notification/notification_utils.js";
 import { GetGeneralEmailTemplateById } from "./generalTemplateController.js";
+import { GetMonitorsParsed } from "./monitorsController.js";
 
 interface SubscriberTokenPayload {
   subscriber_user_id: number;
   subscriber_method_id: number;
   email: string;
   type: "subscriber";
+  linked_user_id?: number;
 }
 
 /**
@@ -423,6 +425,7 @@ export async function VerifySubscriberToken(token: string): Promise<{
   user?: SubscriberUserRecord;
   method?: SubscriberMethodRecord;
   subscriptions?: { incidents: boolean; maintenances: boolean };
+  linked_user_id?: number;
 }> {
   const decoded = await VerifyToken(token);
   if (!decoded || (decoded as unknown as SubscriberTokenPayload).type !== "subscriber") {
@@ -451,7 +454,7 @@ export async function VerifySubscriberToken(token: string): Promise<{
     maintenances: allSubs.some((s) => s.event_type === "maintenances" && s.status === "ACTIVE"),
   };
 
-  return { success: true, user, method, subscriptions };
+  return { success: true, user, method, subscriptions, linked_user_id: payload.linked_user_id };
 }
 
 /**
@@ -577,6 +580,64 @@ export async function VerifySubscriberOTP(
 }
 
 /**
+ * Create/link a subscriber account for an authenticated app user.
+ * Finds or creates a subscriber_user by email and links it to the app user ID,
+ * then returns a subscriber token with linked_user_id embedded.
+ */
+export async function LoginWithAccount(
+  userId: number,
+  email: string,
+): Promise<{ success: boolean; error?: string; token?: string }> {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Find existing subscriber user by linked_user_id first, fall back to email
+  let user = await db.getSubscriberUserByLinkedUserId(userId);
+  if (!user) {
+    user = await db.getSubscriberUserByEmail(normalizedEmail);
+  }
+
+  if (!user) {
+    user = await db.createSubscriberUser({
+      email: normalizedEmail,
+      status: "ACTIVE",
+      linked_user_id: userId,
+    });
+  } else if (user.linked_user_id !== userId || user.status !== "ACTIVE") {
+    await db.updateSubscriberUser(user.id, {
+      linked_user_id: userId,
+      status: "ACTIVE",
+    });
+    // Re-fetch to get updated record
+    user = (await db.getSubscriberUserById(user.id))!;
+  }
+
+  // Find or create email method
+  let method = await db.getSubscriberMethodByUserAndType(user.id, "email", normalizedEmail);
+  if (!method) {
+    method = await db.createSubscriberMethod({
+      subscriber_user_id: user.id,
+      method_type: "email",
+      method_value: normalizedEmail,
+      status: "ACTIVE",
+    });
+  } else if (method.status !== "ACTIVE") {
+    await db.updateSubscriberMethod(method.id, { status: "ACTIVE" });
+    method = (await db.getSubscriberMethodById(method.id))!;
+  }
+
+  const tokenPayload: SubscriberTokenPayload = {
+    subscriber_user_id: user.id,
+    subscriber_method_id: method.id,
+    email: normalizedEmail,
+    type: "subscriber",
+    linked_user_id: userId,
+  };
+
+  const token = await GenerateTokenWithExpiry(tokenPayload, "1y");
+  return { success: true, token };
+}
+
+/**
  * Update subscription preferences
  */
 export async function UpdateSubscriberPreferences(
@@ -594,6 +655,18 @@ export async function UpdateSubscriberPreferences(
   }
 
   const { user, method } = verifyResult;
+
+  // Build set of allowed monitor tags: always includes public monitors;
+  // if the token carries a linked_user_id, also include role-accessible monitors.
+  const publicMonitors = await GetMonitorsParsed({ status: "ACTIVE", is_hidden: "NO", is_public: 1 });
+  const allowedTags = new Set(publicMonitors.map((m) => m.tag));
+  if (verifyResult.linked_user_id) {
+    const accessible = await db.getAccessibleResources(verifyResult.linked_user_id);
+    for (const tag of accessible.monitorTags) {
+      allowedTags.add(tag);
+    }
+  }
+  const filterTags = (tags: string[]) => tags.filter((t) => allowedTags.has(t));
 
   if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
@@ -628,7 +701,7 @@ export async function UpdateSubscriberPreferences(
     }
 
     if (preferences.incident_monitors !== undefined && incidentSubId !== null) {
-      await db.upsertSubscriptionMonitorScopes(incidentSubId, preferences.incident_monitors);
+      await db.upsertSubscriptionMonitorScopes(incidentSubId, filterTags(preferences.incident_monitors));
     }
   }
 
@@ -665,7 +738,7 @@ export async function UpdateSubscriberPreferences(
     }
 
     if (preferences.maintenance_monitors !== undefined && maintenanceSubId !== null) {
-      await db.upsertSubscriptionMonitorScopes(maintenanceSubId, preferences.maintenance_monitors);
+      await db.upsertSubscriptionMonitorScopes(maintenanceSubId, filterTags(preferences.maintenance_monitors));
     }
   }
 

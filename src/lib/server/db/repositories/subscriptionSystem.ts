@@ -28,6 +28,7 @@ export class SubscriptionSystemRepository extends BaseRepository {
       status: data.status || "PENDING",
       verification_code: data.verification_code || null,
       verification_expires_at: data.verification_expires_at || null,
+      linked_user_id: data.linked_user_id ?? null,
       created_at: this.knex.fn.now(),
       updated_at: this.knex.fn.now(),
     };
@@ -58,8 +59,13 @@ export class SubscriptionSystemRepository extends BaseRepository {
     if (data.status !== undefined) updateData.status = data.status;
     if (data.verification_code !== undefined) updateData.verification_code = data.verification_code;
     if (data.verification_expires_at !== undefined) updateData.verification_expires_at = data.verification_expires_at;
+    if (data.linked_user_id !== undefined) updateData.linked_user_id = data.linked_user_id;
 
     return await this.knex("subscriber_users").where("id", id).update(updateData);
+  }
+
+  async getSubscriberUserByLinkedUserId(linkedUserId: number): Promise<SubscriberUserRecord | undefined> {
+    return await this.knex("subscriber_users").where("linked_user_id", linkedUserId).first();
   }
 
   async deleteSubscriberUser(id: number): Promise<number> {
@@ -337,6 +343,7 @@ export class SubscriptionSystemRepository extends BaseRepository {
         status: row.user_status,
         verification_code: null,
         verification_expires_at: null,
+        linked_user_id: null,
         created_at: row.user_created_at,
         updated_at: row.user_created_at,
       },

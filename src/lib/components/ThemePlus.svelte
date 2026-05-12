@@ -36,7 +36,7 @@
   const eventsPath = $derived(`/events/${format(new Date(), "MMMM-yyyy")}`);
 
   const loginDetails = $derived.by((): { label: string; url: string } | null => {
-    if (!page.data?.loggedInUser) return null;
+    if (!page.data?.loggedInUser || !page.data?.hasManageAccess) return null;
 
     if (page.route.id === "/(kener)/monitors/[monitor_tag]") {
       return {

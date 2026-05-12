@@ -10,6 +10,7 @@ import {
   IsEmailSetup,
   IsSetupComplete,
 } from "./controller.js";
+import { GetUserPermissions } from "./userController.js";
 import type { EventDisplaySettings, GlobalPageVisibilitySettings, SiteDateTimeFormat } from "$lib/types/site.js";
 
 export interface LayoutServerData {
@@ -76,6 +77,7 @@ export interface LayoutServerData {
   dateAndTimeFormat: SiteDateTimeFormat;
   metaSiteTitle?: string;
   metaSiteDescription?: string;
+  hasManageAccess: boolean;
 }
 
 export async function GetLayoutServerData(cookies: Cookies, request: Request): Promise<LayoutServerData> {
@@ -116,6 +118,7 @@ export async function GetLayoutServerData(cookies: Cookies, request: Request): P
   const defaultSiteTheme = siteData.theme || "system";
   const font = siteData.font || { cssSrc: "", family: "" };
   const canSendEmail = await IsEmailSetup();
+  const hasManageAccess = loggedInUser ? (await GetUserPermissions(loggedInUser.id)).size > 0 : false;
   return {
     isMobile,
     isSetupComplete,
@@ -147,5 +150,6 @@ export async function GetLayoutServerData(cookies: Cookies, request: Request): P
     dateAndTimeFormat: siteData.dateAndTimeFormat || seedSiteData.dateAndTimeFormat,
     metaSiteTitle: siteData.metaSiteTitle,
     metaSiteDescription: siteData.metaSiteDescription,
+    hasManageAccess,
   };
 }

@@ -6,6 +6,7 @@
   import { Switch } from "$lib/components/ui/switch/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import { resolve } from "$app/paths";
+  import { page } from "$app/stores";
   import clientResolver from "$lib/client/resolver.js";
 
   import Mail from "@lucide/svelte/icons/mail";
@@ -34,6 +35,9 @@
   let isSubmitting = $state(false);
   let errorMessage = $state("");
 
+  // Whether the current session is linked to an app account (no logout shown)
+  let isAccountLinked = $state(false);
+
   // Form data
   let email = $state("");
   let otpValue = $state("");
@@ -60,9 +64,46 @@
 
   $effect(() => {
     if (open) {
-      checkExistingToken();
+      initDialog();
     }
   });
+
+  async function initDialog() {
+    currentView = "loading";
+
+    // Logged-in app users get auto-linked — no OTP flow needed
+    if ($page.data?.loggedInUser) {
+      isAccountLinked = true;
+      await loginWithAccount();
+      return;
+    }
+
+    isAccountLinked = false;
+    await checkExistingToken();
+  }
+
+  async function loginWithAccount() {
+    try {
+      const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "loginWithAccount" })
+      });
+
+      if (!response.ok) {
+        currentView = "error";
+        errorMessage = $t("Failed to link account for notifications");
+        return;
+      }
+
+      const data = await response.json();
+      localStorage.setItem(STORAGE_KEY, data.token);
+      await loadPreferences(data.token);
+    } catch (_err) {
+      currentView = "error";
+      errorMessage = $t("Network error. Please try again.");
+    }
+  }
 
   async function checkExistingToken() {
     const token = localStorage.getItem(STORAGE_KEY);
@@ -71,6 +112,10 @@
       return;
     }
 
+    await loadPreferences(token);
+  }
+
+  async function loadPreferences(token: string) {
     currentView = "loading";
     try {
       const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
@@ -81,7 +126,7 @@
 
       if (!response.ok) {
         localStorage.removeItem(STORAGE_KEY);
-        currentView = "login";
+        currentView = isAccountLinked ? "error" : "login";
         return;
       }
 
@@ -105,7 +150,7 @@
       currentView = "preferences";
     } catch (_err) {
       localStorage.removeItem(STORAGE_KEY);
-      currentView = "login";
+      currentView = isAccountLinked ? "error" : "login";
     }
   }
 
@@ -230,6 +275,7 @@
     maintenanceMonitorSelections = {};
     incidentScopeError = "";
     maintenanceScopeError = "";
+    isAccountLinked = false;
     currentView = "login";
     trackEvent("subscribe_logout", { source: "subscribe_menu" });
   }
@@ -334,7 +380,7 @@
 
 <Dialog.Root bind:open>
   <Dialog.Overlay class="backdrop-blur-[2px]" />
-  <Dialog.Content class="max-w-sm rounded-3xl">
+  <Dialog.Content class="max-w-sm rounded-3xl max-h-[90vh] overflow-y-auto">
     <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <Bell class="h-5 w-5" />
@@ -441,9 +487,11 @@
                 <Mail class="text-muted-foreground h-4 w-4" />
                 <span class="text-sm font-medium">{subscriberEmail}</span>
               </div>
-              <Button variant="ghost" size="icon-sm" onclick={handleLogout} class="rounded-btn">
-                <LogOut class="h-4 w-4" />
-              </Button>
+              {#if !isAccountLinked}
+                <Button variant="ghost" size="icon-sm" onclick={handleLogout} class="rounded-btn">
+                  <LogOut class="h-4 w-4" />
+                </Button>
+              {/if}
             </div>
           </div>
 
@@ -477,7 +525,7 @@
                       </label>
                     </div>
                     {#if incidentScope === "specific"}
-                      <div class="ml-4 flex flex-col gap-1 pt-1">
+                      <div class="ml-4 flex max-h-48 flex-col gap-1 overflow-y-auto pt-1">
                         {#each availableMonitors as monitor (monitor.tag)}
                           <label class="flex cursor-pointer items-center gap-2 text-sm">
                             <input type="checkbox" bind:checked={incidentMonitorSelections[monitor.tag]} />
@@ -529,7 +577,7 @@
                       </label>
                     </div>
                     {#if maintenanceScope === "specific"}
-                      <div class="ml-4 flex flex-col gap-1 pt-1">
+                      <div class="ml-4 flex max-h-48 flex-col gap-1 overflow-y-auto pt-1">
                         {#each availableMonitors as monitor (monitor.tag)}
                           <label class="flex cursor-pointer items-center gap-2 text-sm">
                             <input type="checkbox" bind:checked={maintenanceMonitorSelections[monitor.tag]} />
@@ -556,6 +604,10 @@
           {#if errorMessage}
             <p class="text-destructive text-sm">{errorMessage}</p>
           {/if}
+        </div>
+      {:else if currentView === "error"}
+        <div class="flex flex-col items-center gap-4 py-8">
+          <p class="text-destructive text-sm">{errorMessage || $t("Something went wrong. Please try again.")}</p>
         </div>
       {/if}
     </div>

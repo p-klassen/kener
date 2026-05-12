@@ -1006,14 +1006,21 @@
     "manage.authentication.ldap_group_search_base": "Group Search Base DN",
     "manage.authentication.ldap_group_search_filter": "Group Search Filter",
     "manage.authentication.ldap_group_member_attr": "Member Attribute",
-    "manage.authentication.ldap_group_name_attr": "Group Name Attribute"
-  },
-  "manage.common.edit": "Edit",
-  "manage.common.delete": "Delete",
-  "manage.common.cancel": "Cancel",
-  "manage.users.verify_email_button": "Verify Email",
-  "manage.users.activate_button": "Activate",
-  "manage.users.deactivate_button": "Deactivate",
-  "manage.users.delete_dialog_title": "Delete User",
-  "manage.users.delete_dialog_desc": "Are you sure you want to delete"
+    "manage.authentication.ldap_group_name_attr": "Group Name Attribute",
+    "manage.users.verify_email_button": "Verify Email",
+    "manage.users.activate_button": "Activate",
+    "manage.users.deactivate_button": "Deactivate",
+    "manage.users.delete_dialog_title": "Delete User",
+    "manage.users.delete_dialog_desc": "Are you sure you want to delete",
+    "page.locked.title": "This page is private",
+    "page.locked.desc": "Sign in to view this status page.",
+    "page.locked.sign_in": "Sign in",
+    "page.teaser.desc": "Sign in to view monitor status",
+    "manage.groups.loading": "Loading groups...",
+    "manage.groups.edit_sheet_title": "Edit Group",
+    "manage.groups.edit_sheet_desc": "Update the group name and description.",
+    "manage.groups.save_button": "Save changes",
+    "manage.groups.save_success": "Group saved",
+    "manage.groups.open_detail_button": "Open detail"
+  }
 }

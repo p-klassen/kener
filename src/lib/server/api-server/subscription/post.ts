@@ -7,7 +7,9 @@ import {
   VerifySubscriberOTP,
   VerifySubscriberToken,
   UpdateSubscriberPreferences,
+  LoginWithAccount,
 } from "$lib/server/controllers/userSubscriptionsController";
+import { GetLoggedInSession } from "$lib/server/controllers/userController";
 import db from "$lib/server/db/db.js";
 
 interface LoginRequest {
@@ -35,7 +37,16 @@ interface UpdatePreferencesRequest {
   maintenance_monitors?: string[];
 }
 
-type PostRequestBody = LoginRequest | VerifyRequest | GetPreferencesRequest | UpdatePreferencesRequest;
+interface LoginWithAccountRequest {
+  action: "loginWithAccount";
+}
+
+type PostRequestBody =
+  | LoginRequest
+  | VerifyRequest
+  | GetPreferencesRequest
+  | UpdatePreferencesRequest
+  | LoginWithAccountRequest;
 
 export default async function post(req: APIServerRequest): Promise<Response> {
   const body = req.body as PostRequestBody;
@@ -68,6 +79,8 @@ export default async function post(req: APIServerRequest): Promise<Response> {
         (body as UpdatePreferencesRequest).maintenance_monitors,
         config,
       );
+    case "loginWithAccount":
+      return handleLoginWithAccount(req);
     default:
       return error(400, { message: "Invalid action" });
   }
@@ -175,4 +188,18 @@ async function handleUpdatePreferences(
   }
 
   return json({ success: true });
+}
+
+async function handleLoginWithAccount(req: APIServerRequest): Promise<Response> {
+  const session = await GetLoggedInSession(req.cookies);
+  if (!session) {
+    return error(401, { message: "Not logged in" });
+  }
+
+  const result = await LoginWithAccount(session.id, session.email);
+  if (!result.success) {
+    return error(400, { message: result.error || "Failed to link account" });
+  }
+
+  return json({ success: true, token: result.token });
 }

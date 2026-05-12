@@ -1006,14 +1006,21 @@
     "manage.authentication.ldap_group_search_base": "Gruppen-Such-Basis-DN",
     "manage.authentication.ldap_group_search_filter": "Gruppen-Suchfilter",
     "manage.authentication.ldap_group_member_attr": "Mitglieder-Attribut",
-    "manage.authentication.ldap_group_name_attr": "Gruppenname-Attribut"
-  },
-  "manage.common.edit": "Bearbeiten",
-  "manage.common.delete": "Löschen",
-  "manage.common.cancel": "Abbrechen",
-  "manage.users.verify_email_button": "E-Mail verifizieren",
-  "manage.users.activate_button": "Aktivieren",
-  "manage.users.deactivate_button": "Deaktivieren",
-  "manage.users.delete_dialog_title": "Benutzer löschen",
-  "manage.users.delete_dialog_desc": "Möchten Sie wirklich löschen"
+    "manage.authentication.ldap_group_name_attr": "Gruppenname-Attribut",
+    "manage.users.verify_email_button": "E-Mail verifizieren",
+    "manage.users.activate_button": "Aktivieren",
+    "manage.users.deactivate_button": "Deaktivieren",
+    "manage.users.delete_dialog_title": "Benutzer löschen",
+    "manage.users.delete_dialog_desc": "Möchten Sie wirklich löschen",
+    "page.locked.title": "Diese Seite ist privat",
+    "page.locked.desc": "Melden Sie sich an, um diese Statusseite zu sehen.",
+    "page.locked.sign_in": "Anmelden",
+    "page.teaser.desc": "Melden Sie sich an, um den Monitor-Status zu sehen",
+    "manage.groups.loading": "Gruppen werden geladen...",
+    "manage.groups.edit_sheet_title": "Gruppe bearbeiten",
+    "manage.groups.edit_sheet_desc": "Name und Beschreibung der Gruppe aktualisieren.",
+    "manage.groups.save_button": "Speichern",
+    "manage.groups.save_success": "Gruppe gespeichert",
+    "manage.groups.open_detail_button": "Detailseite öffnen"
+  }
 }

@@ -998,16 +998,35 @@ interface ImageUploadData {
 async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: string }> {
   const {
     base64,
-    mimeType,
     fileName,
     maxWidth = 256,
     maxHeight = 256,
     forceDimensions = false,
     prefix = "img_",
   } = data;
+  let mimeType = data.mimeType;
 
   if (!base64) {
     throw new Error("Image data is required");
+  }
+
+  // Normalize browser-reported font MIME type aliases to canonical values
+  const fontMimeAliases: Record<string, string> = {
+    "application/x-font-ttf": "font/ttf",
+    "application/x-font-otf": "font/otf",
+    "application/font-woff": "font/woff",
+    "application/font-woff2": "font/woff2",
+    "application/vnd.ms-opentype": "font/otf",
+    "application/x-font-woff": "font/woff",
+  };
+  if (fontMimeAliases[mimeType]) {
+    mimeType = fontMimeAliases[mimeType];
+  }
+  // If browser reports octet-stream, try to derive from fileName extension
+  if (mimeType === "application/octet-stream" && fileName) {
+    const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+    const extMap: Record<string, string> = { ttf: "font/ttf", otf: "font/otf", woff: "font/woff", woff2: "font/woff2" };
+    if (extMap[ext]) mimeType = extMap[ext];
   }
 
   const allowedMimeTypes = [

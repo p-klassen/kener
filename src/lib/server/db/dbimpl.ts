@@ -349,6 +349,7 @@ class DbImpl {
   createSubscriberUser!: SubscriptionSystemRepository["createSubscriberUser"];
   getSubscriberUserById!: SubscriptionSystemRepository["getSubscriberUserById"];
   getSubscriberUserByEmail!: SubscriptionSystemRepository["getSubscriberUserByEmail"];
+  getSubscriberUserByLinkedUserId!: SubscriptionSystemRepository["getSubscriberUserByLinkedUserId"];
   updateSubscriberUser!: SubscriptionSystemRepository["updateSubscriberUser"];
   deleteSubscriberUser!: SubscriptionSystemRepository["deleteSubscriberUser"];
   getSubscriberUsersCount!: SubscriptionSystemRepository["getSubscriberUsersCount"];
@@ -831,6 +832,9 @@ class DbImpl {
     this.createSubscriberUser = this.subscriptionSystem.createSubscriberUser.bind(this.subscriptionSystem);
     this.getSubscriberUserById = this.subscriptionSystem.getSubscriberUserById.bind(this.subscriptionSystem);
     this.getSubscriberUserByEmail = this.subscriptionSystem.getSubscriberUserByEmail.bind(this.subscriptionSystem);
+    this.getSubscriberUserByLinkedUserId = this.subscriptionSystem.getSubscriberUserByLinkedUserId.bind(
+      this.subscriptionSystem,
+    );
     this.updateSubscriberUser = this.subscriptionSystem.updateSubscriberUser.bind(this.subscriptionSystem);
     this.deleteSubscriberUser = this.subscriptionSystem.deleteSubscriberUser.bind(this.subscriptionSystem);
     this.getSubscriberUsersCount = this.subscriptionSystem.getSubscriberUsersCount.bind(this.subscriptionSystem);

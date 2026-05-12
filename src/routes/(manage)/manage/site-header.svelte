@@ -25,9 +25,6 @@
       >
         Status Page
       </Button>
-      <Button href="https://kener.ing/docs" variant="secondary" size="sm" target="_blank" rel="noopener noreferrer">
-        Documentation
-      </Button>
     </div>
   </div>
 </header>

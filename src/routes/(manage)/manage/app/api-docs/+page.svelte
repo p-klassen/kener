@@ -5,7 +5,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
 
-  const apiDocsUrl = clientResolver(resolve, "/docs/spec/v4/");
+  const apiDocsUrl = clientResolver(resolve, "/manage/api-spec");
 </script>
 
 <div class="flex w-full flex-col gap-6">

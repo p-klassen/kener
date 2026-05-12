@@ -3,12 +3,12 @@ import type { RequestHandler } from "./$types";
 import { GetOidcAuthorizationUrl } from "$lib/server/controllers/oidcController.js";
 
 export const GET: RequestHandler = async ({ cookies }) => {
+  let authUrl: string;
   try {
-    const url = await GetOidcAuthorizationUrl(cookies);
-    throw redirect(302, url);
+    authUrl = await GetOidcAuthorizationUrl(cookies);
   } catch (e: unknown) {
-    if (e instanceof Response) throw e;
     const msg = e instanceof Error ? e.message : "OIDC configuration error";
     throw redirect(302, `/account/signin?error=${encodeURIComponent(msg)}`);
   }
+  throw redirect(302, authUrl);
 };

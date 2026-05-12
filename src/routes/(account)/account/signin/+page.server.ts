@@ -5,6 +5,7 @@ import {
   GetUsersCount,
   GetUserPasswordHashById,
   CreateFirstUser,
+  GetUserPermissions,
 } from "$lib/server/controllers/userController";
 import { VerifyPassword, GenerateToken, CookieConfig } from "$lib/server/controllers/commonController";
 import { AuthenticateWithLdap } from "$lib/server/controllers/ldapController.js";
@@ -16,7 +17,9 @@ export const load: PageServerLoad = async ({ parent, url }) => {
   const parentData = await parent();
 
   if (!!parentData.loggedInUser && parentData.isSetupComplete) {
-    throw redirect(302, serverResolve("/manage/app/site-configurations"));
+    const permissions = await GetUserPermissions(parentData.loggedInUser.id);
+    const dest = permissions.size > 0 ? "/manage/app/site-configurations" : "/";
+    throw redirect(302, serverResolve(dest));
   }
 
   const [oidcConfig, ldapConfig] = await Promise.all([GetOidcConfig(), GetLdapConfig()]);
@@ -89,7 +92,8 @@ export const actions: Actions = {
     if (userDB.must_change_password) {
       throw redirect(302, serverResolve("/account/change-password"));
     }
-    throw redirect(302, serverResolve("/manage/app/site-configurations"));
+    const loginPermissions = await GetUserPermissions(userDB.id);
+    throw redirect(302, serverResolve(loginPermissions.size > 0 ? "/manage/app/site-configurations" : "/"));
   },
   ldap: async ({ request, cookies }) => {
     const formData = await request.formData();
@@ -111,7 +115,8 @@ export const actions: Actions = {
         secure: cookieConfig.secure,
         sameSite: cookieConfig.sameSite,
       });
-      throw redirect(302, serverResolve("/manage/app/site-configurations"));
+      const ldapPermissions = await GetUserPermissions(userDB.id);
+      throw redirect(302, serverResolve(ldapPermissions.size > 0 ? "/manage/app/site-configurations" : "/"));
     } catch (e: unknown) {
       if (e instanceof Response) throw e;
       const msg = e instanceof Error ? e.message : "LDAP authentication failed";

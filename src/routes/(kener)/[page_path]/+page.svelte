@@ -9,6 +9,7 @@
   import mdToHTML from "$lib/marked.js";
   import clientResolver from "$lib/client/resolver.js";
   import { resolve } from "$app/paths";
+  import { t } from "$lib/stores/i18n";
   import { selectedTimezone } from "$lib/stores/timezone";
   import { getEndOfDayAtTz } from "$lib/client/datetime";
   import { requestMonitorBar } from "$lib/client/monitor-bar-client";
@@ -145,10 +146,10 @@
 {#if data.locked && data.lockedMode === 'locked'}
   <div class="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
     <span class="text-5xl">🔒</span>
-    <h2 class="text-xl font-semibold">This page is private</h2>
-    <p class="text-muted-foreground text-sm">Sign in to view this status page.</p>
+    <h2 class="text-xl font-semibold">{$t("page.locked.title")}</h2>
+    <p class="text-muted-foreground text-sm">{$t("page.locked.desc")}</p>
     <a href={clientResolver(resolve, "/account/signin")} class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
-      Sign in
+      {$t("page.locked.sign_in")}
     </a>
   </div>
 {:else if data.locked && data.lockedMode === 'teaser'}
@@ -180,8 +181,8 @@
     </div>
     <div class="flex items-center gap-2 rounded-2xl border border-dashed px-4 py-3 opacity-70">
       <span>🔒</span>
-      <span class="text-muted-foreground text-sm">Sign in to view monitor status</span>
-      <a href={clientResolver(resolve, "/account/signin")} class="text-primary ml-auto text-xs underline">Sign in</a>
+      <span class="text-muted-foreground text-sm">{$t("page.teaser.desc")}</span>
+      <a href={clientResolver(resolve, "/account/signin")} class="text-primary ml-auto text-xs underline">{$t("page.locked.sign_in")}</a>
     </div>
   </div>
 {:else}

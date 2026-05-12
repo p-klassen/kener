@@ -8,6 +8,7 @@ export interface MonitorFilter {
   monitor_type?: string;
   tag?: string;
   is_hidden?: string;
+  is_public?: number;
   tags?: string[];
   search?: string;
 }

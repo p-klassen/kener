@@ -311,6 +311,12 @@
     }
   }
 
+  function fontMimeTypeFromName(filename: string): string {
+    const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+    const map: Record<string, string> = { ttf: "font/ttf", otf: "font/otf", woff: "font/woff", woff2: "font/woff2" };
+    return map[ext] ?? "font/ttf";
+  }
+
   function fileToBase64Font(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -353,7 +359,7 @@
           action: "uploadImage",
           data: {
             base64,
-            mimeType: file.type,
+            mimeType: fontMimeTypeFromName(file.name),
             fileName: file.name
           }
         })

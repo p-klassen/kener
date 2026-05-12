@@ -874,6 +874,7 @@ export interface SubscriberUserRecord {
   status: SubscriberUserStatus;
   verification_code: string | null;
   verification_expires_at: Date | null;
+  linked_user_id: number | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -883,6 +884,7 @@ export interface SubscriberUserRecordInsert {
   status?: SubscriberUserStatus;
   verification_code?: string | null;
   verification_expires_at?: Date | null;
+  linked_user_id?: number | null;
 }
 
 // ============ subscriber_methods table ============
