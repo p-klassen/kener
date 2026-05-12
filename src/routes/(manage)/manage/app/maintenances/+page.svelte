@@ -98,22 +98,22 @@
     return `${hours}h ${mins}m`;
   }
 
-  // Get status badge variant
-  function getStatusBadgeVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  // Get status badge class for ACTIVE/INACTIVE
+  function getStatusClass(status: string): string {
     switch (status) {
       case "ACTIVE":
-        return "default";
+        return "text-green-500";
       case "INACTIVE":
-        return "secondary";
+        return "text-pink-500";
       default:
-        return "outline";
+        return "text-muted-foreground";
     }
   }
 
   // Compute event display status based on current time
   interface EventDisplayStatus {
     label: string;
-    variant: "default" | "secondary" | "destructive" | "outline";
+    colorClass: string;
   }
 
   function getEventDisplayStatus(event: MaintenanceEvent): EventDisplayStatus {
@@ -121,36 +121,20 @@
     const startDate = new Date(event.start_date_time * 1000);
     const endDate = new Date(event.end_date_time * 1000);
 
-    // Check if currently ongoing
     if (isWithinInterval(now, { start: startDate, end: endDate })) {
-      return {
-        label: "Ongoing",
-        variant: "default"
-      };
+      return { label: "Ongoing", colorClass: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" };
     }
 
-    // Check if in the future (upcoming)
     if (isFuture(startDate)) {
       const distance = formatDistanceToNow(startDate, { addSuffix: false });
-      return {
-        label: `In ${distance}`,
-        variant: "outline"
-      };
+      return { label: `In ${distance}`, colorClass: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" };
     }
 
-    // If in the past (completed)
     if (isPast(endDate)) {
-      return {
-        label: "Completed",
-        variant: "secondary"
-      };
+      return { label: "Completed", colorClass: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" };
     }
 
-    // Fallback
-    return {
-      label: "Scheduled",
-      variant: "outline"
-    };
+    return { label: "Scheduled", colorClass: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" };
   }
 
   // Navigate to maintenance
@@ -315,9 +299,9 @@
                   {@const displayStatus = getEventDisplayStatus(maintenance.upcoming_event)}
                   <Tooltip.Root>
                     <Tooltip.Trigger>
-                      <Badge variant={displayStatus.variant}>
+                      <span class="rounded px-2 py-0.5 text-xs font-semibold {displayStatus.colorClass}">
                         {displayStatus.label}
-                      </Badge>
+                      </span>
                     </Tooltip.Trigger>
                     <Tooltip.Content>
                       <div class="text-sm">
@@ -337,9 +321,9 @@
                 {/if}
               </Table.Cell>
               <Table.Cell>
-                <Badge variant={getStatusBadgeVariant(maintenance.status)}>
+                <span class="text-sm font-semibold {getStatusClass(maintenance.status)}">
                   {maintenance.status}
-                </Badge>
+                </span>
               </Table.Cell>
               <Table.Cell class="text-right">
                 <Button

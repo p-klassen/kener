@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Kener API v4",
-    "version": "4.0.0",
-    "description": "OpenAPI specification for Kener self-hosted API v4. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages"
+    "version": "4.1.0",
+    "description": "OpenAPI specification for Kener self-hosted API v4. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages\n\nNew in v4.1.0: Authentication configuration (OIDC, LDAP) stored under site config keys \"auth.oidc\" and \"auth.ldap\"."
   },
   "servers": [
     {
@@ -50,7 +50,9 @@
   "paths": {
     "/api/v4/monitors": {
       "get": {
-        "tags": ["Monitors"],
+        "tags": [
+          "Monitors"
+        ],
         "operationId": "listMonitors",
         "summary": "List monitors",
         "parameters": [
@@ -90,7 +92,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["monitors"],
+                  "required": [
+                    "monitors"
+                  ],
                   "properties": {
                     "monitors": {
                       "type": "array",
@@ -109,7 +113,9 @@
         }
       },
       "post": {
-        "tags": ["Monitors"],
+        "tags": [
+          "Monitors"
+        ],
         "operationId": "createMonitor",
         "summary": "Create monitor",
         "requestBody": {
@@ -129,7 +135,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["monitor"],
+                  "required": [
+                    "monitor"
+                  ],
                   "properties": {
                     "monitor": {
                       "$ref": "#/components/schemas/Monitor"
@@ -158,7 +166,9 @@
         }
       ],
       "get": {
-        "tags": ["Monitors"],
+        "tags": [
+          "Monitors"
+        ],
         "operationId": "getMonitor",
         "summary": "Get monitor",
         "responses": {
@@ -168,7 +178,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["monitor"],
+                  "required": [
+                    "monitor"
+                  ],
                   "properties": {
                     "monitor": {
                       "$ref": "#/components/schemas/Monitor"
@@ -187,7 +199,9 @@
         }
       },
       "patch": {
-        "tags": ["Monitors"],
+        "tags": [
+          "Monitors"
+        ],
         "operationId": "updateMonitor",
         "summary": "Update monitor",
         "requestBody": {
@@ -207,7 +221,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["monitor"],
+                  "required": [
+                    "monitor"
+                  ],
                   "properties": {
                     "monitor": {
                       "$ref": "#/components/schemas/Monitor"
@@ -239,7 +255,9 @@
         }
       ],
       "get": {
-        "tags": ["Monitor Data"],
+        "tags": [
+          "Monitor Data"
+        ],
         "operationId": "getMonitorDataRange",
         "summary": "Get monitor data in a time range",
         "description": "Returns monitoring data points for [start_ts, end_ts). Timestamps are normalized to minute boundaries.",
@@ -268,7 +286,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "type": "array",
@@ -290,7 +310,9 @@
         }
       },
       "patch": {
-        "tags": ["Monitor Data"],
+        "tags": [
+          "Monitor Data"
+        ],
         "operationId": "bulkUpdateMonitorData",
         "summary": "Bulk update monitor data over a range",
         "requestBody": {
@@ -310,7 +332,10 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["message", "updated_count"],
+                  "required": [
+                    "message",
+                    "updated_count"
+                  ],
                   "properties": {
                     "message": {
                       "type": "string"
@@ -342,7 +367,9 @@
         }
       ],
       "get": {
-        "tags": ["Monitor Data"],
+        "tags": [
+          "Monitor Data"
+        ],
         "operationId": "getMonitorDataPoint",
         "summary": "Get one monitor data point",
         "responses": {
@@ -352,7 +379,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/MonitoringDataPoint"
@@ -374,7 +403,9 @@
         }
       },
       "patch": {
-        "tags": ["Monitor Data"],
+        "tags": [
+          "Monitor Data"
+        ],
         "operationId": "upsertMonitorDataPoint",
         "summary": "Upsert one monitor data point",
         "requestBody": {
@@ -394,7 +425,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/MonitoringDataPoint"
@@ -415,7 +448,9 @@
     },
     "/api/v4/incidents": {
       "get": {
-        "tags": ["Incidents"],
+        "tags": [
+          "Incidents"
+        ],
         "operationId": "listIncidents",
         "summary": "List incidents",
         "parameters": [
@@ -449,7 +484,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["incidents"],
+                  "required": [
+                    "incidents"
+                  ],
                   "properties": {
                     "incidents": {
                       "type": "array",
@@ -468,7 +505,9 @@
         }
       },
       "post": {
-        "tags": ["Incidents"],
+        "tags": [
+          "Incidents"
+        ],
         "operationId": "createIncident",
         "summary": "Create incident",
         "requestBody": {
@@ -488,7 +527,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["incident"],
+                  "required": [
+                    "incident"
+                  ],
                   "properties": {
                     "incident": {
                       "$ref": "#/components/schemas/Incident"
@@ -514,7 +555,9 @@
         }
       ],
       "get": {
-        "tags": ["Incidents"],
+        "tags": [
+          "Incidents"
+        ],
         "operationId": "getIncident",
         "summary": "Get incident",
         "responses": {
@@ -524,7 +567,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["incident"],
+                  "required": [
+                    "incident"
+                  ],
                   "properties": {
                     "incident": {
                       "$ref": "#/components/schemas/Incident"
@@ -543,7 +588,9 @@
         }
       },
       "patch": {
-        "tags": ["Incidents"],
+        "tags": [
+          "Incidents"
+        ],
         "operationId": "updateIncident",
         "summary": "Update incident",
         "requestBody": {
@@ -563,7 +610,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["incident"],
+                  "required": [
+                    "incident"
+                  ],
                   "properties": {
                     "incident": {
                       "$ref": "#/components/schemas/Incident"
@@ -588,7 +637,9 @@
         }
       },
       "delete": {
-        "tags": ["Incidents"],
+        "tags": [
+          "Incidents"
+        ],
         "operationId": "deleteIncident",
         "summary": "Delete incident",
         "responses": {
@@ -618,7 +669,9 @@
         }
       ],
       "get": {
-        "tags": ["Incident Comments"],
+        "tags": [
+          "Incident Comments"
+        ],
         "operationId": "listIncidentComments",
         "summary": "List incident comments",
         "responses": {
@@ -628,7 +681,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["comments"],
+                  "required": [
+                    "comments"
+                  ],
                   "properties": {
                     "comments": {
                       "type": "array",
@@ -650,7 +705,9 @@
         }
       },
       "post": {
-        "tags": ["Incident Comments"],
+        "tags": [
+          "Incident Comments"
+        ],
         "operationId": "createIncidentComment",
         "summary": "Create incident comment",
         "requestBody": {
@@ -670,7 +727,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["comment"],
+                  "required": [
+                    "comment"
+                  ],
                   "properties": {
                     "comment": {
                       "$ref": "#/components/schemas/IncidentComment"
@@ -702,7 +761,9 @@
         }
       ],
       "get": {
-        "tags": ["Incident Comments"],
+        "tags": [
+          "Incident Comments"
+        ],
         "operationId": "getIncidentComment",
         "summary": "Get incident comment",
         "responses": {
@@ -712,7 +773,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["comment"],
+                  "required": [
+                    "comment"
+                  ],
                   "properties": {
                     "comment": {
                       "$ref": "#/components/schemas/IncidentComment"
@@ -734,7 +797,9 @@
         }
       },
       "patch": {
-        "tags": ["Incident Comments"],
+        "tags": [
+          "Incident Comments"
+        ],
         "operationId": "updateIncidentComment",
         "summary": "Update incident comment",
         "requestBody": {
@@ -754,7 +819,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["comment"],
+                  "required": [
+                    "comment"
+                  ],
                   "properties": {
                     "comment": {
                       "$ref": "#/components/schemas/IncidentComment"
@@ -779,7 +846,9 @@
         }
       },
       "delete": {
-        "tags": ["Incident Comments"],
+        "tags": [
+          "Incident Comments"
+        ],
         "operationId": "deleteIncidentComment",
         "summary": "Delete incident comment",
         "responses": {
@@ -807,7 +876,9 @@
     },
     "/api/v4/pages": {
       "get": {
-        "tags": ["Pages"],
+        "tags": [
+          "Pages"
+        ],
         "operationId": "listPages",
         "summary": "List pages",
         "responses": {
@@ -817,7 +888,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["pages"],
+                  "required": [
+                    "pages"
+                  ],
                   "properties": {
                     "pages": {
                       "type": "array",
@@ -836,7 +909,9 @@
         }
       },
       "post": {
-        "tags": ["Pages"],
+        "tags": [
+          "Pages"
+        ],
         "operationId": "createPage",
         "summary": "Create page",
         "requestBody": {
@@ -856,7 +931,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["page"],
+                  "required": [
+                    "page"
+                  ],
                   "properties": {
                     "page": {
                       "$ref": "#/components/schemas/Page"
@@ -882,7 +959,9 @@
         }
       ],
       "get": {
-        "tags": ["Pages"],
+        "tags": [
+          "Pages"
+        ],
         "operationId": "getPage",
         "summary": "Get page",
         "responses": {
@@ -892,7 +971,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["page"],
+                  "required": [
+                    "page"
+                  ],
                   "properties": {
                     "page": {
                       "$ref": "#/components/schemas/Page"
@@ -911,7 +992,9 @@
         }
       },
       "patch": {
-        "tags": ["Pages"],
+        "tags": [
+          "Pages"
+        ],
         "operationId": "updatePage",
         "summary": "Update page",
         "requestBody": {
@@ -931,7 +1014,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["page"],
+                  "required": [
+                    "page"
+                  ],
                   "properties": {
                     "page": {
                       "$ref": "#/components/schemas/Page"
@@ -953,7 +1038,9 @@
         }
       },
       "delete": {
-        "tags": ["Pages"],
+        "tags": [
+          "Pages"
+        ],
         "operationId": "deletePage",
         "summary": "Delete page",
         "responses": {
@@ -978,7 +1065,9 @@
     },
     "/api/v4/site": {
       "get": {
-        "tags": ["Site"],
+        "tags": [
+          "Site"
+        ],
         "operationId": "listSiteConfig",
         "summary": "List site config entries",
         "responses": {
@@ -988,7 +1077,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["site_data"],
+                  "required": [
+                    "site_data"
+                  ],
                   "properties": {
                     "site_data": {
                       "type": "array",
@@ -1014,7 +1105,9 @@
         }
       ],
       "get": {
-        "tags": ["Site"],
+        "tags": [
+          "Site"
+        ],
         "operationId": "getSiteConfig",
         "summary": "Get one site config entry",
         "responses": {
@@ -1037,10 +1130,13 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "description": "\n\nNew config keys in v4.1.0:\n- `auth.oidc`: OIDC/OpenID Connect authentication configuration\n- `auth.ldap`: LDAP/Active Directory authentication configuration"
       },
       "patch": {
-        "tags": ["Site"],
+        "tags": [
+          "Site"
+        ],
         "operationId": "updateSiteConfig",
         "summary": "Update one site config entry",
         "requestBody": {
@@ -1049,7 +1145,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["value"],
+                "required": [
+                  "value"
+                ],
                 "properties": {
                   "value": {}
                 }
@@ -1082,7 +1180,9 @@
     },
     "/api/v4/maintenances": {
       "get": {
-        "tags": ["Maintenances"],
+        "tags": [
+          "Maintenances"
+        ],
         "operationId": "listMaintenances",
         "summary": "List maintenances",
         "parameters": [
@@ -1091,7 +1191,10 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["ACTIVE", "INACTIVE"]
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
             }
           },
           {
@@ -1109,7 +1212,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["maintenances"],
+                  "required": [
+                    "maintenances"
+                  ],
                   "properties": {
                     "maintenances": {
                       "type": "array",
@@ -1128,7 +1233,9 @@
         }
       },
       "post": {
-        "tags": ["Maintenances"],
+        "tags": [
+          "Maintenances"
+        ],
         "operationId": "createMaintenance",
         "summary": "Create maintenance",
         "requestBody": {
@@ -1148,7 +1255,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["maintenance"],
+                  "required": [
+                    "maintenance"
+                  ],
                   "properties": {
                     "maintenance": {
                       "$ref": "#/components/schemas/Maintenance"
@@ -1177,7 +1286,9 @@
         }
       ],
       "get": {
-        "tags": ["Maintenances"],
+        "tags": [
+          "Maintenances"
+        ],
         "operationId": "getMaintenance",
         "summary": "Get maintenance",
         "responses": {
@@ -1187,7 +1298,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["maintenance"],
+                  "required": [
+                    "maintenance"
+                  ],
                   "properties": {
                     "maintenance": {
                       "$ref": "#/components/schemas/Maintenance"
@@ -1206,7 +1319,9 @@
         }
       },
       "patch": {
-        "tags": ["Maintenances"],
+        "tags": [
+          "Maintenances"
+        ],
         "operationId": "updateMaintenance",
         "summary": "Update maintenance",
         "requestBody": {
@@ -1226,7 +1341,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["maintenance"],
+                  "required": [
+                    "maintenance"
+                  ],
                   "properties": {
                     "maintenance": {
                       "$ref": "#/components/schemas/Maintenance"
@@ -1251,7 +1368,9 @@
         }
       },
       "delete": {
-        "tags": ["Maintenances"],
+        "tags": [
+          "Maintenances"
+        ],
         "operationId": "deleteMaintenance",
         "summary": "Delete maintenance",
         "responses": {
@@ -1276,7 +1395,9 @@
     },
     "/api/v4/maintenances/events": {
       "get": {
-        "tags": ["Maintenance Events"],
+        "tags": [
+          "Maintenance Events"
+        ],
         "operationId": "listMaintenanceEvents",
         "summary": "List maintenance events",
         "parameters": [
@@ -1312,7 +1433,13 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["SCHEDULED", "ONGOING", "COMPLETED", "CANCELLED", "READY"]
+              "enum": [
+                "SCHEDULED",
+                "ONGOING",
+                "COMPLETED",
+                "CANCELLED",
+                "READY"
+              ]
             }
           },
           {
@@ -1337,7 +1464,12 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["events", "page", "limit", "total"],
+                  "required": [
+                    "events",
+                    "page",
+                    "limit",
+                    "total"
+                  ],
                   "properties": {
                     "events": {
                       "type": "array",
@@ -1372,7 +1504,9 @@
         }
       ],
       "get": {
-        "tags": ["Maintenance Events"],
+        "tags": [
+          "Maintenance Events"
+        ],
         "operationId": "listMaintenanceEventsByMaintenance",
         "summary": "List events for one maintenance",
         "parameters": [
@@ -1403,7 +1537,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["events", "page", "limit"],
+                  "required": [
+                    "events",
+                    "page",
+                    "limit"
+                  ],
                   "properties": {
                     "events": {
                       "type": "array",
@@ -1441,7 +1579,9 @@
         }
       ],
       "get": {
-        "tags": ["Maintenance Events"],
+        "tags": [
+          "Maintenance Events"
+        ],
         "operationId": "getMaintenanceEvent",
         "summary": "Get one maintenance event",
         "responses": {
@@ -1451,7 +1591,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["event"],
+                  "required": [
+                    "event"
+                  ],
                   "properties": {
                     "event": {
                       "$ref": "#/components/schemas/MaintenanceEvent"
@@ -1470,7 +1612,9 @@
         }
       },
       "patch": {
-        "tags": ["Maintenance Events"],
+        "tags": [
+          "Maintenance Events"
+        ],
         "operationId": "updateMaintenanceEvent",
         "summary": "Update one maintenance event",
         "requestBody": {
@@ -1490,7 +1634,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["event"],
+                  "required": [
+                    "event"
+                  ],
                   "properties": {
                     "event": {
                       "$ref": "#/components/schemas/MaintenanceEvent"
@@ -1515,7 +1661,9 @@
         }
       },
       "delete": {
-        "tags": ["Maintenance Events"],
+        "tags": [
+          "Maintenance Events"
+        ],
         "operationId": "deleteMaintenanceEvent",
         "summary": "Delete one maintenance event",
         "responses": {
@@ -1676,11 +1824,16 @@
     "schemas": {
       "ErrorResponse": {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
           "error": {
             "type": "object",
-            "required": ["code", "message"],
+            "required": [
+              "code",
+              "message"
+            ],
             "properties": {
               "code": {
                 "type": "string"
@@ -1694,7 +1847,9 @@
       },
       "MessageResponse": {
         "type": "object",
-        "required": ["message"],
+        "required": [
+          "message"
+        ],
         "properties": {
           "message": {
             "type": "string"
@@ -1703,7 +1858,10 @@
       },
       "Monitor": {
         "type": "object",
-        "required": ["tag", "name"],
+        "required": [
+          "tag",
+          "name"
+        ],
         "properties": {
           "tag": {
             "type": "string"
@@ -1722,7 +1880,13 @@
           },
           "default_status": {
             "type": "string",
-            "enum": ["UP", "DOWN", "DEGRADED", "MAINTENANCE", "NO_DATA"]
+            "enum": [
+              "UP",
+              "DOWN",
+              "DEGRADED",
+              "MAINTENANCE",
+              "NO_DATA"
+            ]
           },
           "status": {
             "type": "string"
@@ -1752,7 +1916,10 @@
       },
       "CreateMonitorRequest": {
         "type": "object",
-        "required": ["tag", "name"],
+        "required": [
+          "tag",
+          "name"
+        ],
         "properties": {
           "tag": {
             "type": "string",
@@ -1860,7 +2027,13 @@
       },
       "MonitoringDataPoint": {
         "type": "object",
-        "required": ["monitor_tag", "timestamp", "status", "latency", "type"],
+        "required": [
+          "monitor_tag",
+          "timestamp",
+          "status",
+          "latency",
+          "type"
+        ],
         "properties": {
           "monitor_tag": {
             "type": "string"
@@ -1871,7 +2044,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["UP", "DOWN", "DEGRADED"]
+            "enum": [
+              "UP",
+              "DOWN",
+              "DEGRADED"
+            ]
           },
           "latency": {
             "type": "number",
@@ -1885,7 +2062,12 @@
       },
       "BulkUpdateMonitorDataRequest": {
         "type": "object",
-        "required": ["start_ts", "end_ts", "status", "latency"],
+        "required": [
+          "start_ts",
+          "end_ts",
+          "status",
+          "latency"
+        ],
         "properties": {
           "start_ts": {
             "type": "integer"
@@ -1895,7 +2077,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["UP", "DOWN", "DEGRADED"]
+            "enum": [
+              "UP",
+              "DOWN",
+              "DEGRADED"
+            ]
           },
           "latency": {
             "type": "number",
@@ -1914,7 +2100,11 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["UP", "DOWN", "DEGRADED"]
+            "enum": [
+              "UP",
+              "DOWN",
+              "DEGRADED"
+            ]
           },
           "latency": {
             "type": "number",
@@ -1925,20 +2115,30 @@
       },
       "MonitorImpact": {
         "type": "object",
-        "required": ["monitor_tag"],
+        "required": [
+          "monitor_tag"
+        ],
         "properties": {
           "monitor_tag": {
             "type": "string"
           },
           "impact": {
             "type": "string",
-            "enum": ["UP", "DOWN", "DEGRADED", "MAINTENANCE"]
+            "enum": [
+              "UP",
+              "DOWN",
+              "DEGRADED",
+              "MAINTENANCE"
+            ]
           }
         }
       },
       "Incident": {
         "type": "object",
-        "required": ["id", "title"],
+        "required": [
+          "id",
+          "title"
+        ],
         "properties": {
           "id": {
             "type": "integer"
@@ -1975,7 +2175,10 @@
       },
       "CreateIncidentRequest": {
         "type": "object",
-        "required": ["title", "start_date_time"],
+        "required": [
+          "title",
+          "start_date_time"
+        ],
         "properties": {
           "title": {
             "type": "string",
@@ -2019,7 +2222,13 @@
       },
       "IncidentComment": {
         "type": "object",
-        "required": ["id", "incident_id", "comment", "state", "timestamp"],
+        "required": [
+          "id",
+          "incident_id",
+          "comment",
+          "state",
+          "timestamp"
+        ],
         "properties": {
           "id": {
             "type": "integer"
@@ -2032,7 +2241,12 @@
           },
           "state": {
             "type": "string",
-            "enum": ["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]
+            "enum": [
+              "INVESTIGATING",
+              "IDENTIFIED",
+              "MONITORING",
+              "RESOLVED"
+            ]
           },
           "timestamp": {
             "type": "integer"
@@ -2045,7 +2259,10 @@
       },
       "CreateIncidentCommentRequest": {
         "type": "object",
-        "required": ["comment", "state"],
+        "required": [
+          "comment",
+          "state"
+        ],
         "properties": {
           "comment": {
             "type": "string",
@@ -2053,7 +2270,12 @@
           },
           "state": {
             "type": "string",
-            "enum": ["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]
+            "enum": [
+              "INVESTIGATING",
+              "IDENTIFIED",
+              "MONITORING",
+              "RESOLVED"
+            ]
           },
           "timestamp": {
             "type": "integer"
@@ -2069,7 +2291,12 @@
           },
           "state": {
             "type": "string",
-            "enum": ["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]
+            "enum": [
+              "INVESTIGATING",
+              "IDENTIFIED",
+              "MONITORING",
+              "RESOLVED"
+            ]
           },
           "timestamp": {
             "type": "integer"
@@ -2079,7 +2306,11 @@
       },
       "Page": {
         "type": "object",
-        "required": ["page_path", "page_title", "page_header"],
+        "required": [
+          "page_path",
+          "page_title",
+          "page_header"
+        ],
         "properties": {
           "page_path": {
             "type": "string"
@@ -2111,7 +2342,11 @@
       },
       "CreatePageRequest": {
         "type": "object",
-        "required": ["page_path", "page_title", "page_header"],
+        "required": [
+          "page_path",
+          "page_title",
+          "page_header"
+        ],
         "properties": {
           "page_path": {
             "type": "string",
@@ -2177,7 +2412,11 @@
       },
       "SiteDataEntry": {
         "type": "object",
-        "required": ["key", "value", "data_type"],
+        "required": [
+          "key",
+          "value",
+          "data_type"
+        ],
         "properties": {
           "key": {
             "type": "string"
@@ -2191,7 +2430,13 @@
       },
       "Maintenance": {
         "type": "object",
-        "required": ["id", "title", "start_date_time", "rrule", "duration_seconds"],
+        "required": [
+          "id",
+          "title",
+          "start_date_time",
+          "rrule",
+          "duration_seconds"
+        ],
         "properties": {
           "id": {
             "type": "integer"
@@ -2214,7 +2459,10 @@
           },
           "status": {
             "type": "string",
-            "enum": ["ACTIVE", "INACTIVE"]
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
           },
           "monitors": {
             "type": "array",
@@ -2227,7 +2475,12 @@
       },
       "CreateMaintenanceRequest": {
         "type": "object",
-        "required": ["title", "start_date_time", "rrule", "duration_seconds"],
+        "required": [
+          "title",
+          "start_date_time",
+          "rrule",
+          "duration_seconds"
+        ],
         "properties": {
           "title": {
             "type": "string",
@@ -2278,7 +2531,10 @@
           },
           "status": {
             "type": "string",
-            "enum": ["ACTIVE", "INACTIVE"]
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
           },
           "monitors": {
             "type": "array",
@@ -2291,7 +2547,12 @@
       },
       "MaintenanceEvent": {
         "type": "object",
-        "required": ["id", "maintenance_id", "start_date_time", "end_date_time"],
+        "required": [
+          "id",
+          "maintenance_id",
+          "start_date_time",
+          "end_date_time"
+        ],
         "properties": {
           "id": {
             "type": "integer"
@@ -2307,7 +2568,13 @@
           },
           "event_status": {
             "type": "string",
-            "enum": ["SCHEDULED", "ONGOING", "COMPLETED", "CANCELLED", "READY"]
+            "enum": [
+              "SCHEDULED",
+              "ONGOING",
+              "COMPLETED",
+              "CANCELLED",
+              "READY"
+            ]
           }
         },
         "additionalProperties": true
@@ -2330,7 +2597,10 @@
       },
       "UpdateMaintenanceEventRequest": {
         "type": "object",
-        "required": ["start_date_time", "end_date_time"],
+        "required": [
+          "start_date_time",
+          "end_date_time"
+        ],
         "properties": {
           "start_date_time": {
             "type": "integer"

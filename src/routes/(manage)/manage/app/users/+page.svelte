@@ -20,6 +20,11 @@
   import ShieldIcon from "@lucide/svelte/icons/shield";
   import CheckCheckIcon from "@lucide/svelte/icons/check-check";
   import MailWarningIcon from "@lucide/svelte/icons/mail-warning";
+  import MailCheckIcon from "@lucide/svelte/icons/mail-check";
+  import PencilIcon from "@lucide/svelte/icons/pencil";
+  import Trash2Icon from "@lucide/svelte/icons/trash-2";
+  import UserCheckIcon from "@lucide/svelte/icons/user-check";
+  import UserXIcon from "@lucide/svelte/icons/user-x";
   import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
   import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
@@ -117,6 +122,13 @@
   let effectiveAccessUserId = $state<number | null>(null);
   let effectiveAccess = $state<EffectiveAccessEntry[]>([]);
   let accessLoading = $state(false);
+
+  // Delete user state
+  let deleteTarget = $state<UserRecordDashboard | null>(null);
+  let deleting = $state(false);
+
+  // Inline activate/deactivate state
+  let togglingActiveId = $state<number | null>(null);
 
   async function apiCall(action: string, data: Record<string, unknown> = {}) {
     const res = await fetch(clientResolver(resolve, "/manage/api"), {
@@ -304,6 +316,35 @@
       toast.error(message);
     } finally {
       sendingSelfVerification = false;
+    }
+  }
+
+  async function deleteUserById() {
+    if (!deleteTarget) return;
+    deleting = true;
+    try {
+      await apiCall("deleteUser", { id: deleteTarget.id });
+      users = users.filter((u) => u.id !== deleteTarget!.id);
+      total = total - 1;
+      toast.success(`User ${deleteTarget.name} deleted`);
+      deleteTarget = null;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete user");
+    } finally {
+      deleting = false;
+    }
+  }
+
+  async function toggleUserActive(user: UserRecordDashboard) {
+    togglingActiveId = user.id;
+    try {
+      const updated = await apiCall("manualUpdate", { ...user, updateType: "is_active", is_active: user.is_active ? 0 : 1 });
+      users = users.map((u) => (u.id === user.id ? updated : u));
+      toast.success(updated.is_active ? "User activated" : "User deactivated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update user status");
+    } finally {
+      togglingActiveId = null;
     }
   }
 
@@ -530,14 +571,9 @@
                   <span class="text-sm font-semibold text-pink-500">INACTIVE</span>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="text-center">
-                <div class="flex items-center justify-center gap-1">
-                  {#if hasPermission("users.write") && currentUser.id !== user.id}
-                    <Button variant="outline" size="sm" onclick={() => openSettingsSheet(user)}>
-                      <SettingsIcon class="mr-1 h-4 w-4" />
-                      Settings
-                    </Button>
-                  {:else if currentUser.id === user.id && !currentUser.is_verified}
+              <Table.Cell class="text-right">
+                <div class="flex items-center justify-end gap-1">
+                  {#if currentUser.id === user.id && !currentUser.is_verified}
                     <Button
                       variant="outline"
                       size="sm"
@@ -546,8 +582,35 @@
                     >
                       {#if sendingSelfVerification}
                         <Spinner class="size-4" />
+                      {:else}
+                        <MailCheckIcon class="mr-1 h-4 w-4" />
                       {/if}
-                      Verify Email
+                      {$t("manage.users.verify_email_button")}
+                    </Button>
+                  {/if}
+                  {#if hasPermission("users.write") && currentUser.id !== user.id}
+                    <Button variant="outline" size="sm" onclick={() => openSettingsSheet(user)}>
+                      <PencilIcon class="mr-1 h-4 w-4" />
+                      {$t("manage.common.edit")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={togglingActiveId === user.id}
+                      onclick={() => toggleUserActive(user)}
+                    >
+                      {#if togglingActiveId === user.id}
+                        <Spinner class="size-4" />
+                      {:else if user.is_active}
+                        <UserXIcon class="mr-1 h-4 w-4 text-yellow-500" />
+                      {:else}
+                        <UserCheckIcon class="mr-1 h-4 w-4 text-green-500" />
+                      {/if}
+                      {user.is_active ? $t("manage.users.deactivate_button") : $t("manage.users.activate_button")}
+                    </Button>
+                    <Button variant="ghost" size="sm" onclick={() => (deleteTarget = user)}>
+                      <Trash2Icon class="mr-1 h-4 w-4 text-destructive" />
+                      {$t("manage.common.delete")}
                     </Button>
                   {/if}
                   <Button variant="outline" size="sm" onclick={() => openEffectiveAccess(user.id)}>
@@ -593,6 +656,31 @@
     </div>
   {/if}
 </div>
+
+<!-- Delete User Confirmation Dialog -->
+<Dialog.Root open={!!deleteTarget} onOpenChange={(v) => { if (!v) deleteTarget = null; }}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>{$t("manage.users.delete_dialog_title")}</Dialog.Title>
+      <Dialog.Description>
+        {$t("manage.users.delete_dialog_desc")} <strong>{deleteTarget?.name}</strong>?
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => (deleteTarget = null)} disabled={deleting}>
+        {$t("manage.common.cancel")}
+      </Button>
+      <Button variant="destructive" onclick={deleteUserById} disabled={deleting}>
+        {#if deleting}
+          <Spinner class="mr-2 size-4" />
+        {:else}
+          <Trash2Icon class="mr-2 h-4 w-4" />
+        {/if}
+        {$t("manage.common.delete")}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <!-- Add User Dialog -->
 <Dialog.Root bind:open={showAddUserDialog}>

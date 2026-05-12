@@ -125,6 +125,7 @@ import {
   CreateRole,
   UpdateRole,
   DeleteRole,
+  DeleteUser,
   GetUserPermissions,
   RequirePermission,
 } from "$lib/server/controllers/userController.js";
@@ -218,6 +219,11 @@ export async function POST({ request, cookies }) {
     } else if (action == "manualUpdate") {
       await ManualUpdateUserData(data.id, data);
       resp = await GetUserByIDDashboard(data.id);
+    } else if (action == "deleteUser") {
+      const targetId = parseInt(String(data.id));
+      if (!targetId) throw new Error("User ID is required");
+      await DeleteUser(userDB.id, targetId);
+      resp = { success: true };
     } else if (action == "updatePassword") {
       if (userDB.auth_provider !== "local") {
         throw new Error("Password cannot be changed for accounts authenticated via OIDC or LDAP");

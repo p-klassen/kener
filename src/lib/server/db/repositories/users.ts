@@ -403,4 +403,8 @@ export class UsersRepository extends BaseRepository {
       .select();
     return rows.map((r: { id: string }) => r.id);
   }
+
+  async deleteUser(id: number): Promise<number> {
+    return await this.knex("users").where({ id }).delete();
+  }
 }

@@ -14,7 +14,7 @@
   import ClockIcon from "@lucide/svelte/icons/clock";
   import CalendarClockIcon from "@lucide/svelte/icons/calendar-clock";
   import { toast } from "svelte-sonner";
-  import { availableLocalesList } from "$lib/stores/i18n";
+  import { t, availableLocalesList } from "$lib/stores/i18n";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { format } from "date-fns";
@@ -114,13 +114,19 @@
   async function saveLanguages() {
     savingLanguages = true;
     try {
+      const payload = {
+        ...i18n,
+        locales: i18n.locales.map((l) =>
+          l.code !== "en" && l.code !== "de" ? { ...l, selected: false } : l
+        )
+      };
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "storeSiteData",
           data: {
-            i18n: JSON.stringify(i18n)
+            i18n: JSON.stringify(payload)
           }
         })
       });
@@ -274,7 +280,7 @@
             these languages.
           </p>
           <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {#each i18n.locales as locale (locale.code)}
+            {#each i18n.locales.filter((l) => l.code === "en" || l.code === "de") as locale (locale.code)}
               <div class="flex items-center space-x-2">
                 <Checkbox
                   id="locale-{locale.code}"
@@ -327,7 +333,7 @@
           {:else}
             <SaveIcon class="h-4 w-4" />
           {/if}
-          Save Languages
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -398,7 +404,7 @@
           {:else}
             <SaveIcon class="h-4 w-4" />
           {/if}
-          Save Timezone
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -515,7 +521,7 @@
           {:else}
             <SaveIcon class="h-4 w-4" />
           {/if}
-          Save Format
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>

@@ -146,6 +146,7 @@ class DbImpl {
   removeUserFromRole!: UsersRepository["removeUserFromRole"];
   getUserPermissionIds!: UsersRepository["getUserPermissionIds"];
   getUserRoleIds!: UsersRepository["getUserRoleIds"];
+  deleteUser!: UsersRepository["deleteUser"];
 
   // ============ API Keys ============
   createNewApiKey!: UsersRepository["createNewApiKey"];
@@ -557,6 +558,7 @@ class DbImpl {
     this.removeUserFromRole = this.users.removeUserFromRole.bind(this.users);
     this.getUserPermissionIds = this.users.getUserPermissionIds.bind(this.users);
     this.getUserRoleIds = this.users.getUserRoleIds.bind(this.users);
+    this.deleteUser = this.users.deleteUser.bind(this.users);
   }
 
   private bindSiteDataMethods(): void {

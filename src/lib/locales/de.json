@@ -1007,5 +1007,13 @@
     "manage.authentication.ldap_group_search_filter": "Gruppen-Suchfilter",
     "manage.authentication.ldap_group_member_attr": "Mitglieder-Attribut",
     "manage.authentication.ldap_group_name_attr": "Gruppenname-Attribut"
-  }
+  },
+  "manage.common.edit": "Bearbeiten",
+  "manage.common.delete": "Löschen",
+  "manage.common.cancel": "Abbrechen",
+  "manage.users.verify_email_button": "E-Mail verifizieren",
+  "manage.users.activate_button": "Aktivieren",
+  "manage.users.deactivate_button": "Deaktivieren",
+  "manage.users.delete_dialog_title": "Benutzer löschen",
+  "manage.users.delete_dialog_desc": "Möchten Sie wirklich löschen"
 }

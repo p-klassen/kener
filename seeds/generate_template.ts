@@ -10,6 +10,8 @@ import verifyEmailDeTemplate from "../src/lib/server/templates/general/verify_em
 import subscriptionAccountCodeDeTemplate from "../src/lib/server/templates/general/subscription_account_code_de_template.ts";
 import adminPasswordResetTemplate from "../src/lib/server/templates/general/admin_password_reset_template.ts";
 import adminPasswordResetDeTemplate from "../src/lib/server/templates/general/admin_password_reset_de_template.ts";
+import incidentUpdateDeTemplate from "../src/lib/server/templates/general/incident_update_de_template.ts";
+import maintenanceUpdateDeTemplate from "../src/lib/server/templates/general/maintenance_update_de_template.ts";
 import type { Knex } from "knex";
 
 export async function seed(knex: Knex): Promise<void> {
@@ -108,7 +110,7 @@ export async function seed(knex: Knex): Promise<void> {
   }
 
   // German (DE) locale variants
-  for (const t of [forgotPasswordDeTemplate, inviteUserDeTemplate, verifyEmailDeTemplate, subscriptionAccountCodeDeTemplate]) {
+  for (const t of [forgotPasswordDeTemplate, inviteUserDeTemplate, verifyEmailDeTemplate, subscriptionAccountCodeDeTemplate, incidentUpdateDeTemplate, maintenanceUpdateDeTemplate]) {
     const c = await knex("general_email_templates")
       .where({ template_id: t.template_id })
       .count("template_id as CNT")

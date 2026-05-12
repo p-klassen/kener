@@ -365,6 +365,14 @@ export const ManualUpdateUserData = async (forUserId: number, data: ManualUserUp
   }
 };
 
+export const DeleteUser = async (requestingUserId: number, targetUserId: number): Promise<void> => {
+  if (requestingUserId === targetUserId) throw new Error("Cannot delete your own account");
+  const target = await db.getUserById(targetUserId);
+  if (!target) throw new Error("User not found");
+  if (target.is_owner === "YES") throw new Error("Owner account cannot be deleted");
+  await db.deleteUser(targetUserId);
+};
+
 export const GetLoggedInSession = async (cookies: Cookies): Promise<UserRecordPublic | null> => {
   let tokenData = cookies.get("kener-user");
   if (!!!tokenData) {

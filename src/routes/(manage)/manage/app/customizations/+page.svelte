@@ -11,6 +11,7 @@
   import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
   import { Checkbox } from "$lib/components/ui/checkbox/index.js";
   import Loader from "@lucide/svelte/icons/loader";
+  import SaveIcon from "@lucide/svelte/icons/save";
   import Info from "@lucide/svelte/icons/info";
   import X from "@lucide/svelte/icons/x";
   import { toast } from "svelte-sonner";
@@ -618,7 +619,7 @@
   });
 </script>
 
-<div class="flex w-full flex-col gap-6 overflow-hidden">
+<div class="flex w-full flex-col gap-6">
   {#if loading}
     <div class="flex items-center justify-center py-12">
       <Spinner class="h-6 w-6" />
@@ -655,8 +656,10 @@
         <Button onclick={saveFooter} disabled={savingFooter}>
           {#if savingFooter}
             <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
           {/if}
-          {$t("manage.customizations.footer_save")}
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -838,8 +841,10 @@
         <Button onclick={saveColors} disabled={savingColors}>
           {#if savingColors}
             <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
           {/if}
-          {$t("manage.customizations.colors_save")}
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -894,8 +899,10 @@
             <Button onclick={saveFontUrl} disabled={savingFont || uploadingFont} variant="outline" size="sm">
               {#if savingFont}
                 <Loader class="h-4 w-4 animate-spin" />
+              {:else}
+                <SaveIcon class="h-4 w-4" />
               {/if}
-              {$t("manage.customizations.font_save_url")}
+              {$t("manage.common.save")}
             </Button>
           </div>
         </div>
@@ -1005,8 +1012,10 @@
         <Button onclick={saveTheme} disabled={savingTheme}>
           {#if savingTheme}
             <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
           {/if}
-          {$t("manage.customizations.theme_save")}
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -1092,8 +1101,10 @@
         <Button onclick={saveAnnouncement} disabled={savingAnnouncement}>
           {#if savingAnnouncement}
             <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
           {/if}
-          {$t("manage.customizations.announcement_save")}
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -1171,8 +1182,10 @@
         <Button onclick={savePageOrdering} disabled={savingPageOrdering || loadingPages}>
           {#if savingPageOrdering}
             <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
           {/if}
-          {$t("manage.customizations.page_ordering_save")}
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>
@@ -1215,8 +1228,10 @@
         <Button onclick={saveCustomCSS} disabled={savingCSS}>
           {#if savingCSS}
             <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
           {/if}
-          {$t("manage.customizations.css_save")}
+          {$t("manage.common.save")}
         </Button>
       </Card.Footer>
     </Card.Root>

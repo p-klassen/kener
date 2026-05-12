@@ -131,6 +131,7 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   // Users
   getUsers: "users.read",
   manualUpdate: "users.write",
+  deleteUser: "users.write",
   createNewUser: "users.write",
   resendInvitation: "users.write",
 
