@@ -965,8 +965,14 @@ export async function POST({ request, cookies }) {
       resp = await importData(data.payload);
     }
   } catch (error: unknown) {
-    console.log(error);
-    const message = error instanceof Error ? error.message : String(error);
+    console.error("[manage/api] unhandled error:", error);
+    let message = error instanceof Error ? error.message : String(error);
+    // Knex+SQLite errors embed the full SQL before the actual error: "<SQL> - <sqlite error>"
+    // Base64 uses only A-Za-z0-9+/= so " - " only appears as the SQL/error separator.
+    const lastDash = message.lastIndexOf(" - ");
+    if (lastDash > 50) {
+      message = message.slice(lastDash + 3);
+    }
     resp = { error: message };
     return json(resp, { status: 500 });
   }

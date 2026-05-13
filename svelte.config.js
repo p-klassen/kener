@@ -13,7 +13,7 @@ const config = {
   preprocess: [vitePreprocess({})],
 
   kit: {
-    adapter: adapter(),
+    adapter: adapter({ bodySizeLimit: '10mb' }),
     paths: {
       base: basePath,
     },

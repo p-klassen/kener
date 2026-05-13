@@ -936,7 +936,16 @@ class DbImpl {
     this.getAccessibleResources = this.resourceAccess.getAccessibleResources.bind(this.resourceAccess);
   }
 
-  async init(): Promise<void> {}
+  async init(): Promise<void> {
+    const clientName = (this.knex.client as any)?.config?.client;
+    if (clientName === "better-sqlite3") {
+      // WAL mode: readers don't block writers; reduces lock contention between
+      // the dev-mode scheduler process and the SvelteKit server process.
+      await this.knex.raw("PRAGMA journal_mode = WAL");
+      // Retry for up to 5 s when another process holds a write lock.
+      await this.knex.raw("PRAGMA busy_timeout = 5000");
+    }
+  }
 
   async close(): Promise<void> {
     return await this.knex.destroy();
