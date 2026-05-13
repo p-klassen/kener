@@ -1109,7 +1109,7 @@
             </div>
             <div class="mt-3 flex items-center gap-2 border-t pt-3">
               <Switch id="nav-new-tab-{index}" bind:checked={item.openInNewTab} />
-              <Label for="nav-new-tab-{index}" class="cursor-pointer text-sm font-normal">In neuem Tab öffnen</Label>
+              <Label for="nav-new-tab-{index}" class="cursor-pointer text-sm font-normal">{$t("manage.site_config.nav_open_in_new_tab")}</Label>
             </div>
           </div>
         {/each}
