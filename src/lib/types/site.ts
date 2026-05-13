@@ -17,6 +17,7 @@ export interface SiteNavItem {
   name: string;
   url: string;
   iconURL: string;
+  openInNewTab?: boolean;
 }
 
 export interface SiteHero {
