@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "Navn",
     "manage.site_config.nav_name_placeholder": "Dokumentasjon",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "Åpne i ny fane",
     "manage.site_config.submenu_title": "Undermenyalternativer for monitor",
     "manage.site_config.submenu_desc": "Konfigurer hvilke alternativer som vises i monitorundermenyen på statussiden",
     "manage.site_config.share_badge": "Del Badge",

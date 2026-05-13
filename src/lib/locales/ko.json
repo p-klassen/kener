@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "이름",
     "manage.site_config.nav_name_placeholder": "문서",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "새 탭에서 열기",
     "manage.site_config.submenu_title": "모니터 서브메뉴 옵션",
     "manage.site_config.submenu_desc": "상태 페이지 모니터 서브메뉴에 표시할 옵션을 설정합니다",
     "manage.site_config.share_badge": "배지 공유",

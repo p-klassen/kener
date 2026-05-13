@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "Назва",
     "manage.site_config.nav_name_placeholder": "Документація",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "Відкрити у новій вкладці",
     "manage.site_config.submenu_title": "Параметри підменю монітора",
     "manage.site_config.submenu_desc": "Налаштування пунктів підменю монітора на сторінці статусів",
     "manage.site_config.share_badge": "Поділитися бейджем",

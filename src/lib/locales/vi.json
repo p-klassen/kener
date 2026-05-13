@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "Tên",
     "manage.site_config.nav_name_placeholder": "Tài liệu",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "Mở trong tab mới",
     "manage.site_config.submenu_title": "Tùy chọn menu con Monitor",
     "manage.site_config.submenu_desc": "Cấu hình tùy chọn nào hiển thị trong menu con monitor trên trang trạng thái",
     "manage.site_config.share_badge": "Chia sẻ Badge",

@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "Ad",
     "manage.site_config.nav_name_placeholder": "Dokümantasyon",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "Yeni sekmede aç",
     "manage.site_config.submenu_title": "Monitör Alt Menü Seçenekleri",
     "manage.site_config.submenu_desc": "Durum sayfasındaki monitör alt menüsünde hangi seçeneklerin görüneceğini yapılandırın",
     "manage.site_config.share_badge": "Badge Paylaş",

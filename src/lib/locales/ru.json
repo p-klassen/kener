@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "Название",
     "manage.site_config.nav_name_placeholder": "Документация",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "Открыть в новой вкладке",
     "manage.site_config.submenu_title": "Параметры подменю монитора",
     "manage.site_config.submenu_desc": "Настройка пунктов подменю монитора на странице статусов",
     "manage.site_config.share_badge": "Поделиться значком",

@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "Nazwa",
     "manage.site_config.nav_name_placeholder": "Dokumentacja",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "Otwórz w nowej karcie",
     "manage.site_config.submenu_title": "Opcje podmenu monitora",
     "manage.site_config.submenu_desc": "Skonfiguruj, które opcje pojawiają się w podmenu monitora na stronie statusu",
     "manage.site_config.share_badge": "Udostępnij Badge",

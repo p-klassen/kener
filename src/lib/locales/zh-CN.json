@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "名称",
     "manage.site_config.nav_name_placeholder": "文档",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "在新标签页中打开",
     "manage.site_config.submenu_title": "监控项子菜单选项",
     "manage.site_config.submenu_desc": "配置状态页面监控项子菜单中显示的选项",
     "manage.site_config.share_badge": "分享 Badge",

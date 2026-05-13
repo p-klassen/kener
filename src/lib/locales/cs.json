@@ -355,6 +355,7 @@
     "manage.site_config.nav_name_label": "Název",
     "manage.site_config.nav_name_placeholder": "Dokumentace",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "Otevřít v novém panelu",
     "manage.site_config.submenu_title": "Možnosti podnabídky monitoru",
     "manage.site_config.submenu_desc": "Nastavte, které možnosti se zobrazují v podnabídce monitoru na stavové stránce",
     "manage.site_config.share_badge": "Sdílet odznak",

@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "名前",
     "manage.site_config.nav_name_placeholder": "ドキュメント",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "新しいタブで開く",
     "manage.site_config.submenu_title": "モニターサブメニューオプション",
     "manage.site_config.submenu_desc": "ステータスページのモニターサブメニューに表示するオプションを設定します",
     "manage.site_config.share_badge": "バッジを共有",

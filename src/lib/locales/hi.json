@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "नाम",
     "manage.site_config.nav_name_placeholder": "दस्तावेज़ीकरण",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "नए टैब में खोलें",
     "manage.site_config.submenu_title": "मॉनिटर सब-मेनू विकल्प",
     "manage.site_config.submenu_desc": "कॉन्फ़िगर करें कि स्थिति पृष्ठ पर मॉनिटर सब-मेनू में कौन से विकल्प दिखाई दें",
     "manage.site_config.share_badge": "Badge साझा करें",

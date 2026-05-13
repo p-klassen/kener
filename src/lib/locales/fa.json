@@ -335,6 +335,7 @@
     "manage.site_config.nav_name_label": "نام",
     "manage.site_config.nav_name_placeholder": "مستندات",
     "manage.site_config.nav_url_label": "URL",
+    "manage.site_config.nav_open_in_new_tab": "باز کردن در برگه جدید",
     "manage.site_config.submenu_title": "گزینه‌های زیرمنوی مانیتور",
     "manage.site_config.submenu_desc": "تنظیم کنید کدام گزینه‌ها در زیرمنوی مانیتور در صفحه وضعیت نمایش داده شوند",
     "manage.site_config.share_badge": "اشتراک‌گذاری Badge",
