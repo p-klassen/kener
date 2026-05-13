@@ -36,6 +36,7 @@
     name: string;
     url: string;
     iconURL: string;
+    openInNewTab: boolean;
     uploading?: boolean;
   }
 
@@ -169,7 +170,8 @@
           nav = data.nav.map((item: NavItem) => ({
             name: item.name || "",
             url: item.url || "",
-            iconURL: item.iconURL || ""
+            iconURL: item.iconURL || "",
+            openInNewTab: item.openInNewTab ?? item.url.startsWith("http")
           }));
         }
         if (data.subMenuOptions) {
@@ -377,7 +379,8 @@
       const cleanNav = nav.map((item) => ({
         name: item.name,
         url: item.url,
-        iconURL: item.iconURL
+        iconURL: item.iconURL,
+        openInNewTab: item.openInNewTab
       }));
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
@@ -736,7 +739,7 @@
   }
 
   function addNavItem() {
-    nav = [...nav, { name: "", url: "", iconURL: "" }];
+    nav = [...nav, { name: "", url: "", iconURL: "", openInNewTab: false }];
   }
 
   function removeNavItem(index: number) {
@@ -1051,57 +1054,63 @@
       </Card.Header>
       <Card.Content class="space-y-4">
         {#each nav as item, index (index)}
-          <div class="flex items-end gap-2 rounded-lg border p-3">
-            <div class="grid flex-1 gap-2 sm:grid-cols-3">
-              <div class="space-y-1">
-                <Label for="nav-name-{index}">{$t("manage.site_config.nav_name_label")}</Label>
-                <Input id="nav-name-{index}" type="text" bind:value={item.name} placeholder={$t("manage.site_config.nav_name_placeholder")} />
-              </div>
-              <div class="space-y-1">
-                <Label for="nav-url-{index}">{$t("manage.site_config.nav_url_label")}</Label>
-                <Input id="nav-url-{index}" type="text" bind:value={item.url} placeholder="https://docs.example.com" />
-              </div>
-              <div class="space-y-1">
-                <Label for="nav-icon-{index}">Icon</Label>
-                <div class="flex items-center gap-2">
-                  {#if item.iconURL}
-                    <img src={clientResolver(resolve, item.iconURL)} alt="Icon" class="h-6 w-6 object-contain" />
-                    <Button variant="ghost" size="sm" onclick={() => (item.iconURL = "")}>
-                      <XIcon class="h-4 w-4" />
-                    </Button>
-                  {:else}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={item.uploading}
-                      onclick={() => document.getElementById(`nav-icon-input-${index}`)?.click()}
-                    >
-                      {#if item.uploading}
-                        <Loader class="h-4 w-4 animate-spin" />
-                      {:else}
-                        <UploadIcon class="h-4 w-4" />
-                      {/if}
-                    </Button>
-                  {/if}
-                  <input
-                    id="nav-icon-input-{index}"
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/svg+xml"
-                    class="hidden"
-                    onchange={(e) => handleNavIconUpload(e, index)}
-                  />
+          <div class="rounded-lg border p-3">
+            <div class="flex items-end gap-2">
+              <div class="grid flex-1 gap-2 sm:grid-cols-3">
+                <div class="space-y-1">
+                  <Label for="nav-name-{index}">{$t("manage.site_config.nav_name_label")}</Label>
+                  <Input id="nav-name-{index}" type="text" bind:value={item.name} placeholder={$t("manage.site_config.nav_name_placeholder")} />
+                </div>
+                <div class="space-y-1">
+                  <Label for="nav-url-{index}">{$t("manage.site_config.nav_url_label")}</Label>
+                  <Input id="nav-url-{index}" type="text" bind:value={item.url} placeholder="https://docs.example.com" />
+                </div>
+                <div class="space-y-1">
+                  <Label for="nav-icon-{index}">Icon</Label>
+                  <div class="flex items-center gap-2">
+                    {#if item.iconURL}
+                      <img src={clientResolver(resolve, item.iconURL)} alt="Icon" class="h-6 w-6 object-contain" />
+                      <Button variant="ghost" size="sm" onclick={() => (item.iconURL = "")}>
+                        <XIcon class="h-4 w-4" />
+                      </Button>
+                    {:else}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={item.uploading}
+                        onclick={() => document.getElementById(`nav-icon-input-${index}`)?.click()}
+                      >
+                        {#if item.uploading}
+                          <Loader class="h-4 w-4 animate-spin" />
+                        {:else}
+                          <UploadIcon class="h-4 w-4" />
+                        {/if}
+                      </Button>
+                    {/if}
+                    <input
+                      id="nav-icon-input-{index}"
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,image/svg+xml"
+                      class="hidden"
+                      onchange={(e) => handleNavIconUpload(e, index)}
+                    />
+                  </div>
                 </div>
               </div>
+              <Button variant="ghost" size="icon" disabled={index === 0} onclick={() => moveNavItem(index, "up")}>
+                <ChevronUpIcon class="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" disabled={index === nav.length - 1} onclick={() => moveNavItem(index, "down")}>
+                <ChevronDownIcon class="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onclick={() => removeNavItem(index)}>
+                <XIcon class="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" disabled={index === 0} onclick={() => moveNavItem(index, "up")}>
-              <ChevronUpIcon class="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" disabled={index === nav.length - 1} onclick={() => moveNavItem(index, "down")}>
-              <ChevronDownIcon class="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onclick={() => removeNavItem(index)}>
-              <XIcon class="h-4 w-4" />
-            </Button>
+            <div class="mt-3 flex items-center gap-2 border-t pt-3">
+              <Switch id="nav-new-tab-{index}" bind:checked={item.openInNewTab} />
+              <Label for="nav-new-tab-{index}" class="cursor-pointer text-sm font-normal">In neuem Tab öffnen</Label>
+            </div>
           </div>
         {/each}
         <Button variant="outline" onclick={addNavItem}>
