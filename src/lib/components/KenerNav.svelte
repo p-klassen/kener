@@ -25,8 +25,8 @@
     trackEvent("nav_brand_clicked", { name: siteName });
   }
 
-  function trackNavClick(item: { name: string; url: string }) {
-    trackEvent("nav_link_clicked", { name: item.name, external: item.url.startsWith("http") });
+  function trackNavClick(item: { name: string; url: string; openInNewTab?: boolean }) {
+    trackEvent("nav_link_clicked", { name: item.name, external: item.openInNewTab ?? item.url.startsWith("http") });
   }
 </script>
 
