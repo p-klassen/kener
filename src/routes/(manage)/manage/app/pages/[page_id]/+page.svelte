@@ -557,7 +557,7 @@
   onMount(() => {
     void fetchPage();
     void fetchMonitors();
-    fetchSiteDefaults();
+    void fetchSiteDefaults();
   });
 </script>
 
