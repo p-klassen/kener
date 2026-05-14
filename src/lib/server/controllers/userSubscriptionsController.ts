@@ -719,8 +719,10 @@ export async function UpdateSubscriberPreferences(
   preferences: {
     incidents?: boolean;
     incident_monitors?: string[];
+    incident_pages?: string[];
     maintenances?: boolean;
     maintenance_monitors?: string[];
+    maintenance_pages?: string[];
   },
 ): Promise<{ success: boolean; error?: string }> {
   const verifyResult = await VerifySubscriberToken(token);
@@ -749,7 +751,18 @@ export async function UpdateSubscriberPreferences(
   }
   const filterTags = (tags: string[]) => tags.filter((t) => allowedTags.has(t));
 
-  if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined) {
+  // Build set of allowed page slugs: include pages that have at least one allowed monitor
+  const allPages = await GetAllPages();
+  const allowedPageSlugs = new Set<string>();
+  for (const p of allPages) {
+    const pageMonitors = await db.getPageMonitorsExcludeHidden(p.id);
+    if (pageMonitors.some((pm) => allowedTags.has(pm.monitor_tag))) {
+      allowedPageSlugs.add(p.page_path);
+    }
+  }
+  const filterPages = (slugs: string[]) => slugs.filter((s) => allowedPageSlugs.has(s));
+
+  if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined || preferences.incident_pages !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
@@ -781,12 +794,16 @@ export async function UpdateSubscriberPreferences(
       }
     }
 
-    if (preferences.incident_monitors !== undefined && incidentSubId !== null) {
-      await db.upsertSubscriptionScopes(incidentSubId, filterTags(preferences.incident_monitors), []);
+    if ((preferences.incident_monitors !== undefined || preferences.incident_pages !== undefined) && incidentSubId !== null) {
+      await db.upsertSubscriptionScopes(
+        incidentSubId,
+        filterTags(preferences.incident_monitors ?? []),
+        filterPages(preferences.incident_pages ?? []),
+      );
     }
   }
 
-  if (preferences.maintenances !== undefined || preferences.maintenance_monitors !== undefined) {
+  if (preferences.maintenances !== undefined || preferences.maintenance_monitors !== undefined || preferences.maintenance_pages !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
@@ -818,8 +835,12 @@ export async function UpdateSubscriberPreferences(
       }
     }
 
-    if (preferences.maintenance_monitors !== undefined && maintenanceSubId !== null) {
-      await db.upsertSubscriptionScopes(maintenanceSubId, filterTags(preferences.maintenance_monitors), []);
+    if ((preferences.maintenance_monitors !== undefined || preferences.maintenance_pages !== undefined) && maintenanceSubId !== null) {
+      await db.upsertSubscriptionScopes(
+        maintenanceSubId,
+        filterTags(preferences.maintenance_monitors ?? []),
+        filterPages(preferences.maintenance_pages ?? []),
+      );
     }
   }
 
