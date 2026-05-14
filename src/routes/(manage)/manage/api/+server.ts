@@ -472,6 +472,76 @@ export async function POST({ request, cookies }) {
     } else if (action == "deletePage") {
       await DeletePage(data.id);
       resp = { success: true };
+    } else if (action == "applyPageDefaults") {
+      // Load current site defaults (or system fallback)
+      const SYSTEM_DEFAULTS = {
+        monitor_status_history_days: { desktop: 90, mobile: 30 },
+        monitor_layout_style: "default-list" as const,
+      };
+      let siteDefaults = { ...SYSTEM_DEFAULTS };
+      try {
+        const raw = await GetSiteDataByKey("pageDefaults");
+        if (raw && typeof raw === "object") {
+          const partial = raw as typeof SYSTEM_DEFAULTS;
+          siteDefaults = {
+            ...SYSTEM_DEFAULTS,
+            ...partial,
+            monitor_status_history_days: {
+              ...SYSTEM_DEFAULTS.monitor_status_history_days,
+              ...(partial.monitor_status_history_days ?? {}),
+            },
+          };
+        }
+      } catch {}
+
+      const pages = await GetAllPages();
+      for (const p of pages) {
+        let raw: Record<string, unknown> = {};
+        if (p.page_settings_json) {
+          try {
+            const parsed =
+              typeof p.page_settings_json === "string"
+                ? JSON.parse(p.page_settings_json)
+                : p.page_settings_json;
+            if (parsed && typeof parsed === "object") raw = parsed as Record<string, unknown>;
+          } catch {}
+        }
+
+        let changed = false;
+        const historyDays = (raw.monitor_status_history_days as Record<string, unknown>) ?? {};
+
+        if (data.force) {
+          raw.monitor_status_history_days = {
+            ...historyDays,
+            desktop: siteDefaults.monitor_status_history_days.desktop,
+            mobile: siteDefaults.monitor_status_history_days.mobile,
+          };
+          raw.monitor_layout_style = siteDefaults.monitor_layout_style;
+          changed = true;
+        } else {
+          const needsDesktop = historyDays.desktop === null || historyDays.desktop === undefined;
+          const needsMobile = historyDays.mobile === null || historyDays.mobile === undefined;
+          const needsLayout =
+            raw.monitor_layout_style === null || raw.monitor_layout_style === undefined;
+          if (needsDesktop || needsMobile) {
+            raw.monitor_status_history_days = {
+              ...historyDays,
+              ...(needsDesktop && { desktop: siteDefaults.monitor_status_history_days.desktop }),
+              ...(needsMobile && { mobile: siteDefaults.monitor_status_history_days.mobile }),
+            };
+            changed = true;
+          }
+          if (needsLayout) {
+            raw.monitor_layout_style = siteDefaults.monitor_layout_style;
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          await UpdatePage(p.id, { page_settings_json: JSON.stringify(raw) });
+        }
+      }
+      resp = { success: true };
     } else if (action == "addMonitorToPage") {
       await AddMonitorToPage(data.page_id, data.monitor_tag);
       resp = { success: true };
