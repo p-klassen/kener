@@ -323,6 +323,9 @@
     editingScope = null;
     editPageSelections = {};
     editMonitorSelections = {};
+    allPages = [];
+    allMonitorsFlat = [];
+    fetchScopesError = "";
     showScopeDialog = true;
     await fetchScopeOptions(subscriber.method_id);
   }
@@ -732,7 +735,7 @@
                     Maintenances
                   {/if}
                 </div>
-                {#if editingScope !== eventType}
+                {#if editingScope === null}
                   <Button size="sm" variant="outline" onclick={() => startEditScope(eventType)}>
                     <Pencil class="mr-1 h-3 w-3" />
                     Edit
