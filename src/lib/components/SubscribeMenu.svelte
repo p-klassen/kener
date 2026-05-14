@@ -51,12 +51,23 @@
     maintenances: false
   });
 
-  // Monitor scope state
+  // Monitor/page scope state
+  interface PageScopeOption {
+    slug: string;
+    name: string;
+    monitors: Array<{ tag: string; name: string }>;
+  }
   let availableMonitors = $state<{ tag: string; name: string }[]>([]);
+  let availablePages = $state<PageScopeOption[]>([]);
+
   let incidentScope = $state<"all" | "specific">("all");
+  let incidentPageSelections = $state<Record<string, boolean>>({});
   let incidentMonitorSelections = $state<Record<string, boolean>>({});
+
   let maintenanceScope = $state<"all" | "specific">("all");
+  let maintenancePageSelections = $state<Record<string, boolean>>({});
   let maintenanceMonitorSelections = $state<Record<string, boolean>>({});
+
   let incidentScopeError = $state("");
   let maintenanceScopeError = $state("");
   let savingIncidentScope = $state(false);
@@ -136,16 +147,18 @@
       maintenancesEnabled = data.subscriptions?.maintenances || false;
       availableSubscriptions = data.availableSubscriptions || { incidents: false, maintenances: false };
 
-      // Fetch monitors then initialize scope state
+      // Fetch monitors/pages then initialize scope state
       await fetchAvailableMonitors();
       const incMons: string[] = data.incident_monitors || [];
+      const incPages: string[] = data.incident_pages || [];
       const mntMons: string[] = data.maintenance_monitors || [];
-      incidentScope = incMons.length > 0 ? "specific" : "all";
-      maintenanceScope = mntMons.length > 0 ? "specific" : "all";
-      const initSelections = (tags: string[]) =>
-        Object.fromEntries(availableMonitors.map((m) => [m.tag, tags.includes(m.tag)]));
-      incidentMonitorSelections = initSelections(incMons);
-      maintenanceMonitorSelections = initSelections(mntMons);
+      const mntPages: string[] = data.maintenance_pages || [];
+      incidentScope = (incMons.length > 0 || incPages.length > 0) ? "specific" : "all";
+      maintenanceScope = (mntMons.length > 0 || mntPages.length > 0) ? "specific" : "all";
+      incidentMonitorSelections = Object.fromEntries(availableMonitors.map((m) => [m.tag, incMons.includes(m.tag)]));
+      incidentPageSelections = Object.fromEntries(availablePages.map((p) => [p.slug, incPages.includes(p.slug)]));
+      maintenanceMonitorSelections = Object.fromEntries(availableMonitors.map((m) => [m.tag, mntMons.includes(m.tag)]));
+      maintenancePageSelections = Object.fromEntries(availablePages.map((p) => [p.slug, mntPages.includes(p.slug)]));
 
       currentView = "preferences";
     } catch (_err) {
@@ -224,15 +237,23 @@
     const token = localStorage.getItem(STORAGE_KEY);
     if (!token) { currentView = "login"; return; }
 
-    // Only include monitor scope when disabling — enabling defers scope to the picker
+    // Only include monitor/page scope when disabling — enabling defers scope to the picker
     const body: Record<string, unknown> = { action: "updatePreferences", token, [type]: value };
     if (!value) {
       const monitorKey = type === "incidents" ? "incident_monitors" : "maintenance_monitors";
+      const pageKey = type === "incidents" ? "incident_pages" : "maintenance_pages";
       const scope = type === "incidents" ? incidentScope : maintenanceScope;
-      const selections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
-      body[monitorKey] = scope === "specific"
-        ? Object.entries(selections).filter(([, v]) => v).map(([k]) => k)
-        : [];
+      const monSelections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
+      const pgSelections = type === "incidents" ? incidentPageSelections : maintenancePageSelections;
+      if (scope === "specific") {
+        const pages = Object.entries(pgSelections).filter(([, v]) => v).map(([k]) => k);
+        const coveredTags = new Set(availablePages.filter((p) => pages.includes(p.slug)).flatMap((p) => p.monitors.map((m) => m.tag)));
+        body[monitorKey] = Object.entries(monSelections).filter(([k, v]) => v && !coveredTags.has(k)).map(([k]) => k);
+        body[pageKey] = pages;
+      } else {
+        body[monitorKey] = [];
+        body[pageKey] = [];
+      }
     }
 
     try {
@@ -269,9 +290,12 @@
     maintenancesEnabled = false;
     errorMessage = "";
     availableMonitors = [];
+    availablePages = [];
     incidentScope = "all";
+    incidentPageSelections = {};
     incidentMonitorSelections = {};
     maintenanceScope = "all";
+    maintenancePageSelections = {};
     maintenanceMonitorSelections = {};
     incidentScopeError = "";
     maintenanceScopeError = "";
@@ -297,9 +321,10 @@
       if (res.ok) {
         const data = await res.json();
         availableMonitors = data.monitors || [];
+        availablePages = data.pages || [];
       }
     } catch (_err) {
-      // scope picker simply won't show monitor list
+      // scope picker simply won't show monitor/page list
     }
   }
 
@@ -314,14 +339,20 @@
     setError("");
 
     const scope = type === "incidents" ? incidentScope : maintenanceScope;
-    const selections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
+    const monSelections = type === "incidents" ? incidentMonitorSelections : maintenanceMonitorSelections;
+    const pgSelections = type === "incidents" ? incidentPageSelections : maintenancePageSelections;
     const monitorKey = type === "incidents" ? "incident_monitors" : "maintenance_monitors";
+    const pageKey = type === "incidents" ? "incident_pages" : "maintenance_pages";
 
     let monitors: string[] = [];
+    let pages: string[] = [];
+
     if (scope === "specific") {
-      monitors = Object.entries(selections).filter(([, v]) => v).map(([k]) => k);
-      if (monitors.length === 0) {
-        setError($t("Select at least one monitor"));
+      pages = Object.entries(pgSelections).filter(([, v]) => v).map(([k]) => k);
+      const coveredTags = new Set(availablePages.filter((p) => pages.includes(p.slug)).flatMap((p) => p.monitors.map((m) => m.tag)));
+      monitors = Object.entries(monSelections).filter(([k, v]) => v && !coveredTags.has(k)).map(([k]) => k);
+      if (pages.length === 0 && monitors.length === 0) {
+        setError($t("Select at least one page or monitor"));
         return;
       }
     }
@@ -333,7 +364,7 @@
       const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updatePreferences", token, [monitorKey]: monitors })
+        body: JSON.stringify({ action: "updatePreferences", token, [monitorKey]: monitors, [pageKey]: pages })
       });
       if (!response.ok) {
         setError($t("Failed to save scope"));
@@ -511,7 +542,7 @@
                     onCheckedChange={(value) => handlePreferenceChange("incidents", value)}
                   />
                 </div>
-                {#if incidentsEnabled && availableMonitors.length > 0}
+                {#if incidentsEnabled && (availableMonitors.length > 0 || availablePages.length > 0)}
                   <div class="bg-muted/50 ml-8 space-y-3 rounded-md p-3">
                     <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
                     <div class="flex flex-col gap-1">
@@ -521,16 +552,33 @@
                       </label>
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
                         <input type="radio" name="incident-scope" value="specific" bind:group={incidentScope} />
-                        {$t("Specific monitors")}
+                        {$t("Specific pages / monitors")}
                       </label>
                     </div>
                     {#if incidentScope === "specific"}
-                      <div class="ml-4 flex max-h-48 flex-col gap-1 overflow-y-auto pt-1">
-                        {#each availableMonitors as monitor (monitor.tag)}
-                          <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input type="checkbox" bind:checked={incidentMonitorSelections[monitor.tag]} />
-                            {monitor.name}
-                          </label>
+                      <div class="ml-4 flex max-h-48 flex-col gap-2 overflow-y-auto pt-1">
+                        {#each availablePages as pageOpt (pageOpt.slug)}
+                          <div class="space-y-1">
+                            <label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                              <input type="checkbox" bind:checked={incidentPageSelections[pageOpt.slug]} />
+                              <span class="text-muted-foreground text-xs">[{pageOpt.name}]</span>
+                            </label>
+                            {#if !incidentPageSelections[pageOpt.slug]}
+                              {#each pageOpt.monitors as mon (mon.tag)}
+                                <label class="ml-5 flex cursor-pointer items-center gap-2 text-sm">
+                                  <input type="checkbox" bind:checked={incidentMonitorSelections[mon.tag]} />
+                                  {mon.name}
+                                </label>
+                              {/each}
+                            {:else}
+                              {#each pageOpt.monitors as mon (mon.tag)}
+                                <label class="text-muted-foreground ml-5 flex items-center gap-2 text-sm">
+                                  <input type="checkbox" disabled checked />
+                                  {mon.name}
+                                </label>
+                              {/each}
+                            {/if}
+                          </div>
                         {/each}
                       </div>
                     {/if}
@@ -563,7 +611,7 @@
                     onCheckedChange={(value) => handlePreferenceChange("maintenances", value)}
                   />
                 </div>
-                {#if maintenancesEnabled && availableMonitors.length > 0}
+                {#if maintenancesEnabled && (availableMonitors.length > 0 || availablePages.length > 0)}
                   <div class="bg-muted/50 ml-8 space-y-3 rounded-md p-3">
                     <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
                     <div class="flex flex-col gap-1">
@@ -573,16 +621,33 @@
                       </label>
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
                         <input type="radio" name="maintenance-scope" value="specific" bind:group={maintenanceScope} />
-                        {$t("Specific monitors")}
+                        {$t("Specific pages / monitors")}
                       </label>
                     </div>
                     {#if maintenanceScope === "specific"}
-                      <div class="ml-4 flex max-h-48 flex-col gap-1 overflow-y-auto pt-1">
-                        {#each availableMonitors as monitor (monitor.tag)}
-                          <label class="flex cursor-pointer items-center gap-2 text-sm">
-                            <input type="checkbox" bind:checked={maintenanceMonitorSelections[monitor.tag]} />
-                            {monitor.name}
-                          </label>
+                      <div class="ml-4 flex max-h-48 flex-col gap-2 overflow-y-auto pt-1">
+                        {#each availablePages as pageOpt (pageOpt.slug)}
+                          <div class="space-y-1">
+                            <label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                              <input type="checkbox" bind:checked={maintenancePageSelections[pageOpt.slug]} />
+                              <span class="text-muted-foreground text-xs">[{pageOpt.name}]</span>
+                            </label>
+                            {#if !maintenancePageSelections[pageOpt.slug]}
+                              {#each pageOpt.monitors as mon (mon.tag)}
+                                <label class="ml-5 flex cursor-pointer items-center gap-2 text-sm">
+                                  <input type="checkbox" bind:checked={maintenanceMonitorSelections[mon.tag]} />
+                                  {mon.name}
+                                </label>
+                              {/each}
+                            {:else}
+                              {#each pageOpt.monitors as mon (mon.tag)}
+                                <label class="text-muted-foreground ml-5 flex items-center gap-2 text-sm">
+                                  <input type="checkbox" disabled checked />
+                                  {mon.name}
+                                </label>
+                              {/each}
+                            {/if}
+                          </div>
                         {/each}
                       </div>
                     {/if}
