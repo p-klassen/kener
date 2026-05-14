@@ -31,9 +31,19 @@ async function getSitePageDefaults(): Promise<SitePageDefaults> {
   try {
     const raw = await GetSiteDataByKey("pageDefaults");
     if (raw && typeof raw === "object") {
-      return { ...SYSTEM_PAGE_DEFAULTS, ...(raw as Partial<SitePageDefaults>) };
+      const partial = raw as Partial<SitePageDefaults>;
+      return {
+        ...SYSTEM_PAGE_DEFAULTS,
+        ...partial,
+        monitor_status_history_days: {
+          ...SYSTEM_PAGE_DEFAULTS.monitor_status_history_days,
+          ...(partial.monitor_status_history_days ?? {}),
+        },
+      };
     }
-  } catch {}
+  } catch (e) {
+    console.error("[getSitePageDefaults] Failed to load pageDefaults, using system defaults:", e);
+  }
   return { ...SYSTEM_PAGE_DEFAULTS };
 }
 
