@@ -794,6 +794,13 @@
   });
 
   async function savePageDefaults() {
+    const desktop = Number(pageDefaults.monitor_status_history_days.desktop);
+    const mobile = Number(pageDefaults.monitor_status_history_days.mobile);
+    if (!Number.isFinite(desktop) || desktop < 1 || desktop > 365 ||
+        !Number.isFinite(mobile)  || mobile < 1  || mobile > 365) {
+      toast.error("History days must be between 1 and 365");
+      return;
+    }
     savingPageDefaults = true;
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
@@ -1775,7 +1782,7 @@
                 {#if applyingPageDefaults}
                   <Loader class="mr-2 h-4 w-4 animate-spin" />
                 {/if}
-                Apply to pages
+                {$t("manage.site_config.page_defaults_apply_btn")}
                 <ChevronDownIcon class="ml-2 h-4 w-4" />
               </Button>
             {/snippet}
@@ -1802,7 +1809,7 @@
           </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>
-          <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+          <AlertDialog.Cancel>{$t("manage.common.cancel")}</AlertDialog.Cancel>
           <AlertDialog.Action onclick={() => applyPageDefaultsToPages(true)}>
             {$t("manage.site_config.page_defaults_apply_all")}
           </AlertDialog.Action>
