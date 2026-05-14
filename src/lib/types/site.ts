@@ -161,3 +161,11 @@ export interface GlobalMaintenanceNotificationSettings {
   };
   reminder_buffer_hours: number;
 }
+
+export interface SitePageDefaults {
+  monitor_status_history_days: {
+    desktop: number;
+    mobile: number;
+  };
+  monitor_layout_style: "default-list" | "default-grid" | "compact-list" | "compact-grid";
+}

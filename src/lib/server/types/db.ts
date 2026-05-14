@@ -484,10 +484,10 @@ export interface PageRecordInsert {
 
 export interface PageSettingsType {
   monitor_status_history_days: {
-    desktop: number;
-    mobile: number;
-  };
-  monitor_layout_style: "default-list" | "default-grid" | "compact-list" | "compact-grid";
+    desktop: number | null;
+    mobile: number | null;
+  } | null;
+  monitor_layout_style: "default-list" | "default-grid" | "compact-list" | "compact-grid" | null;
   metaPageTitle?: string;
   metaPageDescription?: string;
   socialPagePreviewImage?: string;
