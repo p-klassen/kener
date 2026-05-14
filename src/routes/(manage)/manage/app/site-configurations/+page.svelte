@@ -19,6 +19,7 @@
   import Plus from "@lucide/svelte/icons/plus";
   import ChevronUpIcon from "@lucide/svelte/icons/chevron-up";
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
+  import CheckIcon from "@lucide/svelte/icons/check";
   import CopyButton from "$lib/components/CopyButton.svelte";
   import CopyIcon from "@lucide/svelte/icons/copy";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
@@ -34,7 +35,8 @@
     GlobalPageVisibilitySettings,
     SitemapXMLConfig,
     GlobalMaintenanceNotificationSettings,
-    SitePageDefaults
+    SitePageDefaults,
+    SiteMonitorDefaults
   } from "$lib/types/site.js";
   interface NavItem {
     name: string;
@@ -120,6 +122,19 @@
   let savingPageDefaults = $state(false);
   let applyingPageDefaults = $state(false);
   let showApplyAllConfirm = $state(false);
+  let pendingApplyMode = $state<"none" | "unset" | "all">("none");
+
+  const SYSTEM_MONITOR_DEFAULTS: SiteMonitorDefaults = {
+    uptime_formula_numerator: "up + maintenance",
+    uptime_formula_denominator: "up + maintenance + down + degraded",
+    monitor_status_history_days: { desktop: 90, mobile: 30 },
+    sharing_options: { showShareBadgeMonitor: false, showShareEmbedMonitor: false },
+  };
+  let monitorDefaults = $state<SiteMonitorDefaults>(structuredClone(SYSTEM_MONITOR_DEFAULTS));
+  let savingMonitorDefaults = $state(false);
+  let applyingMonitorDefaults = $state(false);
+  let showApplyAllMonitorConfirm = $state(false);
+  let pendingMonitorApplyMode = $state<"none" | "unset" | "all">("none");
 
   const sitemapURL = $derived(
     siteData.siteURL ? siteData.siteURL.replace(/\/$/, "") + clientResolver(resolve, "/sitemap.xml") : ""
@@ -289,6 +304,33 @@
           }
         } else {
           pageDefaults = structuredClone(SYSTEM_PAGE_DEFAULTS);
+        }
+
+        if (data.monitorDefaults) {
+          try {
+            const parsed =
+              typeof data.monitorDefaults === "string"
+                ? JSON.parse(data.monitorDefaults)
+                : data.monitorDefaults;
+            if (parsed && typeof parsed === "object") {
+              monitorDefaults = {
+                ...SYSTEM_MONITOR_DEFAULTS,
+                ...parsed,
+                monitor_status_history_days: {
+                  ...SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days,
+                  ...(parsed.monitor_status_history_days ?? {}),
+                },
+                sharing_options: {
+                  ...SYSTEM_MONITOR_DEFAULTS.sharing_options,
+                  ...(parsed.sharing_options ?? {}),
+                },
+              };
+            } else {
+              monitorDefaults = structuredClone(SYSTEM_MONITOR_DEFAULTS);
+            }
+          } catch {
+            monitorDefaults = structuredClone(SYSTEM_MONITOR_DEFAULTS);
+          }
         }
       }
     } catch (e) {
@@ -816,6 +858,13 @@
         toast.error(result.error);
       } else {
         toast.success($t("manage.site_config.page_defaults_save") + " ✓");
+        const mode = pendingApplyMode;
+        pendingApplyMode = "none";
+        if (mode === "unset") {
+          await applyPageDefaultsToPages(false);
+        } else if (mode === "all") {
+          showApplyAllConfirm = true;
+        }
       }
     } catch {
       toast.error("Failed to save page defaults");
@@ -846,6 +895,64 @@
     } finally {
       applyingPageDefaults = false;
       showApplyAllConfirm = false;
+      pendingApplyMode = "none";
+    }
+  }
+
+  async function saveMonitorDefaults() {
+    savingMonitorDefaults = true;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "storeSiteData",
+          data: { monitorDefaults: JSON.stringify(monitorDefaults) }
+        })
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success($t("manage.common.save") + " ✓");
+        const mode = pendingMonitorApplyMode;
+        pendingMonitorApplyMode = "none";
+        if (mode === "unset") {
+          await applyMonitorDefaultsToMonitors(false);
+        } else if (mode === "all") {
+          showApplyAllMonitorConfirm = true;
+        }
+      }
+    } catch {
+      toast.error("Failed to save monitor defaults");
+    } finally {
+      savingMonitorDefaults = false;
+    }
+  }
+
+  async function applyMonitorDefaultsToMonitors(force: boolean) {
+    applyingMonitorDefaults = true;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "applyMonitorDefaults",
+          data: { force }
+        })
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success($t("manage.site_config.monitor_defaults_apply_success"));
+      }
+    } catch {
+      toast.error("Failed to apply monitor defaults");
+    } finally {
+      applyingMonitorDefaults = false;
+      showApplyAllMonitorConfirm = false;
+      pendingMonitorApplyMode = "none";
     }
   }
 </script>
@@ -1766,15 +1873,6 @@
         </div>
       </Card.Content>
       <Card.Footer class="flex justify-between">
-        <Button onclick={savePageDefaults} disabled={savingPageDefaults}>
-          {#if savingPageDefaults}
-            <Loader class="mr-2 h-4 w-4 animate-spin" />
-          {:else}
-            <SaveIcon class="mr-2 h-4 w-4" />
-          {/if}
-          {$t("manage.site_config.page_defaults_save")}
-        </Button>
-
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
@@ -1783,19 +1881,33 @@
                   <Loader class="mr-2 h-4 w-4 animate-spin" />
                 {/if}
                 {$t("manage.site_config.page_defaults_apply_btn")}
+                {#if pendingApplyMode !== "none"}
+                  <span class="bg-primary ml-2 h-2 w-2 rounded-full"></span>
+                {/if}
                 <ChevronDownIcon class="ml-2 h-4 w-4" />
               </Button>
             {/snippet}
           </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Item onclick={() => applyPageDefaultsToPages(false)}>
+          <DropdownMenu.Content align="start">
+            <DropdownMenu.Item onclick={() => (pendingApplyMode = "unset")}>
+              <CheckIcon class="mr-2 h-4 w-4 {pendingApplyMode === 'unset' ? 'opacity-100' : 'opacity-0'}" />
               {$t("manage.site_config.page_defaults_apply_unset")}
             </DropdownMenu.Item>
-            <DropdownMenu.Item onclick={() => (showApplyAllConfirm = true)} class="text-destructive">
+            <DropdownMenu.Item onclick={() => (pendingApplyMode = "all")} class="text-destructive">
+              <CheckIcon class="mr-2 h-4 w-4 {pendingApplyMode === 'all' ? 'opacity-100' : 'opacity-0'}" />
               {$t("manage.site_config.page_defaults_apply_all")}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
+
+        <Button onclick={savePageDefaults} disabled={savingPageDefaults}>
+          {#if savingPageDefaults}
+            <Loader class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="mr-2 h-4 w-4" />
+          {/if}
+          {$t("manage.common.save")}
+        </Button>
       </Card.Footer>
     </Card.Root>
 
@@ -1812,6 +1924,113 @@
           <AlertDialog.Cancel>{$t("manage.common.cancel")}</AlertDialog.Cancel>
           <AlertDialog.Action onclick={() => applyPageDefaultsToPages(true)}>
             {$t("manage.site_config.page_defaults_apply_all")}
+          </AlertDialog.Action>
+        </AlertDialog.Footer>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
+
+    <!-- Global Monitor Defaults Card -->
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>{$t("manage.site_config.monitor_defaults_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.monitor_defaults_desc")}</Card.Description>
+      </Card.Header>
+      <Card.Content class="space-y-4">
+        <!-- Uptime Calculation -->
+        <div>
+          <p class="mb-2 text-sm font-medium">{$t("manage.site_config.monitor_defaults_uptime_label")}</p>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="space-y-1">
+              <Label class="text-xs">{$t("manage.site_config.monitor_defaults_uptime_numerator")}</Label>
+              <Input bind:value={monitorDefaults.uptime_formula_numerator} />
+            </div>
+            <div class="space-y-1">
+              <Label class="text-xs">{$t("manage.site_config.monitor_defaults_uptime_denominator")}</Label>
+              <Input bind:value={monitorDefaults.uptime_formula_denominator} />
+            </div>
+          </div>
+        </div>
+        <!-- Status History Days -->
+        <div>
+          <p class="mb-2 text-sm font-medium">{$t("manage.site_config.monitor_defaults_history_label")}</p>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="space-y-1">
+              <Label class="text-xs">{$t("manage.site_config.monitor_defaults_history_desktop")}</Label>
+              <Input type="number" min="1" max="365" bind:value={monitorDefaults.monitor_status_history_days.desktop} />
+            </div>
+            <div class="space-y-1">
+              <Label class="text-xs">{$t("manage.site_config.monitor_defaults_history_mobile")}</Label>
+              <Input type="number" min="1" max="365" bind:value={monitorDefaults.monitor_status_history_days.mobile} />
+            </div>
+          </div>
+        </div>
+        <!-- Sharing Options -->
+        <div>
+          <p class="mb-2 text-sm font-medium">{$t("manage.site_config.monitor_defaults_sharing_label")}</p>
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-3">
+              <Switch bind:checked={monitorDefaults.sharing_options.showShareBadgeMonitor} id="monitor-share-badge" />
+              <Label for="monitor-share-badge" class="text-sm">{$t("manage.site_config.monitor_defaults_sharing_badge")}</Label>
+            </div>
+            <div class="flex items-center gap-3">
+              <Switch bind:checked={monitorDefaults.sharing_options.showShareEmbedMonitor} id="monitor-share-embed" />
+              <Label for="monitor-share-embed" class="text-sm">{$t("manage.site_config.monitor_defaults_sharing_embed")}</Label>
+            </div>
+          </div>
+        </div>
+      </Card.Content>
+      <Card.Footer class="flex justify-between">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Button variant="outline" {...props} disabled={applyingMonitorDefaults}>
+                {#if applyingMonitorDefaults}
+                  <Loader class="mr-2 h-4 w-4 animate-spin" />
+                {/if}
+                {$t("manage.site_config.monitor_defaults_apply_btn")}
+                {#if pendingMonitorApplyMode !== "none"}
+                  <span class="bg-primary ml-2 h-2 w-2 rounded-full"></span>
+                {/if}
+                <ChevronDownIcon class="ml-2 h-4 w-4" />
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="start">
+            <DropdownMenu.Item onclick={() => (pendingMonitorApplyMode = "unset")}>
+              <CheckIcon class="mr-2 h-4 w-4 {pendingMonitorApplyMode === 'unset' ? 'opacity-100' : 'opacity-0'}" />
+              {$t("manage.site_config.monitor_defaults_apply_unset")}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => (pendingMonitorApplyMode = "all")} class="text-destructive">
+              <CheckIcon class="mr-2 h-4 w-4 {pendingMonitorApplyMode === 'all' ? 'opacity-100' : 'opacity-0'}" />
+              {$t("manage.site_config.monitor_defaults_apply_all")}
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+
+        <Button onclick={saveMonitorDefaults} disabled={savingMonitorDefaults}>
+          {#if savingMonitorDefaults}
+            <Loader class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="mr-2 h-4 w-4" />
+          {/if}
+          {$t("manage.common.save")}
+        </Button>
+      </Card.Footer>
+    </Card.Root>
+
+    <!-- Force-apply monitor defaults confirmation dialog -->
+    <AlertDialog.Root bind:open={showApplyAllMonitorConfirm}>
+      <AlertDialog.Content>
+        <AlertDialog.Header>
+          <AlertDialog.Title>{$t("manage.site_config.monitor_defaults_apply_all")}</AlertDialog.Title>
+          <AlertDialog.Description>
+            {$t("manage.site_config.monitor_defaults_apply_all_confirm")}
+          </AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+          <AlertDialog.Cancel>{$t("manage.common.cancel")}</AlertDialog.Cancel>
+          <AlertDialog.Action onclick={() => applyMonitorDefaultsToMonitors(true)}>
+            {$t("manage.site_config.monitor_defaults_apply_all")}
           </AlertDialog.Action>
         </AlertDialog.Footer>
       </AlertDialog.Content>

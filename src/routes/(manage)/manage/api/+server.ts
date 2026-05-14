@@ -551,6 +551,94 @@ export async function POST({ request, cookies }) {
         }
       }
       resp = { success: true };
+    } else if (action == "applyMonitorDefaults") {
+      const SYSTEM_MONITOR_DEFAULTS = {
+        uptime_formula_numerator: "up + maintenance",
+        uptime_formula_denominator: "up + maintenance + down + degraded",
+        monitor_status_history_days: { desktop: 90, mobile: 30 },
+        sharing_options: { showShareBadgeMonitor: false, showShareEmbedMonitor: false },
+      };
+      let siteDefaults = structuredClone(SYSTEM_MONITOR_DEFAULTS);
+      try {
+        const raw = await GetSiteDataByKey("monitorDefaults");
+        if (raw && typeof raw === "object") {
+          const partial = raw as typeof SYSTEM_MONITOR_DEFAULTS;
+          siteDefaults = {
+            ...SYSTEM_MONITOR_DEFAULTS,
+            ...partial,
+            monitor_status_history_days: {
+              ...SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days,
+              ...(partial.monitor_status_history_days ?? {}),
+            },
+            sharing_options: {
+              ...SYSTEM_MONITOR_DEFAULTS.sharing_options,
+              ...(partial.sharing_options ?? {}),
+            },
+          };
+        }
+      } catch (e) {
+        console.error("[applyMonitorDefaults] Failed to load monitorDefaults, using system defaults:", e);
+      }
+
+      const monitors = await GetMonitors({});
+      for (const monitor of monitors) {
+        let settings: Record<string, unknown> = {};
+        if (monitor.monitor_settings_json) {
+          try {
+            const parsed =
+              typeof monitor.monitor_settings_json === "string"
+                ? JSON.parse(monitor.monitor_settings_json)
+                : monitor.monitor_settings_json;
+            if (parsed && typeof parsed === "object") settings = parsed as Record<string, unknown>;
+          } catch {}
+        }
+
+        let changed = false;
+        const historyDays = (settings.monitor_status_history_days as Record<string, unknown>) ?? {};
+        const sharingOptions = (settings.sharing_options as Record<string, unknown>) ?? {};
+
+        if (data.force === true) {
+          settings.uptime_formula_numerator = siteDefaults.uptime_formula_numerator;
+          settings.uptime_formula_denominator = siteDefaults.uptime_formula_denominator;
+          settings.monitor_status_history_days = { ...siteDefaults.monitor_status_history_days };
+          settings.sharing_options = { ...siteDefaults.sharing_options };
+          changed = true;
+        } else {
+          if (settings.uptime_formula_numerator == null) {
+            settings.uptime_formula_numerator = siteDefaults.uptime_formula_numerator;
+            changed = true;
+          }
+          if (settings.uptime_formula_denominator == null) {
+            settings.uptime_formula_denominator = siteDefaults.uptime_formula_denominator;
+            changed = true;
+          }
+          const needsDesktop = historyDays.desktop == null;
+          const needsMobile = historyDays.mobile == null;
+          if (needsDesktop || needsMobile) {
+            settings.monitor_status_history_days = {
+              ...historyDays,
+              ...(needsDesktop && { desktop: siteDefaults.monitor_status_history_days.desktop }),
+              ...(needsMobile && { mobile: siteDefaults.monitor_status_history_days.mobile }),
+            };
+            changed = true;
+          }
+          const needsBadge = sharingOptions.showShareBadgeMonitor == null;
+          const needsEmbed = sharingOptions.showShareEmbedMonitor == null;
+          if (needsBadge || needsEmbed) {
+            settings.sharing_options = {
+              ...sharingOptions,
+              ...(needsBadge && { showShareBadgeMonitor: siteDefaults.sharing_options.showShareBadgeMonitor }),
+              ...(needsEmbed && { showShareEmbedMonitor: siteDefaults.sharing_options.showShareEmbedMonitor }),
+            };
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          await CreateUpdateMonitor({ ...monitor, monitor_settings_json: JSON.stringify(settings) });
+        }
+      }
+      resp = { success: true };
     } else if (action == "addMonitorToPage") {
       await AddMonitorToPage(data.page_id, data.monitor_tag);
       resp = { success: true };
