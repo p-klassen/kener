@@ -364,7 +364,9 @@ export const ManualUpdateUserData = async (forUserId: number, data: ManualUserUp
       newPlainPassword: data.passwordPlain,
     });
   } else if (data.updateType == "user_type") {
-    if (!data.user_type) throw new Error("user_type is required");
+    if (!data.user_type || !["user", "subscriber"].includes(data.user_type)) {
+      throw new Error("user_type must be 'user' or 'subscriber'");
+    }
     return await db.updateUserType(forUser.id, data.user_type);
   } else {
     throw new Error(`Unsupported update type: ${data.updateType}`);
