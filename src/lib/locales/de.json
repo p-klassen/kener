@@ -1135,6 +1135,7 @@
     "manage.users.filter_type_users": "Users",
     "manage.users.filter_type_subscribers": "Subscribers",
     "manage.users.change_to_subscriber_confirm": "This user will lose access to /manage immediately.",
-    "manage.users.filter_type_label": "Type"
+    "manage.users.filter_type_label": "Type",
+    "manage.users.logged_in_as": "Logged in as"
   }
 }

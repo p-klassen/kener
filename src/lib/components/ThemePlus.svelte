@@ -163,7 +163,7 @@
     {#if loggedInUser}
       <div class="flex items-center gap-1">
         <span class="text-foreground/60 hidden text-xs sm:inline">
-          {$t("Logged in as")} <strong>{loggedInUser.name}</strong>
+          {$t("manage.users.logged_in_as")} <strong>{loggedInUser.name}</strong>
         </span>
         {#if loginDetails}
           <Button
