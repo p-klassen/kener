@@ -1140,6 +1140,16 @@
     "manage.site_config.page_defaults_apply_success": "Settings applied to pages successfully ✓",
     "manage.page_detail.site_default_badge": "Site default",
     "manage.page_detail.custom_badge": "Custom",
-    "manage.page_detail.reset_to_default": "Reset to default"
+    "manage.page_detail.reset_to_default": "Reset to default",
+    "manage.users.account_type_label": "Account Type",
+    "manage.users.account_type_user": "User",
+    "manage.users.account_type_subscriber": "Authenticated Subscriber",
+    "manage.users.subscriber_badge": "Subscriber",
+    "manage.users.subscriber_no_manage_hint": "Subscribers have no access to /manage regardless of role permissions.",
+    "manage.users.filter_type_all": "All",
+    "manage.users.filter_type_users": "Users",
+    "manage.users.filter_type_subscribers": "Subscribers",
+    "manage.users.change_to_subscriber_confirm": "This user will lose access to /manage immediately.",
+    "manage.users.filter_type_label": "Type"
   }
 }
