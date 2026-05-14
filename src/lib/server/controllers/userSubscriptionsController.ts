@@ -751,13 +751,15 @@ export async function UpdateSubscriberPreferences(
   }
   const filterTags = (tags: string[]) => tags.filter((t) => allowedTags.has(t));
 
-  // Build set of allowed page slugs: include pages that have at least one allowed monitor
-  const allPages = await GetAllPages();
+  // Build allowed page slugs only when page-scope fields are actually present
   const allowedPageSlugs = new Set<string>();
-  for (const p of allPages) {
-    const pageMonitors = await db.getPageMonitorsExcludeHidden(p.id);
-    if (pageMonitors.some((pm) => allowedTags.has(pm.monitor_tag))) {
-      allowedPageSlugs.add(p.page_path);
+  if (preferences.incident_pages !== undefined || preferences.maintenance_pages !== undefined) {
+    const allPages = await GetAllPages();
+    for (const p of allPages) {
+      const pageMonitors = await db.getPageMonitorsExcludeHidden(p.id);
+      if (pageMonitors.some((pm) => allowedTags.has(pm.monitor_tag))) {
+        allowedPageSlugs.add(p.page_path);
+      }
     }
   }
   const filterPages = (slugs: string[]) => slugs.filter((s) => allowedPageSlugs.has(s));
