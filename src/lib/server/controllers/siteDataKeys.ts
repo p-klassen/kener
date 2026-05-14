@@ -312,4 +312,9 @@ export const siteDataKeys: SiteDataKey[] = [
     isValid: IsValidJSONString,
     data_type: "object",
   },
+  {
+    key: "monitorDefaults",
+    isValid: IsValidJSONString,
+    data_type: "object",
+  },
 ];
