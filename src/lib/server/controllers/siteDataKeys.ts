@@ -307,4 +307,9 @@ export const siteDataKeys: SiteDataKey[] = [
     isValid: IsValidSMTPConfig,
     data_type: "object",
   },
+  {
+    key: "pageDefaults",
+    isValid: IsValidJSONString,
+    data_type: "object",
+  },
 ];
