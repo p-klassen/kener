@@ -7,6 +7,9 @@
   import { Switch } from "$lib/components/ui/switch/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
+  import * as Select from "$lib/components/ui/select/index.js";
   import GC from "$lib/global-constants.js";
   import SaveIcon from "@lucide/svelte/icons/save";
   import Loader from "@lucide/svelte/icons/loader";
@@ -30,7 +33,8 @@
     EventDisplaySettings,
     GlobalPageVisibilitySettings,
     SitemapXMLConfig,
-    GlobalMaintenanceNotificationSettings
+    GlobalMaintenanceNotificationSettings,
+    SitePageDefaults
   } from "$lib/types/site.js";
   interface NavItem {
     name: string;
@@ -106,6 +110,16 @@
   let maintenanceNotificationSettings = $state<GlobalMaintenanceNotificationSettings>(
     structuredClone(defaultMaintenanceNotificationSettings)
   );
+
+  const SYSTEM_PAGE_DEFAULTS: SitePageDefaults = {
+    monitor_status_history_days: { desktop: 90, mobile: 30 },
+    monitor_layout_style: "default-list",
+  };
+
+  let pageDefaults = $state<SitePageDefaults>(structuredClone(SYSTEM_PAGE_DEFAULTS));
+  let savingPageDefaults = $state(false);
+  let applyingPageDefaults = $state(false);
+  let showApplyAllConfirm = $state(false);
 
   const sitemapURL = $derived(
     siteData.siteURL ? siteData.siteURL.replace(/\/$/, "") + clientResolver(resolve, "/sitemap.xml") : ""
@@ -255,6 +269,26 @@
           }
         } else {
           maintenanceNotificationSettings = structuredClone(defaultMaintenanceNotificationSettings);
+        }
+
+        if (data.pageDefaults) {
+          try {
+            const parsed =
+              typeof data.pageDefaults === "string"
+                ? JSON.parse(data.pageDefaults)
+                : data.pageDefaults;
+            pageDefaults = {
+              monitor_status_history_days: {
+                desktop: parsed?.monitor_status_history_days?.desktop ?? SYSTEM_PAGE_DEFAULTS.monitor_status_history_days.desktop,
+                mobile: parsed?.monitor_status_history_days?.mobile ?? SYSTEM_PAGE_DEFAULTS.monitor_status_history_days.mobile,
+              },
+              monitor_layout_style: parsed?.monitor_layout_style ?? SYSTEM_PAGE_DEFAULTS.monitor_layout_style,
+            };
+          } catch {
+            pageDefaults = structuredClone(SYSTEM_PAGE_DEFAULTS);
+          }
+        } else {
+          pageDefaults = structuredClone(SYSTEM_PAGE_DEFAULTS);
         }
       }
     } catch (e) {
@@ -758,6 +792,55 @@
     currentOrigin = window.location.origin;
     void fetchSiteData();
   });
+
+  async function savePageDefaults() {
+    savingPageDefaults = true;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "storeSiteData",
+          data: { pageDefaults: JSON.stringify(pageDefaults) }
+        })
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success($t("manage.site_config.page_defaults_save") + " ✓");
+      }
+    } catch {
+      toast.error("Failed to save page defaults");
+    } finally {
+      savingPageDefaults = false;
+    }
+  }
+
+  async function applyPageDefaultsToPages(force: boolean) {
+    applyingPageDefaults = true;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "applyPageDefaults",
+          data: { force }
+        })
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success($t("manage.site_config.page_defaults_apply_success"));
+      }
+    } catch {
+      toast.error("Failed to apply page defaults");
+    } finally {
+      applyingPageDefaults = false;
+      showApplyAllConfirm = false;
+    }
+  }
 </script>
 
 <div class="flex w-full flex-col gap-4 p-4">
@@ -1614,5 +1697,117 @@
         </Button>
       </Card.Footer>
     </Card.Root>
+
+    <!-- Global Page Defaults Card -->
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>{$t("manage.site_config.page_defaults_title")}</Card.Title>
+        <Card.Description>{$t("manage.site_config.page_defaults_desc")}</Card.Description>
+      </Card.Header>
+      <Card.Content class="space-y-6">
+        <!-- Monitor History Days -->
+        <div class="space-y-3">
+          <Label class="text-base font-medium">{$t("manage.site_config.page_defaults_history_label")}</Label>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="pd-history-desktop">{$t("manage.site_config.page_defaults_history_desktop")}</Label>
+              <Input
+                id="pd-history-desktop"
+                type="number"
+                min="1"
+                max="365"
+                bind:value={pageDefaults.monitor_status_history_days.desktop}
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="pd-history-mobile">{$t("manage.site_config.page_defaults_history_mobile")}</Label>
+              <Input
+                id="pd-history-mobile"
+                type="number"
+                min="1"
+                max="365"
+                bind:value={pageDefaults.monitor_status_history_days.mobile}
+              />
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-muted" />
+
+        <!-- Monitor Layout Style -->
+        <div class="space-y-2">
+          <Label class="text-base font-medium">{$t("manage.site_config.page_defaults_layout_label")}</Label>
+          <Select.Root type="single" bind:value={pageDefaults.monitor_layout_style}>
+            <Select.Trigger class="w-full">
+              {#if pageDefaults.monitor_layout_style === "default-list"}
+                Default List
+              {:else if pageDefaults.monitor_layout_style === "default-grid"}
+                Default Grid
+              {:else if pageDefaults.monitor_layout_style === "compact-list"}
+                Compact List
+              {:else}
+                Compact Grid
+              {/if}
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="default-list">Default List</Select.Item>
+              <Select.Item value="default-grid">Default Grid</Select.Item>
+              <Select.Item value="compact-list">Compact List</Select.Item>
+              <Select.Item value="compact-grid">Compact Grid</Select.Item>
+            </Select.Content>
+          </Select.Root>
+        </div>
+      </Card.Content>
+      <Card.Footer class="flex justify-between">
+        <Button onclick={savePageDefaults} disabled={savingPageDefaults}>
+          {#if savingPageDefaults}
+            <Loader class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="mr-2 h-4 w-4" />
+          {/if}
+          {$t("manage.site_config.page_defaults_save")}
+        </Button>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              <Button variant="outline" {...props} disabled={applyingPageDefaults}>
+                {#if applyingPageDefaults}
+                  <Loader class="mr-2 h-4 w-4 animate-spin" />
+                {/if}
+                Apply to pages
+                <ChevronDownIcon class="ml-2 h-4 w-4" />
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end">
+            <DropdownMenu.Item onclick={() => applyPageDefaultsToPages(false)}>
+              {$t("manage.site_config.page_defaults_apply_unset")}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => (showApplyAllConfirm = true)} class="text-destructive">
+              {$t("manage.site_config.page_defaults_apply_all")}
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </Card.Footer>
+    </Card.Root>
+
+    <!-- Force-apply confirmation dialog -->
+    <AlertDialog.Root bind:open={showApplyAllConfirm}>
+      <AlertDialog.Content>
+        <AlertDialog.Header>
+          <AlertDialog.Title>{$t("manage.site_config.page_defaults_apply_all")}</AlertDialog.Title>
+          <AlertDialog.Description>
+            {$t("manage.site_config.page_defaults_apply_all_confirm")}
+          </AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+          <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+          <AlertDialog.Action onclick={() => applyPageDefaultsToPages(true)}>
+            {$t("manage.site_config.page_defaults_apply_all")}
+          </AlertDialog.Action>
+        </AlertDialog.Footer>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
   {/if}
 </div>
