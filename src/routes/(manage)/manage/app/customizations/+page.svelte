@@ -4,8 +4,7 @@
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
-  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
@@ -730,7 +729,7 @@
   });
 </script>
 
-<div class="flex w-full flex-col gap-6">
+<div class="flex w-full flex-col gap-4 p-4">
   {#if loading}
     <div class="flex items-center justify-center py-12">
       <Spinner class="h-6 w-6" />
@@ -784,168 +783,48 @@
         >
       </Card.Header>
       <Card.Content class="pt-6">
-        <div class="ktable rounded-lg border">
-          <Table.Root>
-            <Table.Header>
-              <Table.Row>
-                <Table.Head>{$t("manage.customizations.colors_col_name")}</Table.Head>
-                <Table.Head>{$t("manage.customizations.colors_col_light")}</Table.Head>
-                <Table.Head>{$t("manage.customizations.colors_col_dark")}</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              <Table.Row>
-                <Table.Cell class="font-medium">{constants.UP}</Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colors.UP}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colorsDark.UP}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-              </Table.Row>
-              <Table.Row>
-                <Table.Cell class="font-medium">{constants.DEGRADED}</Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colors.DEGRADED}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colorsDark.DEGRADED}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-              </Table.Row>
-              <Table.Row>
-                <Table.Cell class="font-medium">{constants.DOWN}</Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colors.DOWN}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colorsDark.DOWN}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-              </Table.Row>
-              <Table.Row>
-                <Table.Cell class="font-medium">{constants.MAINTENANCE}</Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colors.MAINTENANCE}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colorsDark.MAINTENANCE}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-              </Table.Row>
-              <Table.Row>
-                <Table.Cell class="font-medium">Accent</Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colors.ACCENT}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colorsDark.ACCENT}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-              </Table.Row>
-              <Table.Row>
-                <Table.Cell class="font-medium">Accent Foreground</Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colors.ACCENT_FOREGROUND}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-                <Table.Cell>
-                  <ColorPicker
-                    bind:hex={colorsDark.ACCENT_FOREGROUND}
-                    position="fixed"
-                    isAlpha={false}
-                    isDark={mode.current === "dark"}
-                    --input-size="16px"
-                    isTextInput={true}
-                    label=""
-                  />
-                </Table.Cell>
-              </Table.Row>
-            </Table.Body>
-          </Table.Root>
+        <div class="rounded-lg border">
+          <!-- Header -->
+          <div class="grid grid-cols-3 border-b px-4 py-3">
+            <span class="text-muted-foreground text-sm font-medium">{$t("manage.customizations.colors_col_name")}</span>
+            <span class="text-muted-foreground text-sm font-medium">{$t("manage.customizations.colors_col_light")}</span>
+            <span class="text-muted-foreground text-sm font-medium">{$t("manage.customizations.colors_col_dark")}</span>
+          </div>
+          <!-- Rows -->
+          {#each [
+            { label: constants.UP,          light: "UP",               dark: "UP" },
+            { label: constants.DEGRADED,    light: "DEGRADED",         dark: "DEGRADED" },
+            { label: constants.DOWN,        light: "DOWN",             dark: "DOWN" },
+            { label: constants.MAINTENANCE, light: "MAINTENANCE",      dark: "MAINTENANCE" },
+            { label: "Accent",              light: "ACCENT",           dark: "ACCENT" },
+            { label: "Accent Foreground",   light: "ACCENT_FOREGROUND",dark: "ACCENT_FOREGROUND" },
+          ] as row (row.label)}
+            <div class="grid grid-cols-3 items-center border-b px-4 py-2 last:border-0">
+              <span class="text-sm font-medium">{row.label}</span>
+              <div>
+                <ColorPicker
+                  bind:hex={colors[row.light as keyof StatusColors]}
+                  position="responsive"
+                  isAlpha={false}
+                  isDark={mode.current === "dark"}
+                  --input-size="16px"
+                  isTextInput={true}
+                  label=""
+                />
+              </div>
+              <div>
+                <ColorPicker
+                  bind:hex={colorsDark[row.dark as keyof StatusColors]}
+                  position="responsive"
+                  isAlpha={false}
+                  isDark={mode.current === "dark"}
+                  --input-size="16px"
+                  isTextInput={true}
+                  label=""
+                />
+              </div>
+            </div>
+          {/each}
         </div>
       </Card.Content>
       <Card.Footer class="flex justify-end border-t pt-6">

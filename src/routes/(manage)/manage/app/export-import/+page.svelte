@@ -88,7 +88,7 @@
 
 <input bind:this={importFileInput} type="file" accept=".json" class="hidden" onchange={onFileSelected} />
 
-<div class="flex w-full flex-col gap-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <div>
     <h1 class="text-2xl font-semibold">{$t("manage.export_import.title")}</h1>
     <p class="text-muted-foreground mt-1 text-sm">{$t("manage.export_import.description")}</p>

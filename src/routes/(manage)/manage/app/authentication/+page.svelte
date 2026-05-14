@@ -304,7 +304,7 @@
   });
 </script>
 
-<div class="flex w-full flex-col gap-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <!-- ── OIDC Card ───────────────────────────────────────────────────────── -->
   <Card.Root class="kener-card">
     <Card.Header>
