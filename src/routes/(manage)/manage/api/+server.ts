@@ -108,6 +108,7 @@ import {
   AdminDeleteSubscriber,
   AdminAddSubscriber,
   AdminUpdateSubscriptionScope,
+  GetAccessibleScopesForSubscriber,
 } from "$lib/server/controllers/userSubscriptionsController.js";
 import {
   GetAllGeneralEmailTemplates,
@@ -847,7 +848,7 @@ export async function POST({ request, cookies }) {
         throw new Error(resp.error);
       }
     } else if (action == "adminUpdateSubscriptionScope") {
-      const { methodId, eventType, monitorTags } = data;
+      const { methodId, eventType, monitorTags, pageSlugs } = data;
       if (!methodId || !eventType) {
         throw new Error("Method ID and event type are required");
       }
@@ -857,11 +858,21 @@ export async function POST({ request, cookies }) {
       if (monitorTags !== undefined && monitorTags !== null && !Array.isArray(monitorTags)) {
         throw new Error("monitorTags must be an array");
       }
+      if (pageSlugs !== undefined && pageSlugs !== null && !Array.isArray(pageSlugs)) {
+        throw new Error("pageSlugs must be an array");
+      }
       const safeTags: string[] = Array.isArray(monitorTags) ? monitorTags.slice(0, 500) : [];
-      resp = await AdminUpdateSubscriptionScope(methodId, eventType, safeTags);
+      const safePages: string[] = Array.isArray(pageSlugs) ? pageSlugs.slice(0, 100) : [];
+      resp = await AdminUpdateSubscriptionScope(methodId, eventType, safeTags, safePages);
       if (!resp.success) {
         throw new Error(resp.error);
       }
+    } else if (action == "getSubscriberAccessibleScopes") {
+      const { methodId } = data;
+      if (!methodId) {
+        throw new Error("methodId is required");
+      }
+      resp = await GetAccessibleScopesForSubscriber(methodId);
     } else if (action == "getSubscriptionsConfig") {
       let subscriptionsSettings = await GetSiteDataByKey("subscriptionsSettings");
       if (!!!subscriptionsSettings) {
