@@ -43,6 +43,7 @@
     name: string;
     email: string;
     role_ids: string[];
+    user_type: "user" | "subscriber";
   }
 
   interface EditUser extends UserRecordDashboard {
@@ -81,6 +82,7 @@
   let total = $state(0);
   let totalPages = $state(0);
   let statusFilter = $state<"ACTIVE" | "INACTIVE">("ACTIVE");
+  let typeFilter = $state<"ALL" | "user" | "subscriber">("ALL");
 
   // Add user modal state
   let showAddUserDialog = $state(false);
@@ -89,7 +91,8 @@
   let newUser = $state<NewUser>({
     name: "",
     email: "",
-    role_ids: []
+    role_ids: [],
+    user_type: "user"
   });
 
   // Edit user sheet state
@@ -170,7 +173,12 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "getUsers",
-          data: { page, limit, is_active: statusFilter === "ACTIVE" ? 1 : 0 }
+          data: {
+            page,
+            limit,
+            is_active: statusFilter === "ACTIVE" ? 1 : 0,
+            ...(typeFilter !== "ALL" ? { user_type_filter: typeFilter } : {})
+          }
         })
       });
       const result = await res.json();
@@ -214,7 +222,7 @@
       creatingUserError = "Please enter a valid email address";
       return;
     }
-    if (newUser.role_ids.length === 0) {
+    if (newUser.user_type === "user" && newUser.role_ids.length === 0) {
       creatingUserError = "At least one role must be selected";
       return;
     }
@@ -255,7 +263,8 @@
     newUser = {
       name: "",
       email: "",
-      role_ids: []
+      role_ids: [],
+      user_type: "user"
     };
   }
 
@@ -494,6 +503,41 @@
       >
         {$t("manage.common.inactive")}
       </Button>
+      <div class="ml-3 flex items-center gap-1 border-l pl-3">
+        <Button
+          variant={typeFilter === "ALL" ? "default" : "outline"}
+          size="sm"
+          onclick={() => {
+            typeFilter = "ALL";
+            page = 1;
+            fetchUsers();
+          }}
+        >
+          {$t("manage.users.filter_type_all")}
+        </Button>
+        <Button
+          variant={typeFilter === "user" ? "default" : "outline"}
+          size="sm"
+          onclick={() => {
+            typeFilter = "user";
+            page = 1;
+            fetchUsers();
+          }}
+        >
+          {$t("manage.users.filter_type_users")}
+        </Button>
+        <Button
+          variant={typeFilter === "subscriber" ? "default" : "outline"}
+          size="sm"
+          onclick={() => {
+            typeFilter = "subscriber";
+            page = 1;
+            fetchUsers();
+          }}
+        >
+          {$t("manage.users.filter_type_subscribers")}
+        </Button>
+      </div>
     </div>
     <div class="flex items-center gap-2">
       {#if loading}
@@ -547,10 +591,15 @@
         {:else}
           {#each users as user (user.id)}
             <Table.Row class={currentUser.id === user.id ? "bg-muted/50" : ""}>
-              <Table.Cell class="font-medium"
-                >{user.name}{#if currentUser.id === user.id}
-                  <Badge variant="outline" class="ml-1 text-[10px]">{$t("manage.common.you")}</Badge>{/if}</Table.Cell
-              >
+              <Table.Cell class="font-medium">
+                {user.name}
+                {#if currentUser.id === user.id}
+                  <Badge variant="outline" class="ml-1 text-[10px]">{$t("manage.common.you")}</Badge>
+                {/if}
+                {#if user.user_type === "subscriber"}
+                  <Badge variant="outline" class="ml-1 text-[10px]">{$t("manage.users.subscriber_badge")}</Badge>
+                {/if}
+              </Table.Cell>
               <Table.Cell>{user.email}</Table.Cell>
               <Table.Cell class="text-center">
                 {#if user.is_verified}
@@ -724,6 +773,29 @@
             {/if}
           </div>
         </div>
+
+        <!-- Account Type -->
+        <div class="space-y-2">
+          <Label>{$t("manage.users.account_type_label")}</Label>
+          <div class="flex gap-2">
+            <Button
+              type="button"
+              variant={newUser.user_type === "user" ? "default" : "outline"}
+              size="sm"
+              onclick={() => { newUser.user_type = "user"; }}
+            >{$t("manage.users.account_type_user")}</Button>
+            <Button
+              type="button"
+              variant={newUser.user_type === "subscriber" ? "default" : "outline"}
+              size="sm"
+              onclick={() => { newUser.user_type = "subscriber"; }}
+            >{$t("manage.users.account_type_subscriber")}</Button>
+          </div>
+          {#if newUser.user_type === "subscriber"}
+            <p class="text-muted-foreground text-xs">{$t("manage.users.subscriber_no_manage_hint")}</p>
+          {/if}
+        </div>
+
         {#if creatingUserError}
           <p class="text-destructive text-sm font-medium">{creatingUserError}</p>
         {/if}
@@ -745,7 +817,12 @@
 <Sheet.Root bind:open={showSettingsSheet}>
   <Sheet.Content side="right" class="w-full overflow-y-auto sm:max-w-xl">
     <Sheet.Header>
-      <Sheet.Title>{$t("manage.users.settings_title")} - {toEditUser?.name}</Sheet.Title>
+      <Sheet.Title>
+      {$t("manage.users.settings_title")} - {toEditUser?.name}
+      {#if toEditUser?.user_type === "subscriber"}
+        <Badge variant="outline" class="ml-2 text-xs">{$t("manage.users.subscriber_badge")}</Badge>
+      {/if}
+    </Sheet.Title>
       <Sheet.Description>{$t("manage.users.settings_desc")}</Sheet.Description>
     </Sheet.Header>
     <div class="px-4">
@@ -837,6 +914,42 @@
                 {/if}
                 {$t("manage.users.update_roles_button")}
               </Button>
+            </Card.Content>
+          </Card.Root>
+
+          <!-- Account Type -->
+          <Card.Root>
+            <Card.Content class="p-4">
+              <p class="mb-3 text-sm">{$t("manage.users.account_type_label")}</p>
+              <div class="flex gap-2">
+                <Button
+                  type="button"
+                  variant={toEditUser.user_type === "user" ? "default" : "outline"}
+                  size="sm"
+                  onclick={() => {
+                    if (toEditUser!.user_type !== "user") {
+                      toEditUser!.user_type = "user";
+                      manualUpdateData("user_type");
+                    }
+                  }}
+                >{$t("manage.users.account_type_user")}</Button>
+                <Button
+                  type="button"
+                  variant={toEditUser.user_type === "subscriber" ? "default" : "outline"}
+                  size="sm"
+                  onclick={() => {
+                    if (toEditUser!.user_type !== "subscriber") {
+                      if (confirm($t("manage.users.change_to_subscriber_confirm"))) {
+                        toEditUser!.user_type = "subscriber";
+                        manualUpdateData("user_type");
+                      }
+                    }
+                  }}
+                >{$t("manage.users.account_type_subscriber")}</Button>
+              </div>
+              {#if toEditUser.user_type === "subscriber"}
+                <p class="text-muted-foreground mt-2 text-xs">{$t("manage.users.subscriber_no_manage_hint")}</p>
+              {/if}
             </Card.Content>
           </Card.Root>
 

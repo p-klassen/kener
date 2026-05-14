@@ -69,14 +69,14 @@ const validateNameOrThrow = (name: string): string => {
 
 export const GetAllUsersPaginated = async (
   data: PaginationInput,
-  filter?: { is_active?: number },
+  filter?: { is_active?: number; user_type?: string },
 ): Promise<UserRecordPublic[]> => {
   return await db.getUsersPaginated(data.page, data.limit, filter);
 };
 
 export const GetAllUsersPaginatedDashboard = async (
   data: PaginationInput,
-  filter?: { is_active?: number },
+  filter?: { is_active?: number; user_type?: string },
 ): Promise<UserRecordDashboard[]> => {
   const users = await db.getUsersPaginated(data.page, data.limit, filter);
   if (users.length === 0) return [];
@@ -96,7 +96,7 @@ export const GetAllUsers = async () => {
   return await db.getAllUsers();
 };
 
-export const GetUsersCount = async (filter?: { is_active?: number }) => {
+export const GetUsersCount = async (filter?: { is_active?: number; user_type?: string }) => {
   return await db.getTotalUsers(filter);
 };
 
@@ -410,12 +410,13 @@ export const GetTotalUserPages = async (limit: number): Promise<number> => {
 
 //send invitation email to user for account creation
 export const SendInvitationEmail = async (email: string, role_ids: string[], name: string, user_type?: "user" | "subscriber") => {
-  if (!role_ids || role_ids.length === 0) {
+  const effectiveUserType = user_type ?? "user";
+  if (effectiveUserType === "user" && (!role_ids || role_ids.length === 0)) {
     throw new Error("At least one role is required");
   }
 
   // Validate all role_ids exist and are active
-  for (const roleId of role_ids) {
+  for (const roleId of (role_ids || [])) {
     const role = await db.getRoleById(roleId);
     if (!role) {
       throw new Error(`Role "${roleId}" does not exist`);

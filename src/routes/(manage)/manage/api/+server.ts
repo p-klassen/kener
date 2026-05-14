@@ -266,9 +266,12 @@ export async function POST({ request, cookies }) {
     } else if (action == "getUsers") {
       const page = parseInt(String(data.page)) || 1;
       const limit = parseInt(String(data.limit)) || 10;
-      const filter: { is_active?: number } = {};
+      const filter: { is_active?: number; user_type?: string } = {};
       if (data.is_active !== undefined && data.is_active !== null) {
         filter.is_active = parseInt(String(data.is_active));
+      }
+      if (data.user_type_filter && typeof data.user_type_filter === "string" && ["user", "subscriber"].includes(data.user_type_filter)) {
+        filter.user_type = data.user_type_filter;
       }
       const hasFilter = Object.keys(filter).length > 0 ? filter : undefined;
       const users = await GetAllUsersPaginatedDashboard({ page, limit }, hasFilter);

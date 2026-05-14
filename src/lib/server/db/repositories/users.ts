@@ -141,7 +141,7 @@ export class UsersRepository extends BaseRepository {
     return await this.enrichManyWithRoleIds(rows);
   }
 
-  async getUsersPaginated(page: number, limit: number, filter?: { is_active?: number }): Promise<UserRecordPublic[]> {
+  async getUsersPaginated(page: number, limit: number, filter?: { is_active?: number; user_type?: string }): Promise<UserRecordPublic[]> {
     const query = this.knex("users")
       .select(...this.userColumns)
       .orderBy("created_at", "desc")
@@ -150,14 +150,20 @@ export class UsersRepository extends BaseRepository {
     if (filter?.is_active !== undefined) {
       query.where("is_active", filter.is_active);
     }
+    if (filter?.user_type !== undefined) {
+      query.where("user_type", filter.user_type);
+    }
     const rows = await query;
     return await this.enrichManyWithRoleIds(rows);
   }
 
-  async getTotalUsers(filter?: { is_active?: number }): Promise<CountResult | undefined> {
+  async getTotalUsers(filter?: { is_active?: number; user_type?: string }): Promise<CountResult | undefined> {
     const query = this.knex("users").count("* as count");
     if (filter?.is_active !== undefined) {
       query.where("is_active", filter.is_active);
+    }
+    if (filter?.user_type !== undefined) {
+      query.where("user_type", filter.user_type);
     }
     return await query.first<CountResult>();
   }
