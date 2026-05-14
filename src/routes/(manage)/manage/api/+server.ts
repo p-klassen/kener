@@ -245,7 +245,7 @@ export async function POST({ request, cookies }) {
       await AdminResetPassword(userDB.id, parseInt(String(targetUserId)), reason);
       resp = { success: true };
     } else if (action == "createNewUser") {
-      await SendInvitationEmail(data.email, data.role_ids, data.name);
+      await SendInvitationEmail(data.email, data.role_ids, data.name, data.user_type);
       resp = await GetUserByEmail(data.email);
     } else if (action == "resendInvitation") {
       await ResendInvitationEmail(data.email);

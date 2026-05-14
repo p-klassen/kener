@@ -409,7 +409,7 @@ export const GetTotalUserPages = async (limit: number): Promise<number> => {
 };
 
 //send invitation email to user for account creation
-export const SendInvitationEmail = async (email: string, role_ids: string[], name: string) => {
+export const SendInvitationEmail = async (email: string, role_ids: string[], name: string, user_type?: "user" | "subscriber") => {
   if (!role_ids || role_ids.length === 0) {
     throw new Error("At least one role is required");
   }
@@ -442,6 +442,7 @@ export const SendInvitationEmail = async (email: string, role_ids: string[], nam
       name: normalizedName,
       role_ids: role_ids,
       is_active: 0,
+      user_type: user_type ?? "user",
     });
   } catch (error: unknown) {
     // Handle database constraint errors
