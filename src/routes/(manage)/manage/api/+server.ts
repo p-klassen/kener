@@ -184,6 +184,10 @@ export async function POST({ request, cookies }) {
     return json({ error: "User not logged in" }, { status: 401 });
   }
 
+  if (userDB.user_type === "subscriber") {
+    return json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // Fetch user permissions once for the entire request
   const userPermissions = await GetUserPermissions(userDB.id);
 
