@@ -237,6 +237,13 @@ export class UsersRepository extends BaseRepository {
     });
   }
 
+  async updateUserType(id: number, user_type: "user" | "subscriber"): Promise<number> {
+    return await this.knex("users").where({ id }).update({
+      user_type,
+      updated_at: this.knex.fn.now(),
+    });
+  }
+
   // ============ API Keys ============
 
   async createNewApiKey(data: ApiKeyRecordInsert): Promise<number[]> {

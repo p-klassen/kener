@@ -128,6 +128,7 @@ class DbImpl {
   updateUserEmail!: UsersRepository["updateUserEmail"];
   getUserByExternalId!: UsersRepository["getUserByExternalId"];
   updateUserAuthProvider!: UsersRepository["updateUserAuthProvider"];
+  updateUserType!: UsersRepository["updateUserType"];
 
   // ============ Roles ============
   getRoleById!: UsersRepository["getRoleById"];
@@ -536,6 +537,7 @@ class DbImpl {
     this.updateUserEmail = this.users.updateUserEmail.bind(this.users);
     this.getUserByExternalId = this.users.getUserByExternalId.bind(this.users);
     this.updateUserAuthProvider = this.users.updateUserAuthProvider.bind(this.users);
+    this.updateUserType = this.users.updateUserType.bind(this.users);
     this.createNewApiKey = this.users.createNewApiKey.bind(this.users);
     this.updateApiKeyStatus = this.users.updateApiKeyStatus.bind(this.users);
     this.deleteApiKey = this.users.deleteApiKey.bind(this.users);
