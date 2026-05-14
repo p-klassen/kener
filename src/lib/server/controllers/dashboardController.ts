@@ -18,15 +18,40 @@ import type {
 import type { GroupMonitorTypeData } from "../types/monitor.js";
 import GC from "../../global-constants.js";
 import type { LayoutServerData } from "./layoutController.js";
+import type { SitePageDefaults } from "../../types/site.js";
+import { GetSiteDataByKey } from "./siteDataController.js";
 
-// Default page settings
-const defaultPageSettings: PageSettingsType = {
-  monitor_status_history_days: {
-    desktop: 90,
-    mobile: 30,
-  },
+// System-level fallback — matches the previous hardcoded values
+const SYSTEM_PAGE_DEFAULTS: SitePageDefaults = {
+  monitor_status_history_days: { desktop: 90, mobile: 30 },
   monitor_layout_style: "default-list",
 };
+
+async function getSitePageDefaults(): Promise<SitePageDefaults> {
+  try {
+    const raw = await GetSiteDataByKey("pageDefaults");
+    if (raw && typeof raw === "object") {
+      return { ...SYSTEM_PAGE_DEFAULTS, ...(raw as Partial<SitePageDefaults>) };
+    }
+  } catch {}
+  return { ...SYSTEM_PAGE_DEFAULTS };
+}
+
+function resolvePageSettings(
+  pageSettings: PageSettingsType | null,
+  siteDefaults: SitePageDefaults
+): PageSettingsType {
+  return {
+    monitor_status_history_days: {
+      desktop: pageSettings?.monitor_status_history_days?.desktop ?? siteDefaults.monitor_status_history_days.desktop,
+      mobile: pageSettings?.monitor_status_history_days?.mobile ?? siteDefaults.monitor_status_history_days.mobile,
+    },
+    monitor_layout_style: pageSettings?.monitor_layout_style ?? siteDefaults.monitor_layout_style,
+    ...(pageSettings?.metaPageTitle !== undefined && { metaPageTitle: pageSettings.metaPageTitle }),
+    ...(pageSettings?.metaPageDescription !== undefined && { metaPageDescription: pageSettings.metaPageDescription }),
+    ...(pageSettings?.socialPagePreviewImage !== undefined && { socialPagePreviewImage: pageSettings.socialPagePreviewImage }),
+  };
+}
 
 export interface NotificationEvent {
   eventURL: string;
@@ -312,6 +337,8 @@ export const GetPageDashboardData = async (
   pagePath: string,
   layoutData: LayoutServerData,
 ): Promise<PageDashboardData | null> => {
+  const siteDefaults = await getSitePageDefaults();
+
   // Fetch page by path with monitors
   const pageData = await GetPageByPathWithMonitors(pagePath);
   if (!pageData) {
@@ -340,7 +367,7 @@ export const GetPageDashboardData = async (
       if (mode === "hidden") return null;
       // Return minimal locked/teaser state — component checks locked=true before rendering
       const nowTs = GetMinuteStartNowTimestampUTC();
-      const settings: PageSettingsType = defaultPageSettings;
+      const settings = resolvePageSettings(null, siteDefaults);
       return {
         locked: true,
         lockedMode: mode,
@@ -389,19 +416,17 @@ export const GetPageDashboardData = async (
   }
   const monitorTags = visibleMonitorTags;
 
-  // Parse page settings with defaults
-  let settings: PageSettingsType = defaultPageSettings;
+  // Parse page settings, resolving nulls against site defaults
+  let rawSettings: PageSettingsType | null = null;
   if (pageDetails.page_settings_json) {
     try {
-      const parsed =
+      rawSettings =
         typeof pageDetails.page_settings_json === "string"
           ? JSON.parse(pageDetails.page_settings_json)
           : pageDetails.page_settings_json;
-      settings = { ...defaultPageSettings, ...parsed };
-    } catch {
-      settings = defaultPageSettings;
-    }
+    } catch {}
   }
+  const settings = resolvePageSettings(rawSettings, siteDefaults);
   const nowTs = GetMinuteStartNowTimestampUTC();
 
   // Convert to PageRecordTyped with parsed settings
