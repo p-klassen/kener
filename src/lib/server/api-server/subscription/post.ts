@@ -183,7 +183,7 @@ async function handleUpdatePreferences(
       if (!Array.isArray(incidentPages)) {
         return error(400, { message: "incident_pages must be an array" });
       }
-      preferences.incident_pages = incidentPages.slice(0, 100).map(String);
+      preferences.incident_pages = incidentPages.filter((s) => typeof s === "string").slice(0, 100);
     }
   }
   if (config.methods?.emails?.maintenances) {
@@ -200,7 +200,7 @@ async function handleUpdatePreferences(
       if (!Array.isArray(maintenancePages)) {
         return error(400, { message: "maintenance_pages must be an array" });
       }
-      preferences.maintenance_pages = maintenancePages.slice(0, 100).map(String);
+      preferences.maintenance_pages = maintenancePages.filter((s) => typeof s === "string").slice(0, 100);
     }
   }
 

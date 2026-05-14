@@ -8,10 +8,12 @@ import db from "$lib/server/db/db.js";
 export const GET: RequestHandler = async ({ cookies }) => {
   const publicMonitors = await GetMonitorsParsed({ status: "ACTIVE", is_hidden: "NO", is_public: 1 });
   const allowedMonitors = new Map<string, string>(publicMonitors.map((m) => [m.tag, m.name]));
+  const accessiblePageIds = new Set<number>();
 
   const session = await GetLoggedInSession(cookies);
   if (session) {
     const accessible = await db.getAccessibleResources(session.id);
+    for (const id of accessible.pageIds) accessiblePageIds.add(id);
     if (accessible.monitorTags.size > 0) {
       const roleMonitors = await GetMonitorsParsed({
         status: "ACTIVE",
@@ -22,11 +24,12 @@ export const GET: RequestHandler = async ({ cookies }) => {
     }
   }
 
-  // Build grouped pages (only pages with at least one allowed monitor)
+  // Build grouped pages — only include pages the caller can view
   const allPages = await GetAllPages();
   const pages: Array<{ slug: string; name: string; monitors: Array<{ tag: string; name: string }> }> = [];
 
   for (const p of allPages) {
+    if (p.is_public !== 1 && !accessiblePageIds.has(p.id)) continue;
     const pageMonitors = await db.getPageMonitorsExcludeHidden(p.id);
     const accessible = pageMonitors
       .filter((pm) => allowedMonitors.has(pm.monitor_tag))
