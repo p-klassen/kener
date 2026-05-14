@@ -398,7 +398,7 @@
                 {:else}
                   <SaveIcon class="mr-2 size-4" />
                 {/if}
-                {$t("manage.analytics.save_button")} {selectedAnalytics.label}
+                {$t("manage.common.save")}
               </Button>
             </div>
           </div>
