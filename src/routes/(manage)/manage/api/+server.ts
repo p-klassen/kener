@@ -492,7 +492,9 @@ export async function POST({ request, cookies }) {
             },
           };
         }
-      } catch {}
+      } catch (e) {
+        console.error("[applyPageDefaults] Failed to load pageDefaults, using system defaults:", e);
+      }
 
       const pages = await GetAllPages();
       for (const p of pages) {
@@ -510,7 +512,7 @@ export async function POST({ request, cookies }) {
         let changed = false;
         const historyDays = (raw.monitor_status_history_days as Record<string, unknown>) ?? {};
 
-        if (data.force) {
+        if (data.force === true) {
           raw.monitor_status_history_days = {
             ...historyDays,
             desktop: siteDefaults.monitor_status_history_days.desktop,

@@ -182,6 +182,7 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   addMonitorToPage: "pages.write",
   removeMonitorFromPage: "pages.write",
   reorderPageMonitors: "pages.write",
+  applyPageDefaults: "pages.write",
 
   // Triggers
   getTriggers: "triggers.read",
