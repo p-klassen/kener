@@ -20,6 +20,7 @@ interface ManualUserUpdateInput {
   is_active?: number;
   password?: string;
   passwordPlain?: string;
+  user_type?: "user" | "subscriber";
 }
 interface PasswordUpdateInput {
   userID: number;
@@ -33,6 +34,7 @@ interface NewUserInput {
   password: string;
   plainPassword: string;
   role_ids: string[];
+  user_type?: "user" | "subscriber";
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -190,6 +192,7 @@ export const CreateNewUser = async (data: NewUserInput): Promise<number[]> => {
     password_hash: await HashPassword(data.password),
     name: normalizedName,
     role_ids: data.role_ids,
+    user_type: data.user_type ?? "user",
   };
   return await db.insertUser(user);
 };
@@ -360,6 +363,9 @@ export const ManualUpdateUserData = async (forUserId: number, data: ManualUserUp
       newPassword: data.password,
       newPlainPassword: data.passwordPlain,
     });
+  } else if (data.updateType == "user_type") {
+    if (!data.user_type) throw new Error("user_type is required");
+    return await db.updateUserType(forUser.id, data.user_type);
   } else {
     throw new Error(`Unsupported update type: ${data.updateType}`);
   }
