@@ -244,6 +244,7 @@ export interface UserRecord {
   preferred_locale: string | null;
   auth_provider: string; // "local" | "oidc" | "ldap"
   external_id: string | null;
+  user_type: "user" | "subscriber";
   created_at: Date;
   updated_at: Date;
 }
@@ -260,6 +261,7 @@ export interface UserRecordInsert {
   preferred_locale?: string | null;
   auth_provider?: string;
   external_id?: string | null;
+  user_type?: "user" | "subscriber";
 }
 
 export interface UserRecordPublic {
@@ -274,6 +276,7 @@ export interface UserRecordPublic {
   preferred_locale: string | null;
   auth_provider: string;
   external_id: string | null;
+  user_type: "user" | "subscriber";
   created_at: Date;
   updated_at: Date;
 }
