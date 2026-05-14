@@ -60,6 +60,8 @@
   let savingFont = $state(false);
   let uploadingFont = $state(false);
   let uploadedFontName = $state("");
+  let detectedFamilies = $state<string[]>([]);
+  let pendingFontFile = $state<File | null>(null);
   let savingCSS = $state(false);
   let savingTheme = $state(false);
   let savingAnnouncement = $state(false);
@@ -311,57 +313,115 @@
     }
   }
 
-  function fontMimeTypeFromName(filename: string): string {
-    const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-    const map: Record<string, string> = { ttf: "font/ttf", otf: "font/otf", woff: "font/woff", woff2: "font/woff2" };
-    return map[ext] ?? "font/ttf";
-  }
+  async function parseFontFamilyNames(buffer: ArrayBuffer): Promise<string[]> {
+    try {
+      const view = new DataView(buffer);
+      const magic = view.getUint32(0);
 
-  function fileToBase64Font(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  }
+      // WOFF2 uses Brotli — not supported by DecompressionStream
+      if (magic === 0x774f4632) return [];
 
-  async function saveFontFile(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+      const isWOFF = magic === 0x774f4646;
+      const numTables = isWOFF ? view.getUint16(12) : view.getUint16(4);
+      const dirOffset = isWOFF ? 44 : 12;
+      const dirEntrySize = isWOFF ? 20 : 16;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Font file must be under 2 MB");
-      input.value = "";
-      return;
+      let nameOffset = -1;
+      let nameCompLen = -1;
+      let nameOrigLen = -1;
+
+      for (let i = 0; i < numTables; i++) {
+        const base = dirOffset + i * dirEntrySize;
+        const tag = String.fromCharCode(
+          view.getUint8(base),
+          view.getUint8(base + 1),
+          view.getUint8(base + 2),
+          view.getUint8(base + 3)
+        );
+        if (tag === "name") {
+          if (isWOFF) {
+            nameOffset = view.getUint32(base + 4);
+            nameCompLen = view.getUint32(base + 8);
+            nameOrigLen = view.getUint32(base + 12);
+          } else {
+            nameOffset = view.getUint32(base + 8);
+            nameCompLen = view.getUint32(base + 12);
+            nameOrigLen = nameCompLen;
+          }
+          break;
+        }
+      }
+
+      if (nameOffset === -1) return [];
+
+      let nameData: DataView;
+      let nameBase = 0;
+
+      if (isWOFF && nameCompLen < nameOrigLen) {
+        // zlib-compressed WOFF table — decompress with DecompressionStream
+        const compressed = buffer.slice(nameOffset, nameOffset + nameCompLen);
+        const ds = new DecompressionStream("deflate");
+        const writer = ds.writable.getWriter();
+        writer.write(new Uint8Array(compressed));
+        writer.close();
+        nameData = new DataView(await new Response(ds.readable).arrayBuffer());
+      } else {
+        nameData = view;
+        nameBase = nameOffset;
+      }
+
+      const count = nameData.getUint16(nameBase + 2);
+      const stringOffset = nameData.getUint16(nameBase + 4);
+      const families = new Set<string>();
+
+      for (let i = 0; i < count; i++) {
+        const rec = nameBase + 6 + i * 12;
+        const platformID = nameData.getUint16(rec);
+        const nameID = nameData.getUint16(rec + 6);
+
+        // nameID 1 = Font Family, 16 = Typographic Family (preferred)
+        if (nameID !== 1 && nameID !== 16) continue;
+
+        const len = nameData.getUint16(rec + 8);
+        const off = nameData.getUint16(rec + 10);
+        const strBase = nameBase + stringOffset + off;
+
+        let name = "";
+        if (platformID === 3 || platformID === 0) {
+          for (let j = 0; j < len; j += 2) {
+            name += String.fromCharCode(nameData.getUint16(strBase + j));
+          }
+        } else {
+          for (let j = 0; j < len; j++) {
+            name += String.fromCharCode(nameData.getUint8(strBase + j));
+          }
+        }
+
+        name = name.trim();
+        if (name) families.add(name);
+      }
+
+      return [...families];
+    } catch {
+      return [];
     }
+  }
 
+  async function uploadFontFile(file: File) {
     if (!font.family.trim()) {
-      toast.error("Please enter a font family name before uploading");
-      input.value = "";
+      toast.error("Please enter a font family name");
       return;
     }
-
     uploadingFont = true;
     const previousFileId = font.fileId;
     try {
       const base64 = await fileToBase64Font(file);
-
       const uploadResponse = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "uploadImage",
-          data: {
-            base64,
-            mimeType: fontMimeTypeFromName(file.name),
-            fileName: file.name
-          }
+          data: { base64, mimeType: fontMimeTypeFromName(file.name), fileName: file.name }
         })
       });
       const uploadResult = await uploadResponse.json();
@@ -392,9 +452,10 @@
         font.cssSrc = "";
         font.fileId = uploadResult.id;
         uploadedFontName = file.name;
+        pendingFontFile = null;
+        detectedFamilies = [];
         toast.success("Font uploaded successfully");
 
-        // Best-effort: delete old font file only after metadata is saved
         if (previousFileId) {
           const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
             method: "POST",
@@ -402,16 +463,60 @@
             body: JSON.stringify({ action: "deleteImage", data: { id: previousFileId } })
           });
           const deleteResult = await deleteRes.json();
-          if (deleteResult.error) {
-            console.warn("Failed to delete old font file:", deleteResult.error);
-          }
+          if (deleteResult.error) console.warn("Failed to delete old font file:", deleteResult.error);
         }
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to upload font");
     } finally {
       uploadingFont = false;
-      input.value = "";
+    }
+  }
+
+  function fontMimeTypeFromName(filename: string): string {
+    const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+    const map: Record<string, string> = { ttf: "font/ttf", otf: "font/otf", woff: "font/woff", woff2: "font/woff2" };
+    return map[ext] ?? "font/ttf";
+  }
+
+  function fileToBase64Font(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
+  async function saveFontFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    input.value = "";
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Font file must be under 2 MB");
+      return;
+    }
+
+    const buffer = await file.arrayBuffer();
+    const families = await parseFontFamilyNames(buffer);
+
+    if (families.length === 1) {
+      font.family = families[0];
+      await uploadFontFile(file);
+    } else if (families.length > 1) {
+      detectedFamilies = families;
+      font.family = families[0];
+      pendingFontFile = file;
+    } else {
+      // Auto-detection failed (e.g. WOFF2) — let user enter family manually
+      detectedFamilies = [];
+      pendingFontFile = file;
     }
   }
 
@@ -639,7 +744,7 @@
           {$t("manage.customizations.footer_desc")}
         </Card.Description>
       </Card.Header>
-      <Card.Content class="pt-6">
+      <Card.Content class="pt-6 min-w-0">
         <div class="w-full">
           <div class="overflow-hidden rounded-md border">
             <CodeMirror
@@ -694,7 +799,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colors.UP}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -705,7 +810,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colorsDark.UP}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -719,7 +824,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colors.DEGRADED}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -730,7 +835,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colorsDark.DEGRADED}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -744,7 +849,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colors.DOWN}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -755,7 +860,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colorsDark.DOWN}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -769,7 +874,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colors.MAINTENANCE}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -780,7 +885,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colorsDark.MAINTENANCE}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -794,7 +899,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colors.ACCENT}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -805,7 +910,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colorsDark.ACCENT}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -819,7 +924,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colors.ACCENT_FOREGROUND}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -830,7 +935,7 @@
                 <Table.Cell>
                   <ColorPicker
                     bind:hex={colorsDark.ACCENT_FOREGROUND}
-                    position="responsive"
+                    position="fixed"
                     isAlpha={false}
                     isDark={mode.current === "dark"}
                     --input-size="16px"
@@ -923,20 +1028,82 @@
         <!-- Option B: Upload Font File -->
         <div class="flex flex-col gap-3">
           <p class="text-sm font-medium">{$t("manage.customizations.font_option_b")}</p>
-          {#if font.fileId && uploadedFontName}
+
+          {#if pendingFontFile}
+            <!-- File selected — waiting for family confirmation -->
+            <div class="bg-muted flex items-center gap-2 rounded-lg px-3 py-2 text-sm">
+              <span class="truncate">{pendingFontFile.name}</span>
+            </div>
+
+            {#if detectedFamilies.length > 1}
+              <div>
+                <Label>{$t("manage.customizations.font_select_family")}</Label>
+                <Select.Root type="single" bind:value={font.family}>
+                  <Select.Trigger class="mt-1 w-full">
+                    {font.family || $t("manage.customizations.font_select_family")}
+                  </Select.Trigger>
+                  <Select.Content>
+                    {#each detectedFamilies as family (family)}
+                      <Select.Item value={family}>{family}</Select.Item>
+                    {/each}
+                  </Select.Content>
+                </Select.Root>
+              </div>
+            {:else}
+              <div>
+                <Label for="font-family-pending">{$t("manage.customizations.font_family_label")}</Label>
+                <Input
+                  bind:value={font.family}
+                  type="text"
+                  id="font-family-pending"
+                  placeholder="MyFont"
+                  class="mt-1"
+                />
+                <p class="text-muted-foreground mt-1 text-xs">{$t("manage.customizations.font_family_helper")}</p>
+              </div>
+            {/if}
+
             <div class="flex items-center gap-2">
-              <span class="text-sm">{uploadedFontName}</span>
               <Button
-                onclick={removeFontFile}
-                disabled={savingFont}
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Remove font file"
+                onclick={() => { pendingFontFile = null; detectedFamilies = []; }}
+                variant="outline"
+                size="sm"
+                disabled={uploadingFont}
               >
-                <X class="h-4 w-4" />
+                {$t("manage.common.cancel")}
+              </Button>
+              <Button
+                onclick={() => pendingFontFile && uploadFontFile(pendingFontFile)}
+                disabled={uploadingFont || !font.family.trim()}
+                size="sm"
+              >
+                {#if uploadingFont}
+                  <Loader class="h-4 w-4 animate-spin" />
+                {/if}
+                {$t("manage.customizations.font_upload_btn")}
               </Button>
             </div>
+
           {:else}
+            {#if font.fileId && uploadedFontName}
+              <!-- Active font badge -->
+              <div class="bg-muted flex items-center gap-2 rounded-lg px-3 py-2">
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <span class="text-sm font-medium">{$t("manage.customizations.font_active_file")}</span>
+                  <span class="text-muted-foreground truncate text-xs">{uploadedFontName}{font.family ? ` · ${font.family}` : ""}</span>
+                </div>
+                <Button
+                  onclick={removeFontFile}
+                  disabled={savingFont}
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Remove font file"
+                >
+                  <X class="h-4 w-4" />
+                </Button>
+              </div>
+            {/if}
+
             <div>
               <Label for="font-upload">{$t("manage.customizations.font_file_label")}</Label>
               <input
@@ -949,23 +1116,13 @@
               />
               <p class="text-muted-foreground mt-1 text-xs">{$t("manage.customizations.font_file_helper")}</p>
             </div>
-          {/if}
-          <div>
-            <Label for="font-family-file">{$t("manage.customizations.font_family_label")}</Label>
-            <Input
-              bind:value={font.family}
-              type="text"
-              id="font-family-file"
-              placeholder="MyFont"
-              class="mt-1"
-            />
-            <p class="text-muted-foreground mt-1 text-xs">Used in the CSS font-family declaration</p>
-          </div>
-          {#if uploadingFont}
-            <div class="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader class="h-4 w-4 animate-spin" />
-              {$t("manage.customizations.font_uploading")}
-            </div>
+
+            {#if uploadingFont}
+              <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader class="h-4 w-4 animate-spin" />
+                {$t("manage.customizations.font_uploading")}
+              </div>
+            {/if}
           {/if}
         </div>
 
@@ -1212,7 +1369,7 @@
           </a>.
         </Card.Description>
       </Card.Header>
-      <Card.Content class="pt-6">
+      <Card.Content class="pt-6 min-w-0">
         <div class="w-full">
           <div class="overflow-hidden rounded-md border">
             <CodeMirror

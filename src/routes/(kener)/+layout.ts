@@ -10,9 +10,15 @@ export const load: LayoutLoad = async ({ data, fetch }) => {
       ? data.defaultSiteTheme
       : "system";
 
-  // Only set mode if not already present in localStorage
-  if (typeof window !== "undefined" && !localStorage.getItem("mode-watcher-mode")) {
-    setMode(theme);
+  // Apply admin default theme once per session; re-apply if admin changed it.
+  // Using sessionStorage so fresh sessions always start with the configured default,
+  // but user toggles within a session are preserved across SPA navigations.
+  if (typeof window !== "undefined") {
+    const applied = sessionStorage.getItem("kener-theme-session");
+    if (applied !== theme) {
+      setMode(theme);
+      sessionStorage.setItem("kener-theme-session", theme);
+    }
   }
 
   return {
