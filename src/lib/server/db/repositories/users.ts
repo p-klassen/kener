@@ -31,6 +31,7 @@ export class UsersRepository extends BaseRepository {
     "auth_provider",
     "external_id",
     "preferred_locale",
+    "user_type",
     "created_at",
     "updated_at",
   ] as const;
@@ -95,6 +96,7 @@ export class UsersRepository extends BaseRepository {
       must_change_password: data.must_change_password ?? 0,
       auth_provider: data.auth_provider ?? "local",
       external_id: data.external_id ?? null,
+      user_type: data.user_type ?? "user",
       created_at: this.knex.fn.now(),
       updated_at: this.knex.fn.now(),
     };
@@ -356,6 +358,11 @@ export class UsersRepository extends BaseRepository {
         "users.is_active",
         "users.is_verified",
         "users.is_owner",
+        "users.must_change_password",
+        "users.auth_provider",
+        "users.external_id",
+        "users.preferred_locale",
+        "users.user_type",
         "users.created_at",
         "users.updated_at",
         "users_roles.roles_id",
