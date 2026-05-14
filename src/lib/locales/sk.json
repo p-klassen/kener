@@ -1125,6 +1125,21 @@
     "manage.users.eff_access_direct": "Direct",
     "manage.users.eff_access_no_resources": "No resources assigned to this role yet.",
     "manage.users.eff_access_inherited": "(inherited)",
-    "manage.users.eff_access_direct_monitors": "Direct monitors:"
+    "manage.users.eff_access_direct_monitors": "Direct monitors:",
+    "manage.site_config.page_defaults_title": "Global Page Defaults",
+    "manage.site_config.page_defaults_desc": "Configure default settings that apply to all status pages",
+    "manage.site_config.page_defaults_history_label": "Monitor History Days",
+    "manage.site_config.page_defaults_history_desktop": "Desktop",
+    "manage.site_config.page_defaults_history_mobile": "Mobile",
+    "manage.site_config.page_defaults_layout_label": "Page Layout",
+    "manage.site_config.page_defaults_save": "Save Page Defaults",
+    "manage.site_config.page_defaults_apply_btn": "Apply to pages",
+    "manage.site_config.page_defaults_apply_unset": "Apply only to pages without custom settings",
+    "manage.site_config.page_defaults_apply_all": "Apply to all pages",
+    "manage.site_config.page_defaults_apply_all_confirm": "This will overwrite custom settings on all pages. This action cannot be undone.",
+    "manage.site_config.page_defaults_apply_success": "Settings applied to pages successfully ✓",
+    "manage.page_detail.site_default_badge": "Site default",
+    "manage.page_detail.custom_badge": "Custom",
+    "manage.page_detail.reset_to_default": "Reset to default"
   }
 }
