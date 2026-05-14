@@ -557,6 +557,14 @@
                     </div>
                     {#if incidentScope === "specific"}
                       <div class="ml-4 flex max-h-48 flex-col gap-2 overflow-y-auto pt-1">
+                        {#if availablePages.length === 0}
+                          {#each availableMonitors as mon (mon.tag)}
+                            <label class="flex cursor-pointer items-center gap-2 text-sm">
+                              <input type="checkbox" bind:checked={incidentMonitorSelections[mon.tag]} />
+                              {mon.name}
+                            </label>
+                          {/each}
+                        {:else}
                         {#each availablePages as pageOpt (pageOpt.slug)}
                           <div class="space-y-1">
                             <label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
@@ -580,6 +588,7 @@
                             {/if}
                           </div>
                         {/each}
+                        {/if}
                       </div>
                     {/if}
                     {#if incidentScopeError}
@@ -626,6 +635,14 @@
                     </div>
                     {#if maintenanceScope === "specific"}
                       <div class="ml-4 flex max-h-48 flex-col gap-2 overflow-y-auto pt-1">
+                        {#if availablePages.length === 0}
+                          {#each availableMonitors as mon (mon.tag)}
+                            <label class="flex cursor-pointer items-center gap-2 text-sm">
+                              <input type="checkbox" bind:checked={maintenanceMonitorSelections[mon.tag]} />
+                              {mon.name}
+                            </label>
+                          {/each}
+                        {:else}
                         {#each availablePages as pageOpt (pageOpt.slug)}
                           <div class="space-y-1">
                             <label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
@@ -649,6 +666,7 @@
                             {/if}
                           </div>
                         {/each}
+                        {/if}
                       </div>
                     {/if}
                     {#if maintenanceScopeError}
