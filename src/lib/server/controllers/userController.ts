@@ -20,6 +20,7 @@ interface ManualUserUpdateInput {
   is_active?: number;
   password?: string;
   passwordPlain?: string;
+  user_type?: "user" | "subscriber";
 }
 interface PasswordUpdateInput {
   userID: number;
@@ -33,6 +34,7 @@ interface NewUserInput {
   password: string;
   plainPassword: string;
   role_ids: string[];
+  user_type?: "user" | "subscriber";
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,14 +69,14 @@ const validateNameOrThrow = (name: string): string => {
 
 export const GetAllUsersPaginated = async (
   data: PaginationInput,
-  filter?: { is_active?: number },
+  filter?: { is_active?: number; user_type?: string },
 ): Promise<UserRecordPublic[]> => {
   return await db.getUsersPaginated(data.page, data.limit, filter);
 };
 
 export const GetAllUsersPaginatedDashboard = async (
   data: PaginationInput,
-  filter?: { is_active?: number },
+  filter?: { is_active?: number; user_type?: string },
 ): Promise<UserRecordDashboard[]> => {
   const users = await db.getUsersPaginated(data.page, data.limit, filter);
   if (users.length === 0) return [];
@@ -94,7 +96,7 @@ export const GetAllUsers = async () => {
   return await db.getAllUsers();
 };
 
-export const GetUsersCount = async (filter?: { is_active?: number }) => {
+export const GetUsersCount = async (filter?: { is_active?: number; user_type?: string }) => {
   return await db.getTotalUsers(filter);
 };
 
@@ -190,6 +192,7 @@ export const CreateNewUser = async (data: NewUserInput): Promise<number[]> => {
     password_hash: await HashPassword(data.password),
     name: normalizedName,
     role_ids: data.role_ids,
+    user_type: data.user_type ?? "user",
   };
   return await db.insertUser(user);
 };
@@ -360,6 +363,17 @@ export const ManualUpdateUserData = async (forUserId: number, data: ManualUserUp
       newPassword: data.password,
       newPlainPassword: data.passwordPlain,
     });
+  } else if (data.updateType == "user_type") {
+    if (!data.user_type || !["user", "subscriber"].includes(data.user_type)) {
+      throw new Error("user_type must be 'user' or 'subscriber'");
+    }
+    await db.updateUserType(forUser.id, data.user_type);
+    if (data.user_type === "subscriber") {
+      await db.updateUserRoles(forUser.id, ["subscriber"]);
+    } else {
+      await db.updateUserRoles(forUser.id, []);
+    }
+    return;
   } else {
     throw new Error(`Unsupported update type: ${data.updateType}`);
   }
@@ -401,19 +415,25 @@ export const GetTotalUserPages = async (limit: number): Promise<number> => {
 };
 
 //send invitation email to user for account creation
-export const SendInvitationEmail = async (email: string, role_ids: string[], name: string) => {
-  if (!role_ids || role_ids.length === 0) {
+export const SendInvitationEmail = async (email: string, role_ids: string[], name: string, user_type?: "user" | "subscriber") => {
+  const effectiveUserType = user_type ?? "user";
+
+  const effectiveRoleIds = effectiveUserType === "subscriber" ? ["subscriber"] : role_ids;
+
+  if (effectiveUserType === "user" && (!effectiveRoleIds || effectiveRoleIds.length === 0)) {
     throw new Error("At least one role is required");
   }
 
-  // Validate all role_ids exist and are active
-  for (const roleId of role_ids) {
-    const role = await db.getRoleById(roleId);
-    if (!role) {
-      throw new Error(`Role "${roleId}" does not exist`);
-    }
-    if (role.status !== "ACTIVE") {
-      throw new Error(`Role "${roleId}" is not active`);
+  // Validate all role_ids exist and are active (skip for subscriber — role is system-managed)
+  if (effectiveUserType === "user") {
+    for (const roleId of (effectiveRoleIds || [])) {
+      const role = await db.getRoleById(roleId);
+      if (!role) {
+        throw new Error(`Role "${roleId}" does not exist`);
+      }
+      if (role.status !== "ACTIVE") {
+        throw new Error(`Role "${roleId}" is not active`);
+      }
     }
   }
 
@@ -432,8 +452,9 @@ export const SendInvitationEmail = async (email: string, role_ids: string[], nam
       email: normalizedEmail,
       password_hash: "",
       name: normalizedName,
-      role_ids: role_ids,
+      role_ids: effectiveRoleIds,
       is_active: 0,
+      user_type: effectiveUserType,
     });
   } catch (error: unknown) {
     // Handle database constraint errors

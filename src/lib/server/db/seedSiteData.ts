@@ -177,6 +177,10 @@ const seedSiteData = {
     },
     reminder_buffer_hours: 1,
   },
+  pageDefaults: {
+    monitor_status_history_days: { desktop: 90, mobile: 30 },
+    monitor_layout_style: "default-list",
+  },
 };
 
 export default seedSiteData;

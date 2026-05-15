@@ -72,11 +72,13 @@ export const actions: Actions = {
       });
     }
 
-    if (!userDB.role_ids || userDB.role_ids.length === 0) {
-      return fail(403, {
-        error: "Your account has no active roles assigned. Please contact an administrator.",
-        values: { email },
-      });
+    if (userDB.user_type !== "subscriber") {
+      if (!userDB.role_ids || userDB.role_ids.length === 0) {
+        return fail(403, {
+          error: "Your account has no active roles assigned. Please contact an administrator.",
+          values: { email },
+        });
+      }
     }
 
     const token = await GenerateToken(userDB);
@@ -91,6 +93,9 @@ export const actions: Actions = {
 
     if (userDB.must_change_password) {
       throw redirect(302, serverResolve("/account/change-password"));
+    }
+    if (userDB.user_type === "subscriber") {
+      throw redirect(303, "/");
     }
     const loginPermissions = await GetUserPermissions(userDB.id);
     throw redirect(302, serverResolve(loginPermissions.size > 0 ? "/manage/app/site-configurations" : "/"));
@@ -116,8 +121,12 @@ export const actions: Actions = {
         secure: cookieConfig.secure,
         sameSite: cookieConfig.sameSite,
       });
-      const ldapPermissions = await GetUserPermissions(userDB.id);
-      ldapRedirect = serverResolve(ldapPermissions.size > 0 ? "/manage/app/site-configurations" : "/");
+      if (userDB.user_type === "subscriber") {
+        ldapRedirect = "/";
+      } else {
+        const ldapPermissions = await GetUserPermissions(userDB.id);
+        ldapRedirect = serverResolve(ldapPermissions.size > 0 ? "/manage/app/site-configurations" : "/");
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "LDAP authentication failed";
       return fail(401, { error: msg, values: { ldap_username: username } });

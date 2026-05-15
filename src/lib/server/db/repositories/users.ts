@@ -31,6 +31,7 @@ export class UsersRepository extends BaseRepository {
     "auth_provider",
     "external_id",
     "preferred_locale",
+    "user_type",
     "created_at",
     "updated_at",
   ] as const;
@@ -95,6 +96,7 @@ export class UsersRepository extends BaseRepository {
       must_change_password: data.must_change_password ?? 0,
       auth_provider: data.auth_provider ?? "local",
       external_id: data.external_id ?? null,
+      user_type: data.user_type ?? "user",
       created_at: this.knex.fn.now(),
       updated_at: this.knex.fn.now(),
     };
@@ -139,7 +141,7 @@ export class UsersRepository extends BaseRepository {
     return await this.enrichManyWithRoleIds(rows);
   }
 
-  async getUsersPaginated(page: number, limit: number, filter?: { is_active?: number }): Promise<UserRecordPublic[]> {
+  async getUsersPaginated(page: number, limit: number, filter?: { is_active?: number; user_type?: string }): Promise<UserRecordPublic[]> {
     const query = this.knex("users")
       .select(...this.userColumns)
       .orderBy("created_at", "desc")
@@ -148,14 +150,20 @@ export class UsersRepository extends BaseRepository {
     if (filter?.is_active !== undefined) {
       query.where("is_active", filter.is_active);
     }
+    if (filter?.user_type !== undefined) {
+      query.where("user_type", filter.user_type);
+    }
     const rows = await query;
     return await this.enrichManyWithRoleIds(rows);
   }
 
-  async getTotalUsers(filter?: { is_active?: number }): Promise<CountResult | undefined> {
+  async getTotalUsers(filter?: { is_active?: number; user_type?: string }): Promise<CountResult | undefined> {
     const query = this.knex("users").count("* as count");
     if (filter?.is_active !== undefined) {
       query.where("is_active", filter.is_active);
+    }
+    if (filter?.user_type !== undefined) {
+      query.where("user_type", filter.user_type);
     }
     return await query.first<CountResult>();
   }
@@ -231,6 +239,13 @@ export class UsersRepository extends BaseRepository {
     return await this.knex("users").where({ id }).update({
       email: email.toLowerCase().trim(),
       is_verified: 0,
+      updated_at: this.knex.fn.now(),
+    });
+  }
+
+  async updateUserType(id: number, user_type: "user" | "subscriber"): Promise<number> {
+    return await this.knex("users").where({ id }).update({
+      user_type,
       updated_at: this.knex.fn.now(),
     });
   }
@@ -356,6 +371,11 @@ export class UsersRepository extends BaseRepository {
         "users.is_active",
         "users.is_verified",
         "users.is_owner",
+        "users.must_change_password",
+        "users.auth_provider",
+        "users.external_id",
+        "users.preferred_locale",
+        "users.user_type",
         "users.created_at",
         "users.updated_at",
         "users_roles.roles_id",

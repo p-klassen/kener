@@ -92,8 +92,8 @@ export interface MonitorSettings {
   uptime_formula_numerator?: string;
   uptime_formula_denominator?: string;
   monitor_status_history_days?: {
-    desktop: number;
-    mobile: number;
+    desktop: number | null;
+    mobile: number | null;
   };
   sharing_options?: MonitorSharingOptions;
 }
@@ -244,6 +244,7 @@ export interface UserRecord {
   preferred_locale: string | null;
   auth_provider: string; // "local" | "oidc" | "ldap"
   external_id: string | null;
+  user_type: "user" | "subscriber";
   created_at: Date;
   updated_at: Date;
 }
@@ -260,6 +261,7 @@ export interface UserRecordInsert {
   preferred_locale?: string | null;
   auth_provider?: string;
   external_id?: string | null;
+  user_type?: "user" | "subscriber";
 }
 
 export interface UserRecordPublic {
@@ -274,6 +276,7 @@ export interface UserRecordPublic {
   preferred_locale: string | null;
   auth_provider: string;
   external_id: string | null;
+  user_type: "user" | "subscriber";
   created_at: Date;
   updated_at: Date;
 }
@@ -484,10 +487,10 @@ export interface PageRecordInsert {
 
 export interface PageSettingsType {
   monitor_status_history_days: {
-    desktop: number;
-    mobile: number;
-  };
-  monitor_layout_style: "default-list" | "default-grid" | "compact-list" | "compact-grid";
+    desktop: number | null;
+    mobile: number | null;
+  } | null;
+  monitor_layout_style: "default-list" | "default-grid" | "compact-list" | "compact-grid" | null;
   metaPageTitle?: string;
   metaPageDescription?: string;
   socialPagePreviewImage?: string;

@@ -54,6 +54,8 @@
     maintenances_subscription_id: number | null;
     incident_monitors: string[];
     maintenance_monitors: string[];
+    incident_pages: string[];
+    maintenance_pages: string[];
     created_at: string;
   }
 
@@ -81,14 +83,16 @@
   let updatingToggle = $state<Record<string, boolean>>({});
 
   // Scope dialog state
-  interface MonitorOption { tag: string; name: string; }
+  interface PageOption { slug: string; name: string; monitors: Array<{ tag: string; name: string }> }
   let showScopeDialog = $state(false);
   let scopeDialogSubscriber = $state<Subscriber | null>(null);
-  let allMonitors = $state<MonitorOption[]>([]);
-  let fetchingMonitors = $state(false);
-  let fetchMonitorsError = $state("");
+  let allPages = $state<PageOption[]>([]);
+  let allMonitorsFlat = $state<Array<{ tag: string; name: string; page_slug: string }>>([]);
+  let fetchingScopes = $state(false);
+  let fetchScopesError = $state("");
   let editingScope = $state<"incidents" | "maintenances" | null>(null);
-  let editScopeSelections = $state<Record<string, boolean>>({});
+  let editPageSelections = $state<Record<string, boolean>>({});
+  let editMonitorSelections = $state<Record<string, boolean>>({});
   let savingScope = $state(false);
 
   // Fetch config
@@ -282,55 +286,80 @@
     showDeleteDialog = true;
   }
 
-  async function fetchAllMonitors() {
-    if (allMonitors.length > 0) return;
-    fetchingMonitors = true;
-    fetchMonitorsError = "";
+  async function fetchScopeOptions(methodId: number) {
+    fetchingScopes = true;
+    fetchScopesError = "";
     try {
-      const res = await fetch(clientResolver(resolve, "/dashboard-apis/subscription/monitors"));
+      const res = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getSubscriberAccessibleScopes", data: { methodId } })
+      });
       if (res.ok) {
         const data = await res.json();
-        allMonitors = data.monitors || [];
+        const monitorsByPage = new Map<string, Array<{ tag: string; name: string }>>();
+        for (const m of (data.monitors || [])) {
+          if (!monitorsByPage.has(m.page_slug)) monitorsByPage.set(m.page_slug, []);
+          monitorsByPage.get(m.page_slug)!.push({ tag: m.tag, name: m.name });
+        }
+        allPages = (data.pages || []).map((p: { slug: string; name: string }) => ({
+          slug: p.slug,
+          name: p.name,
+          monitors: monitorsByPage.get(p.slug) || [],
+        }));
+        allMonitorsFlat = data.monitors || [];
       } else {
-        fetchMonitorsError = "Failed to load monitors";
+        fetchScopesError = "Failed to load scope options";
       }
     } catch (_e) {
-      fetchMonitorsError = "Failed to load monitors";
+      fetchScopesError = "Failed to load scope options";
     } finally {
-      fetchingMonitors = false;
+      fetchingScopes = false;
     }
   }
 
   async function openScopeDialog(subscriber: Subscriber) {
     scopeDialogSubscriber = subscriber;
     editingScope = null;
-    editScopeSelections = {};
+    editPageSelections = {};
+    editMonitorSelections = {};
+    allPages = [];
+    allMonitorsFlat = [];
+    fetchScopesError = "";
     showScopeDialog = true;
-    await fetchAllMonitors();
+    await fetchScopeOptions(subscriber.method_id);
   }
 
   function startEditScope(type: "incidents" | "maintenances") {
     if (!scopeDialogSubscriber) return;
     editingScope = type;
+    const currentPages = type === "incidents"
+      ? scopeDialogSubscriber.incident_pages
+      : scopeDialogSubscriber.maintenance_pages;
     const currentTags = type === "incidents"
       ? scopeDialogSubscriber.incident_monitors
       : scopeDialogSubscriber.maintenance_monitors;
-    editScopeSelections = Object.fromEntries(
-      allMonitors.map((m) => [m.tag, currentTags.includes(m.tag)])
-    );
+    editPageSelections = Object.fromEntries(allPages.map((p) => [p.slug, currentPages.includes(p.slug)]));
+    editMonitorSelections = Object.fromEntries(allMonitorsFlat.map((m) => [m.tag, currentTags.includes(m.tag)]));
   }
 
   async function saveScope() {
     if (!scopeDialogSubscriber || !editingScope) return;
     savingScope = true;
-    const monitorTags = Object.entries(editScopeSelections).filter(([, v]) => v).map(([k]) => k);
+    const pageSlugs = Object.entries(editPageSelections).filter(([, v]) => v).map(([k]) => k);
+    const coveredByPage = new Set(
+      allPages.filter((p) => pageSlugs.includes(p.slug)).flatMap((p) => p.monitors.map((m) => m.tag))
+    );
+    const monitorTags = Object.entries(editMonitorSelections)
+      .filter(([k, v]) => v && !coveredByPage.has(k))
+      .map(([k]) => k);
     try {
       const res = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "adminUpdateSubscriptionScope",
-          data: { methodId: scopeDialogSubscriber.method_id, eventType: editingScope, monitorTags }
+          data: { methodId: scopeDialogSubscriber.method_id, eventType: editingScope, monitorTags, pageSlugs }
         })
       });
       const result = await res.json();
@@ -339,8 +368,10 @@
       } else {
         if (editingScope === "incidents") {
           scopeDialogSubscriber.incident_monitors = monitorTags;
+          scopeDialogSubscriber.incident_pages = pageSlugs;
         } else {
           scopeDialogSubscriber.maintenance_monitors = monitorTags;
+          scopeDialogSubscriber.maintenance_pages = pageSlugs;
         }
         editingScope = null;
         toast.success("Scope updated");
@@ -367,7 +398,7 @@
   });
 </script>
 
-<div class="container mx-auto space-y-6 py-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <!-- Settings Card -->
   <Card.Root>
     <Card.Header>
@@ -534,7 +565,9 @@
                   <Table.Cell>
                     {@const isScoped =
                       subscriber.incident_monitors.length > 0 ||
-                      subscriber.maintenance_monitors.length > 0}
+                      subscriber.maintenance_monitors.length > 0 ||
+                      subscriber.incident_pages.length > 0 ||
+                      subscriber.maintenance_pages.length > 0}
                     <button
                       onclick={() => openScopeDialog(subscriber)}
                       class={[
@@ -678,81 +711,80 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    {#if fetchingMonitors}
+    {#if fetchingScopes}
       <div class="flex items-center justify-center py-6">
         <Loader class="text-muted-foreground h-5 w-5 animate-spin" />
       </div>
-    {:else if fetchMonitorsError}
-      <p class="text-destructive py-4 text-sm">{fetchMonitorsError}</p>
+    {:else if fetchScopesError}
+      <p class="text-destructive py-4 text-sm">{fetchScopesError}</p>
     {:else if scopeDialogSubscriber}
       <div class="space-y-4 py-2">
-        {#if scopeDialogSubscriber.incidents_enabled}
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-sm font-medium">
-                <AlertTriangle class="h-4 w-4 text-orange-500" />
-                Incidents
+        {#each (["incidents", "maintenances"] as const) as eventType}
+          {@const isEnabled = eventType === "incidents"
+            ? scopeDialogSubscriber.incidents_enabled
+            : scopeDialogSubscriber.maintenances_enabled}
+          {#if isEnabled}
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-sm font-medium">
+                  {#if eventType === "incidents"}
+                    <AlertTriangle class="h-4 w-4 text-orange-500" />
+                    Incidents
+                  {:else}
+                    <Wrench class="h-4 w-4 text-blue-500" />
+                    Maintenances
+                  {/if}
+                </div>
+                {#if editingScope === null}
+                  <Button size="sm" variant="outline" onclick={() => startEditScope(eventType)}>
+                    <Pencil class="mr-1 h-3 w-3" />
+                    Edit
+                  </Button>
+                {/if}
               </div>
-              {#if editingScope !== "incidents"}
-                <Button size="sm" variant="outline" onclick={() => startEditScope("incidents")}>
-                  <Pencil class="mr-1 h-3 w-3" />
-                  Edit
-                </Button>
-              {/if}
-            </div>
-            {#if editingScope === "incidents"}
-              <div class="space-y-1 pl-2">
-                {#each allMonitors as monitor (monitor.tag)}
-                  <label class="flex cursor-pointer items-center gap-2 text-sm">
-                    <input type="checkbox" bind:checked={editScopeSelections[monitor.tag]} />
-                    {monitor.name}
-                  </label>
-                {/each}
-                <p class="text-muted-foreground text-xs">Leave all unchecked for all monitors</p>
-              </div>
-            {:else}
-              <p class="text-muted-foreground pl-2 text-sm">
-                {scopeDialogSubscriber.incident_monitors.length === 0
-                  ? "All monitors"
-                  : scopeDialogSubscriber.incident_monitors.join(", ")}
-              </p>
-            {/if}
-          </div>
-        {/if}
 
-        {#if scopeDialogSubscriber.maintenances_enabled}
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-sm font-medium">
-                <Wrench class="h-4 w-4 text-blue-500" />
-                Maintenances
-              </div>
-              {#if editingScope !== "maintenances"}
-                <Button size="sm" variant="outline" onclick={() => startEditScope("maintenances")}>
-                  <Pencil class="mr-1 h-3 w-3" />
-                  Edit
-                </Button>
+              {#if editingScope === eventType}
+                <div class="max-h-64 space-y-2 overflow-y-auto pl-2">
+                  {#each allPages as pageOpt (pageOpt.slug)}
+                    <div class="space-y-1">
+                      <label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                        <input type="checkbox" bind:checked={editPageSelections[pageOpt.slug]} />
+                        <span class="text-muted-foreground text-xs uppercase tracking-wide">[Page]</span>
+                        {pageOpt.name}
+                      </label>
+                      {#if !editPageSelections[pageOpt.slug]}
+                        {#each pageOpt.monitors as mon (mon.tag)}
+                          <label class="ml-5 flex cursor-pointer items-center gap-2 text-sm">
+                            <input type="checkbox" bind:checked={editMonitorSelections[mon.tag]} />
+                            {mon.name}
+                          </label>
+                        {/each}
+                      {:else}
+                        {#each pageOpt.monitors as mon (mon.tag)}
+                          <label class="text-muted-foreground ml-5 flex items-center gap-2 text-sm">
+                            <input type="checkbox" disabled checked />
+                            {mon.name} <span class="text-xs">(via page)</span>
+                          </label>
+                        {/each}
+                      {/if}
+                    </div>
+                  {/each}
+                  <p class="text-muted-foreground text-xs">Leave all unchecked for all monitors</p>
+                </div>
+              {:else}
+                {@const pages = eventType === "incidents" ? scopeDialogSubscriber.incident_pages : scopeDialogSubscriber.maintenance_pages}
+                {@const monitors = eventType === "incidents" ? scopeDialogSubscriber.incident_monitors : scopeDialogSubscriber.maintenance_monitors}
+                <p class="text-muted-foreground pl-2 text-sm">
+                  {#if pages.length === 0 && monitors.length === 0}
+                    All monitors
+                  {:else}
+                    {#if pages.length > 0}{pages.length} page(s){monitors.length > 0 ? ", " : ""}{/if}{#if monitors.length > 0}{monitors.length} monitor(s){/if}
+                  {/if}
+                </p>
               {/if}
             </div>
-            {#if editingScope === "maintenances"}
-              <div class="space-y-1 pl-2">
-                {#each allMonitors as monitor (monitor.tag)}
-                  <label class="flex cursor-pointer items-center gap-2 text-sm">
-                    <input type="checkbox" bind:checked={editScopeSelections[monitor.tag]} />
-                    {monitor.name}
-                  </label>
-                {/each}
-                <p class="text-muted-foreground text-xs">Leave all unchecked for all monitors</p>
-              </div>
-            {:else}
-              <p class="text-muted-foreground pl-2 text-sm">
-                {scopeDialogSubscriber.maintenance_monitors.length === 0
-                  ? "All monitors"
-                  : scopeDialogSubscriber.maintenance_monitors.join(", ")}
-              </p>
-            {/if}
-          </div>
-        {/if}
+          {/if}
+        {/each}
 
         {#if !scopeDialogSubscriber.incidents_enabled && !scopeDialogSubscriber.maintenances_enabled}
           <p class="text-muted-foreground text-sm">No active subscriptions to configure scope for.</p>
@@ -772,7 +804,7 @@
           {$t("manage.common.save")}
         </Button>
       {:else}
-        <Button onclick={() => { showScopeDialog = false; editingScope = null; editScopeSelections = {}; }}>{$t("manage.common.close")}</Button>
+        <Button onclick={() => { showScopeDialog = false; editingScope = null; editPageSelections = {}; editMonitorSelections = {}; }}>{$t("manage.common.close")}</Button>
       {/if}
     </Dialog.Footer>
   </Dialog.Content>

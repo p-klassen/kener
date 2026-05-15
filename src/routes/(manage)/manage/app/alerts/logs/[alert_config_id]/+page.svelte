@@ -182,7 +182,7 @@
   });
 </script>
 
-<div class="container mx-auto space-y-6 py-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <!-- Breadcrumb -->
   <Breadcrumb.Root>
     <Breadcrumb.List>

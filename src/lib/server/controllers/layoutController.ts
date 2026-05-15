@@ -35,7 +35,7 @@ export interface LayoutServerData {
     ACCENT: string;
     ACCENT_FOREGROUND: string;
   };
-  navItems: Array<{ name: string; url: string; iconURL: string }>;
+  navItems: Array<{ name: string; url: string; iconURL: string; openInNewTab?: boolean }>;
   siteName: string;
   siteUrl: string;
   logo: string | undefined;

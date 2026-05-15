@@ -128,6 +128,7 @@ class DbImpl {
   updateUserEmail!: UsersRepository["updateUserEmail"];
   getUserByExternalId!: UsersRepository["getUserByExternalId"];
   updateUserAuthProvider!: UsersRepository["updateUserAuthProvider"];
+  updateUserType!: UsersRepository["updateUserType"];
 
   // ============ Roles ============
   getRoleById!: UsersRepository["getRoleById"];
@@ -222,6 +223,7 @@ class DbImpl {
   getImageById!: ImagesRepository["getImageById"];
   deleteImage!: ImagesRepository["deleteImage"];
   getAllImages!: ImagesRepository["getAllImages"];
+  getAllImagesWithData!: ImagesRepository["getAllImagesWithData"];
 
   // ============ Pages ============
   createPage!: PagesRepository["createPage"];
@@ -373,8 +375,8 @@ class DbImpl {
   getMethodsCountByType!: SubscriptionSystemRepository["getMethodsCountByType"];
   getSubscribersByMethodTypeV2!: SubscriptionSystemRepository["getSubscribersByMethodTypeV2"];
   getSubscriberDetailsByMethodId!: SubscriptionSystemRepository["getSubscriberDetailsByMethodId"];
-  upsertSubscriptionMonitorScopes!: SubscriptionSystemRepository["upsertSubscriptionMonitorScopes"];
-  getSubscriptionMonitorScopes!: SubscriptionSystemRepository["getSubscriptionMonitorScopes"];
+  upsertSubscriptionScopes!: SubscriptionSystemRepository["upsertSubscriptionScopes"];
+  getSubscriptionScopes!: SubscriptionSystemRepository["getSubscriptionScopes"];
 
   // ============ General Email Templates ============
   insertEmailTemplate!: EmailTemplateConfigRepository["insertEmailTemplate"];
@@ -536,6 +538,7 @@ class DbImpl {
     this.updateUserEmail = this.users.updateUserEmail.bind(this.users);
     this.getUserByExternalId = this.users.getUserByExternalId.bind(this.users);
     this.updateUserAuthProvider = this.users.updateUserAuthProvider.bind(this.users);
+    this.updateUserType = this.users.updateUserType.bind(this.users);
     this.createNewApiKey = this.users.createNewApiKey.bind(this.users);
     this.updateApiKeyStatus = this.users.updateApiKeyStatus.bind(this.users);
     this.deleteApiKey = this.users.deleteApiKey.bind(this.users);
@@ -636,6 +639,7 @@ class DbImpl {
     this.getImageById = this.images.getImageById.bind(this.images);
     this.deleteImage = this.images.deleteImage.bind(this.images);
     this.getAllImages = this.images.getAllImages.bind(this.images);
+    this.getAllImagesWithData = this.images.getAllImagesWithData.bind(this.images);
   }
 
   private bindPagesMethods(): void {
@@ -878,10 +882,10 @@ class DbImpl {
     this.getSubscriberDetailsByMethodId = this.subscriptionSystem.getSubscriberDetailsByMethodId.bind(
       this.subscriptionSystem,
     );
-    this.upsertSubscriptionMonitorScopes = this.subscriptionSystem.upsertSubscriptionMonitorScopes.bind(
+    this.upsertSubscriptionScopes = this.subscriptionSystem.upsertSubscriptionScopes.bind(
       this.subscriptionSystem,
     );
-    this.getSubscriptionMonitorScopes = this.subscriptionSystem.getSubscriptionMonitorScopes.bind(
+    this.getSubscriptionScopes = this.subscriptionSystem.getSubscriptionScopes.bind(
       this.subscriptionSystem,
     );
   }

@@ -21,6 +21,7 @@
   import ImageIcon from "@lucide/svelte/icons/image";
   import TrashIcon from "@lucide/svelte/icons/trash";
   import type { PageRecord, MonitorRecord, PageSettingsType } from "$lib/server/types/db.js";
+  import type { SitePageDefaults } from "$lib/types/site.js";
   import { mode } from "mode-watcher";
   import CodeMirror from "svelte-codemirror-editor";
   import { onMount } from "svelte";
@@ -32,14 +33,18 @@
   import { t } from "$lib/stores/i18n";
 
 
-  // Default page settings
-  const defaultPageSettings: PageSettingsType = {
-    monitor_status_history_days: {
-      desktop: 90,
-      mobile: 30
-    },
-    monitor_layout_style: "default-list"
+  // null = use site default; explicit value = custom override
+  const NULL_PAGE_SETTINGS: PageSettingsType = {
+    monitor_status_history_days: { desktop: null, mobile: null },
+    monitor_layout_style: null,
   };
+
+  const SYSTEM_PAGE_DEFAULTS: SitePageDefaults = {
+    monitor_status_history_days: { desktop: 90, mobile: 30 },
+    monitor_layout_style: "default-list",
+  };
+
+  let siteDefaults = $state<SitePageDefaults>(structuredClone(SYSTEM_PAGE_DEFAULTS));
 
   interface PageWithMonitors extends PageRecord {
     monitors?: { monitor_tag: string }[];
@@ -89,7 +94,7 @@
   );
 
   // Page settings state
-  let pageSettings = $state<PageSettingsType>(structuredClone(defaultPageSettings));
+  let pageSettings = $state<PageSettingsType>(structuredClone(NULL_PAGE_SETTINGS));
   let savingDisplaySettings = $state(false);
   let savingSeoSettings = $state(false);
 
@@ -129,19 +134,28 @@
           visibility_mode: (foundPage.visibility_mode ?? "hidden") as "hidden" | "teaser" | "locked"
         };
         selectedMonitors = foundPage.monitors?.map((m: { monitor_tag: string }) => m.monitor_tag) || [];
-        // Load page settings with defaults
+        // Load page settings — null fields mean "use site default"
         if (foundPage.page_settings_json) {
           try {
             const parsed =
               typeof foundPage.page_settings_json === "string"
                 ? JSON.parse(foundPage.page_settings_json)
                 : foundPage.page_settings_json;
-            pageSettings = { ...structuredClone(defaultPageSettings), ...parsed };
+            pageSettings = {
+              monitor_status_history_days: {
+                desktop: parsed?.monitor_status_history_days?.desktop ?? null,
+                mobile: parsed?.monitor_status_history_days?.mobile ?? null,
+              },
+              monitor_layout_style: parsed?.monitor_layout_style ?? null,
+              metaPageTitle: parsed?.metaPageTitle,
+              metaPageDescription: parsed?.metaPageDescription,
+              socialPagePreviewImage: parsed?.socialPagePreviewImage,
+            };
           } catch {
-            pageSettings = structuredClone(defaultPageSettings);
+            pageSettings = structuredClone(NULL_PAGE_SETTINGS);
           }
         } else {
-          pageSettings = structuredClone(defaultPageSettings);
+          pageSettings = structuredClone(NULL_PAGE_SETTINGS);
         }
       } else {
         toast.error("Page not found");
@@ -169,6 +183,30 @@
     } catch (e) {
       console.error("Failed to fetch monitors", e);
     }
+  }
+
+  async function fetchSiteDefaults() {
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getAllSiteData" })
+      });
+      const data = await response.json();
+      if (data.pageDefaults) {
+        const parsed =
+          typeof data.pageDefaults === "string"
+            ? JSON.parse(data.pageDefaults)
+            : data.pageDefaults;
+        siteDefaults = {
+          monitor_status_history_days: {
+            desktop: parsed?.monitor_status_history_days?.desktop ?? SYSTEM_PAGE_DEFAULTS.monitor_status_history_days.desktop,
+            mobile: parsed?.monitor_status_history_days?.mobile ?? SYSTEM_PAGE_DEFAULTS.monitor_status_history_days.mobile,
+          },
+          monitor_layout_style: parsed?.monitor_layout_style ?? SYSTEM_PAGE_DEFAULTS.monitor_layout_style,
+        };
+      }
+    } catch {}
   }
 
   async function savePage() {
@@ -519,10 +557,11 @@
   onMount(() => {
     void fetchPage();
     void fetchMonitors();
+    void fetchSiteDefaults();
   });
 </script>
 
-<div class="container space-y-6 py-6">
+<div class="flex w-full flex-col gap-4 p-4">
   {#if loading}
     <div class="flex items-center justify-center py-12">
       <Spinner class="size-8" />
@@ -824,31 +863,98 @@
           <div class="space-y-4">
             <div>
               <Label class="text-base font-medium">{$t("manage.page_detail.history_label")}</Label>
-              <p class="text-muted-foreground text-sm">
-                {$t("manage.page_detail.history_helper")}
-              </p>
+              <p class="text-muted-foreground text-sm">{$t("manage.page_detail.history_helper")}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
+              <!-- Desktop -->
               <div class="space-y-2">
-                <Label for="history-desktop">{$t("manage.page_detail.history_desktop_label")}</Label>
+                <div class="flex items-center gap-2">
+                  <Label for="history-desktop">{$t("manage.page_detail.history_desktop_label")}</Label>
+                  {#if pageSettings.monitor_status_history_days?.desktop === null || pageSettings.monitor_status_history_days?.desktop === undefined}
+                    <span class="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
+                      {$t("manage.page_detail.site_default_badge")}
+                    </span>
+                  {:else}
+                    <span class="rounded border px-1.5 py-0.5 text-xs">
+                      {$t("manage.page_detail.custom_badge")}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="h-6 px-2 text-xs"
+                      onclick={() => {
+                        if (!pageSettings.monitor_status_history_days) {
+                          pageSettings.monitor_status_history_days = { desktop: null, mobile: null };
+                        } else {
+                          pageSettings.monitor_status_history_days.desktop = null;
+                        }
+                      }}
+                    >
+                      {$t("manage.page_detail.reset_to_default")}
+                    </Button>
+                  {/if}
+                </div>
                 <Input
                   id="history-desktop"
                   type="number"
                   min="1"
                   max="365"
-                  bind:value={pageSettings.monitor_status_history_days.desktop}
+                  value={pageSettings.monitor_status_history_days?.desktop ?? ""}
+                  placeholder={String(siteDefaults.monitor_status_history_days.desktop)}
+                  oninput={(e) => {
+                    const v = parseInt((e.currentTarget as HTMLInputElement).value);
+                    if (!pageSettings.monitor_status_history_days) {
+                      pageSettings.monitor_status_history_days = { desktop: null, mobile: null };
+                    }
+                    pageSettings.monitor_status_history_days.desktop = isNaN(v) ? null : v;
+                  }}
                 />
                 <p class="text-muted-foreground text-xs">{$t("manage.page_detail.history_desktop_helper")}</p>
               </div>
+
+              <!-- Mobile -->
               <div class="space-y-2">
-                <Label for="history-mobile">{$t("manage.page_detail.history_mobile_label")}</Label>
+                <div class="flex items-center gap-2">
+                  <Label for="history-mobile">{$t("manage.page_detail.history_mobile_label")}</Label>
+                  {#if pageSettings.monitor_status_history_days?.mobile === null || pageSettings.monitor_status_history_days?.mobile === undefined}
+                    <span class="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
+                      {$t("manage.page_detail.site_default_badge")}
+                    </span>
+                  {:else}
+                    <span class="rounded border px-1.5 py-0.5 text-xs">
+                      {$t("manage.page_detail.custom_badge")}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="h-6 px-2 text-xs"
+                      onclick={() => {
+                        if (!pageSettings.monitor_status_history_days) {
+                          pageSettings.monitor_status_history_days = { desktop: null, mobile: null };
+                        } else {
+                          pageSettings.monitor_status_history_days.mobile = null;
+                        }
+                      }}
+                    >
+                      {$t("manage.page_detail.reset_to_default")}
+                    </Button>
+                  {/if}
+                </div>
                 <Input
                   id="history-mobile"
                   type="number"
                   min="1"
                   max="365"
-                  bind:value={pageSettings.monitor_status_history_days.mobile}
+                  value={pageSettings.monitor_status_history_days?.mobile ?? ""}
+                  placeholder={String(siteDefaults.monitor_status_history_days.mobile)}
+                  oninput={(e) => {
+                    const v = parseInt((e.currentTarget as HTMLInputElement).value);
+                    if (!pageSettings.monitor_status_history_days) {
+                      pageSettings.monitor_status_history_days = { desktop: null, mobile: null };
+                    }
+                    pageSettings.monitor_status_history_days.mobile = isNaN(v) ? null : v;
+                  }}
                 />
                 <p class="text-muted-foreground text-xs">{$t("manage.page_detail.history_mobile_helper")}</p>
               </div>
@@ -859,17 +965,40 @@
 
           <!-- Monitor Layout Style -->
           <div class="space-y-4">
-            <div>
+            <div class="flex items-center gap-2">
               <Label class="text-base font-medium">{$t("manage.page_detail.layout_label")}</Label>
-              <p class="text-muted-foreground text-sm">{$t("manage.page_detail.layout_helper")}</p>
+              {#if pageSettings.monitor_layout_style === null}
+                <span class="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
+                  {$t("manage.page_detail.site_default_badge")}
+                </span>
+              {:else}
+                <span class="rounded border px-1.5 py-0.5 text-xs">
+                  {$t("manage.page_detail.custom_badge")}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 px-2 text-xs"
+                  onclick={() => { pageSettings.monitor_layout_style = null; }}
+                >
+                  {$t("manage.page_detail.reset_to_default")}
+                </Button>
+              {/if}
             </div>
-            <Select.Root type="single" bind:value={pageSettings.monitor_layout_style}>
+            <p class="text-muted-foreground text-sm">{$t("manage.page_detail.layout_helper")}</p>
+            <Select.Root
+              type="single"
+              value={pageSettings.monitor_layout_style ?? siteDefaults.monitor_layout_style}
+              onValueChange={(v) => {
+                pageSettings.monitor_layout_style = v as PageSettingsType["monitor_layout_style"];
+              }}
+            >
               <Select.Trigger class="w-full">
-                {#if pageSettings.monitor_layout_style === "default-list"}
+                {#if (pageSettings.monitor_layout_style ?? siteDefaults.monitor_layout_style) === "default-list"}
                   Default List
-                {:else if pageSettings.monitor_layout_style === "default-grid"}
+                {:else if (pageSettings.monitor_layout_style ?? siteDefaults.monitor_layout_style) === "default-grid"}
                   Default Grid
-                {:else if pageSettings.monitor_layout_style === "compact-list"}
+                {:else if (pageSettings.monitor_layout_style ?? siteDefaults.monitor_layout_style) === "compact-list"}
                   Compact List
                 {:else}
                   Compact Grid
@@ -883,7 +1012,7 @@
               </Select.Content>
             </Select.Root>
             <p class="text-muted-foreground text-xs">
-              Default is <code class="bg-muted rounded px-1 font-mono">default-list</code>
+              {$t("manage.page_detail.site_default_badge")}: <code class="bg-muted rounded px-1 font-mono">{siteDefaults.monitor_layout_style}</code>
             </p>
           </div>
         </Card.Content>

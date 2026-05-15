@@ -19,8 +19,8 @@
   let pageSettings = $derived(data.pageDetails.page_settings);
   let barCount = $derived.by(() =>
     data.isMobile
-      ? pageSettings?.monitor_status_history_days.mobile || 30
-      : pageSettings?.monitor_status_history_days.desktop || 90
+      ? pageSettings?.monitor_status_history_days?.mobile || 30
+      : pageSettings?.monitor_status_history_days?.desktop || 90
   );
   let endOfDayTodayAtTz = $derived(getEndOfDayAtTz($selectedTimezone));
 

@@ -1,8 +1,6 @@
 import { json } from "@sveltejs/kit";
 import Service, { type MonitorWithType } from "$lib/server/services/service.js";
 import { format } from "date-fns";
-import sharp from "sharp";
-import { nanoid } from "nanoid";
 import db from "$lib/server/db/db";
 import GC from "$lib/global-constants.js";
 import {
@@ -108,6 +106,7 @@ import {
   AdminDeleteSubscriber,
   AdminAddSubscriber,
   AdminUpdateSubscriptionScope,
+  GetAccessibleScopesForSubscriber,
 } from "$lib/server/controllers/userSubscriptionsController.js";
 import {
   GetAllGeneralEmailTemplates,
@@ -160,10 +159,10 @@ import sendWebhook from "$lib/server/notification/webhook_notification.js";
 import sendEmail from "$lib/server/notification/email_notification.js";
 import sendDiscord from "$lib/server/notification/discord_notification.js";
 import sendSlack from "$lib/server/notification/slack_notification.js";
-import heicConvert from "heic-convert";
 import serverResolver from "$lib/server/resolver.js";
 import { ACTION_PERMISSION_MAP } from "$lib/allPerms.js";
 import { exportData, importData } from "$lib/server/controllers/exportImportController.js";
+import { uploadImage } from "$lib/server/controllers/imageController.js";
 import {
   GetOidcConfig,
   SaveOidcConfig,
@@ -182,6 +181,10 @@ export async function POST({ request, cookies }) {
   let userDB = await GetLoggedInSession(cookies);
   if (!userDB) {
     return json({ error: "User not logged in" }, { status: 401 });
+  }
+
+  if (userDB.user_type === "subscriber") {
+    return json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Fetch user permissions once for the entire request
@@ -245,7 +248,7 @@ export async function POST({ request, cookies }) {
       await AdminResetPassword(userDB.id, parseInt(String(targetUserId)), reason);
       resp = { success: true };
     } else if (action == "createNewUser") {
-      await SendInvitationEmail(data.email, data.role_ids, data.name);
+      await SendInvitationEmail(data.email, data.role_ids, data.name, data.user_type);
       resp = await GetUserByEmail(data.email);
     } else if (action == "resendInvitation") {
       await ResendInvitationEmail(data.email);
@@ -266,9 +269,12 @@ export async function POST({ request, cookies }) {
     } else if (action == "getUsers") {
       const page = parseInt(String(data.page)) || 1;
       const limit = parseInt(String(data.limit)) || 10;
-      const filter: { is_active?: number } = {};
+      const filter: { is_active?: number; user_type?: string } = {};
       if (data.is_active !== undefined && data.is_active !== null) {
         filter.is_active = parseInt(String(data.is_active));
+      }
+      if (data.user_type_filter && typeof data.user_type_filter === "string" && ["user", "subscriber"].includes(data.user_type_filter)) {
+        filter.user_type = data.user_type_filter;
       }
       const hasFilter = Object.keys(filter).length > 0 ? filter : undefined;
       const users = await GetAllUsersPaginatedDashboard({ page, limit }, hasFilter);
@@ -471,6 +477,166 @@ export async function POST({ request, cookies }) {
       resp = await UpdatePage(id, updateData);
     } else if (action == "deletePage") {
       await DeletePage(data.id);
+      resp = { success: true };
+    } else if (action == "applyPageDefaults") {
+      // Load current site defaults (or system fallback)
+      const SYSTEM_DEFAULTS = {
+        monitor_status_history_days: { desktop: 90, mobile: 30 },
+        monitor_layout_style: "default-list" as const,
+      };
+      let siteDefaults = { ...SYSTEM_DEFAULTS };
+      try {
+        const raw = await GetSiteDataByKey("pageDefaults");
+        if (raw && typeof raw === "object") {
+          const partial = raw as typeof SYSTEM_DEFAULTS;
+          siteDefaults = {
+            ...SYSTEM_DEFAULTS,
+            ...partial,
+            monitor_status_history_days: {
+              ...SYSTEM_DEFAULTS.monitor_status_history_days,
+              ...(partial.monitor_status_history_days ?? {}),
+            },
+          };
+        }
+      } catch (e) {
+        console.error("[applyPageDefaults] Failed to load pageDefaults, using system defaults:", e);
+      }
+
+      const pages = await GetAllPages();
+      for (const p of pages) {
+        let raw: Record<string, unknown> = {};
+        if (p.page_settings_json) {
+          try {
+            const parsed =
+              typeof p.page_settings_json === "string"
+                ? JSON.parse(p.page_settings_json)
+                : p.page_settings_json;
+            if (parsed && typeof parsed === "object") raw = parsed as Record<string, unknown>;
+          } catch {}
+        }
+
+        let changed = false;
+        const historyDays = (raw.monitor_status_history_days as Record<string, unknown>) ?? {};
+
+        if (data.force === true) {
+          raw.monitor_status_history_days = {
+            ...historyDays,
+            desktop: siteDefaults.monitor_status_history_days.desktop,
+            mobile: siteDefaults.monitor_status_history_days.mobile,
+          };
+          raw.monitor_layout_style = siteDefaults.monitor_layout_style;
+          changed = true;
+        } else {
+          const needsDesktop = historyDays.desktop === null || historyDays.desktop === undefined;
+          const needsMobile = historyDays.mobile === null || historyDays.mobile === undefined;
+          const needsLayout =
+            raw.monitor_layout_style === null || raw.monitor_layout_style === undefined;
+          if (needsDesktop || needsMobile) {
+            raw.monitor_status_history_days = {
+              ...historyDays,
+              ...(needsDesktop && { desktop: siteDefaults.monitor_status_history_days.desktop }),
+              ...(needsMobile && { mobile: siteDefaults.monitor_status_history_days.mobile }),
+            };
+            changed = true;
+          }
+          if (needsLayout) {
+            raw.monitor_layout_style = siteDefaults.monitor_layout_style;
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          await UpdatePage(p.id, { page_settings_json: JSON.stringify(raw) });
+        }
+      }
+      resp = { success: true };
+    } else if (action == "applyMonitorDefaults") {
+      const SYSTEM_MONITOR_DEFAULTS = {
+        uptime_formula_numerator: "up + maintenance",
+        uptime_formula_denominator: "up + maintenance + down + degraded",
+        monitor_status_history_days: { desktop: 90, mobile: 30 },
+        sharing_options: { showShareBadgeMonitor: false, showShareEmbedMonitor: false },
+      };
+      let siteDefaults = structuredClone(SYSTEM_MONITOR_DEFAULTS);
+      try {
+        const raw = await GetSiteDataByKey("monitorDefaults");
+        if (raw && typeof raw === "object") {
+          const partial = raw as typeof SYSTEM_MONITOR_DEFAULTS;
+          siteDefaults = {
+            ...SYSTEM_MONITOR_DEFAULTS,
+            ...partial,
+            monitor_status_history_days: {
+              ...SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days,
+              ...(partial.monitor_status_history_days ?? {}),
+            },
+            sharing_options: {
+              ...SYSTEM_MONITOR_DEFAULTS.sharing_options,
+              ...(partial.sharing_options ?? {}),
+            },
+          };
+        }
+      } catch (e) {
+        console.error("[applyMonitorDefaults] Failed to load monitorDefaults, using system defaults:", e);
+      }
+
+      const monitors = await GetMonitors({});
+      for (const monitor of monitors) {
+        let settings: Record<string, unknown> = {};
+        if (monitor.monitor_settings_json) {
+          try {
+            const parsed =
+              typeof monitor.monitor_settings_json === "string"
+                ? JSON.parse(monitor.monitor_settings_json)
+                : monitor.monitor_settings_json;
+            if (parsed && typeof parsed === "object") settings = parsed as Record<string, unknown>;
+          } catch {}
+        }
+
+        let changed = false;
+        const historyDays = (settings.monitor_status_history_days as Record<string, unknown>) ?? {};
+        const sharingOptions = (settings.sharing_options as Record<string, unknown>) ?? {};
+
+        if (data.force === true) {
+          settings.uptime_formula_numerator = siteDefaults.uptime_formula_numerator;
+          settings.uptime_formula_denominator = siteDefaults.uptime_formula_denominator;
+          settings.monitor_status_history_days = { ...siteDefaults.monitor_status_history_days };
+          settings.sharing_options = { ...siteDefaults.sharing_options };
+          changed = true;
+        } else {
+          if (settings.uptime_formula_numerator == null) {
+            settings.uptime_formula_numerator = siteDefaults.uptime_formula_numerator;
+            changed = true;
+          }
+          if (settings.uptime_formula_denominator == null) {
+            settings.uptime_formula_denominator = siteDefaults.uptime_formula_denominator;
+            changed = true;
+          }
+          const needsDesktop = historyDays.desktop == null;
+          const needsMobile = historyDays.mobile == null;
+          if (needsDesktop || needsMobile) {
+            settings.monitor_status_history_days = {
+              ...historyDays,
+              ...(needsDesktop && { desktop: siteDefaults.monitor_status_history_days.desktop }),
+              ...(needsMobile && { mobile: siteDefaults.monitor_status_history_days.mobile }),
+            };
+            changed = true;
+          }
+          const needsBadge = sharingOptions.showShareBadgeMonitor == null;
+          const needsEmbed = sharingOptions.showShareEmbedMonitor == null;
+          if (needsBadge || needsEmbed) {
+            settings.sharing_options = {
+              ...sharingOptions,
+              ...(needsBadge && { showShareBadgeMonitor: siteDefaults.sharing_options.showShareBadgeMonitor }),
+              ...(needsEmbed && { showShareEmbedMonitor: siteDefaults.sharing_options.showShareEmbedMonitor }),
+            };
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          await CreateUpdateMonitor({ ...monitor, monitor_settings_json: JSON.stringify(settings) });
+        }
+      }
       resp = { success: true };
     } else if (action == "addMonitorToPage") {
       await AddMonitorToPage(data.page_id, data.monitor_tag);
@@ -680,7 +846,7 @@ export async function POST({ request, cookies }) {
         throw new Error(resp.error);
       }
     } else if (action == "adminUpdateSubscriptionScope") {
-      const { methodId, eventType, monitorTags } = data;
+      const { methodId, eventType, monitorTags, pageSlugs } = data;
       if (!methodId || !eventType) {
         throw new Error("Method ID and event type are required");
       }
@@ -690,11 +856,21 @@ export async function POST({ request, cookies }) {
       if (monitorTags !== undefined && monitorTags !== null && !Array.isArray(monitorTags)) {
         throw new Error("monitorTags must be an array");
       }
+      if (pageSlugs !== undefined && pageSlugs !== null && !Array.isArray(pageSlugs)) {
+        throw new Error("pageSlugs must be an array");
+      }
       const safeTags: string[] = Array.isArray(monitorTags) ? monitorTags.slice(0, 500) : [];
-      resp = await AdminUpdateSubscriptionScope(methodId, eventType, safeTags);
+      const safePages: string[] = Array.isArray(pageSlugs) ? pageSlugs.slice(0, 100) : [];
+      resp = await AdminUpdateSubscriptionScope(methodId, eventType, safeTags, safePages);
       if (!resp.success) {
         throw new Error(resp.error);
       }
+    } else if (action == "getSubscriberAccessibleScopes") {
+      const { methodId } = data;
+      if (!methodId) {
+        throw new Error("methodId is required");
+      }
+      resp = await GetAccessibleScopesForSubscriber(methodId);
     } else if (action == "getSubscriptionsConfig") {
       let subscriptionsSettings = await GetSiteDataByKey("subscriptionsSettings");
       if (!!!subscriptionsSettings) {
@@ -989,224 +1165,4 @@ async function storeSiteData(data: { [x: string]: any }) {
     }
   }
   return { success: true };
-}
-
-interface ImageUploadData {
-  base64: string; // base64 encoded image data (without data URI prefix)
-  mimeType: string;
-  fileName?: string;
-  maxWidth?: number;
-  maxHeight?: number;
-  forceDimensions?: boolean;
-  prefix?: string; // prefix for the ID (e.g., "logo_", "favicon_")
-}
-
-async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: string }> {
-  const {
-    base64,
-    fileName,
-    maxWidth = 256,
-    maxHeight = 256,
-    forceDimensions = false,
-    prefix = "img_",
-  } = data;
-  let mimeType = data.mimeType;
-
-  if (!base64) {
-    throw new Error("Image data is required");
-  }
-
-  // Normalize browser-reported font MIME type aliases to canonical values
-  const fontMimeAliases: Record<string, string> = {
-    "application/x-font-ttf": "font/ttf",
-    "application/x-font-otf": "font/otf",
-    "application/font-woff": "font/woff",
-    "application/font-woff2": "font/woff2",
-    "application/vnd.ms-opentype": "font/otf",
-    "application/x-font-woff": "font/woff",
-  };
-  if (fontMimeAliases[mimeType]) {
-    mimeType = fontMimeAliases[mimeType];
-  }
-  // If browser reports octet-stream, try to derive from fileName extension
-  if (mimeType === "application/octet-stream" && fileName) {
-    const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-    const extMap: Record<string, string> = { ttf: "font/ttf", otf: "font/otf", woff: "font/woff", woff2: "font/woff2" };
-    if (extMap[ext]) mimeType = extMap[ext];
-  }
-
-  const allowedMimeTypes = [
-    "image/png", "image/jpeg", "image/jpg", "image/webp",
-    "image/heic", "image/heif", "image/svg+xml",
-    "font/ttf", "font/otf", "font/woff", "font/woff2",
-  ];
-  if (!allowedMimeTypes.includes(mimeType)) {
-    throw new Error(`Invalid image type. Allowed types: ${allowedMimeTypes.join(", ")}`);
-  }
-
-  // Decode base64 to buffer
-  const imageBuffer = Buffer.from(base64, "base64");
-  if (!imageBuffer.length) {
-    throw new Error("Invalid image data");
-  }
-
-  if (imageBuffer.length > GC.MAX_UPLOAD_BYTES) {
-    throw new Error("Image is too large. Maximum upload size is 5MB");
-  }
-
-  const normalizedRequestedMime = mimeType === "image/jpg" ? "image/jpeg" : mimeType;
-  const maybeTextHeader = imageBuffer.subarray(0, 4096).toString("utf8");
-  const looksLikeSvg = /<svg[\s>]/i.test(maybeTextHeader) || /<\?xml/i.test(maybeTextHeader);
-
-  // Reject if content looks like SVG but client claims it's not SVG
-  if (looksLikeSvg && normalizedRequestedMime !== "image/svg+xml") {
-    throw new Error("Image content does not match the declared MIME type");
-  }
-
-  // Store font files as-is, bypassing sharp
-  const FONT_MIME_TYPES = new Set(["font/ttf", "font/otf", "font/woff", "font/woff2"]);
-  if (FONT_MIME_TYPES.has(normalizedRequestedMime)) {
-    const ext = normalizedRequestedMime.split("/")[1]; // "ttf", "otf", "woff", "woff2"
-    const fontId = `font_${nanoid(16)}.${ext}`;
-    await db.insertImage({
-      id: fontId,
-      data: imageBuffer.toString("base64"),
-      mime_type: normalizedRequestedMime,
-      original_name: fileName || null,
-      width: null,
-      height: null,
-      size: imageBuffer.length,
-    });
-    return { id: fontId, url: `/assets/fonts/${fontId}` };
-  }
-
-  // Store SVG as-is, bypassing sharp
-  if (normalizedRequestedMime === "image/svg+xml") {
-    const svgId = `${nanoid(16)}.svg`;
-    await db.insertImage({
-      id: svgId,
-      data: imageBuffer.toString("base64"),
-      mime_type: "image/svg+xml",
-      original_name: fileName || null,
-      width: null,
-      height: null,
-      size: imageBuffer.length,
-    });
-    return { id: svgId, url: `/assets/images/${svgId}` };
-  }
-
-  let processedBuffer: Buffer;
-  let finalMimeType = mimeType;
-  let width: number | undefined;
-  let height: number | undefined;
-
-  // Pre-convert HEIC/HEIF to JPEG before passing to sharp (sharp may lack HEVC codec)
-  let sharpInputBuffer = imageBuffer;
-  const heicSignature = imageBuffer.subarray(4, 12).toString("ascii");
-  const isHeicData = heicSignature.includes("ftyp");
-  if (isHeicData) {
-    const converted = await heicConvert({
-      buffer: new Uint8Array(imageBuffer) as unknown as ArrayBuffer,
-      format: "JPEG",
-      quality: 0.85,
-    });
-    sharpInputBuffer = Buffer.from(converted);
-  }
-
-  // Process with sharp and normalize output
-  const image = sharp(sharpInputBuffer, { limitInputPixels: GC.MAX_INPUT_PIXELS });
-  const metadata = await image.metadata();
-
-  const formatToMime: Record<string, string> = {
-    png: "image/png",
-    jpeg: "image/jpeg",
-    webp: "image/webp",
-    svg: "image/svg+xml",
-    heic: "image/heic",
-    heif: "image/heif",
-  };
-
-  const detectedMimeType = metadata.format ? formatToMime[metadata.format] : undefined;
-  if (!detectedMimeType) {
-    throw new Error("Could not detect a valid image format");
-  }
-
-  // HEIC/HEIF files often have .jpg extension (e.g. iPhone photos); allow the mismatch
-  const isHeicDetected = detectedMimeType === "image/heic" || detectedMimeType === "image/heif";
-  const isHeicRequested = normalizedRequestedMime === "image/heic" || normalizedRequestedMime === "image/heif";
-  if (normalizedRequestedMime !== detectedMimeType && !isHeicDetected && !isHeicRequested) {
-    throw new Error("Image MIME type does not match file content");
-  }
-
-  const sourceWidth = metadata.width || maxWidth;
-  const sourceHeight = metadata.height || maxHeight;
-
-  if (sourceWidth > GC.MAX_IMAGE_DIMENSION || sourceHeight > GC.MAX_IMAGE_DIMENSION) {
-    throw new Error(
-      `Image dimensions exceed maximum allowed size of ${GC.MAX_IMAGE_DIMENSION}x${GC.MAX_IMAGE_DIMENSION}`,
-    );
-  }
-
-  const boundedMaxWidth = Math.min(maxWidth, GC.MAX_IMAGE_DIMENSION);
-  const boundedMaxHeight = Math.min(maxHeight, GC.MAX_IMAGE_DIMENSION);
-
-  // Calculate new dimensions.
-  let newWidth = sourceWidth;
-  let newHeight = sourceHeight;
-
-  if (forceDimensions) {
-    newWidth = Math.max(1, boundedMaxWidth);
-    newHeight = Math.max(1, boundedMaxHeight);
-  } else if (newWidth > boundedMaxWidth || newHeight > boundedMaxHeight) {
-    const ratio = Math.min(boundedMaxWidth / newWidth, boundedMaxHeight / newHeight);
-    newWidth = Math.max(1, Math.round(newWidth * ratio));
-    newHeight = Math.max(1, Math.round(newHeight * ratio));
-  }
-
-  width = newWidth;
-  height = newHeight;
-
-  // Keep JPEG as JPEG; convert HEIC/HEIF to JPEG; convert everything else (WebP/PNG) to PNG.
-  if (detectedMimeType === "image/jpeg" || isHeicDetected) {
-    processedBuffer = await image
-      .resize(newWidth, newHeight, {
-        fit: forceDimensions ? "cover" : "inside",
-        position: "centre",
-      })
-      .jpeg({ quality: 85 })
-      .toBuffer();
-    finalMimeType = "image/jpeg";
-  } else {
-    processedBuffer = await image
-      .resize(newWidth, newHeight, {
-        fit: forceDimensions ? "cover" : "inside",
-        position: "centre",
-      })
-      .png()
-      .toBuffer();
-    finalMimeType = "image/png";
-  }
-
-  // Generate ID with nanoid and extension
-  const fileExtension = finalMimeType === "image/jpeg" ? "jpg" : "png";
-  const id = `${nanoid(16)}.${fileExtension}`;
-
-  // Convert processed image back to base64
-  const processedBase64 = processedBuffer.toString("base64");
-
-  // Store in database
-  await db.insertImage({
-    id,
-    data: processedBase64,
-    mime_type: finalMimeType,
-    original_name: fileName || null,
-    width: width || null,
-    height: height || null,
-    size: processedBuffer.length,
-  });
-
-  return {
-    id,
-    url: `/assets/images/${id}`,
-  };
 }

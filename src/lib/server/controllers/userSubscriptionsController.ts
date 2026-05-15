@@ -129,6 +129,8 @@ export interface AdminSubscriberRecord {
   maintenances_subscription_id: number | null;
   incident_monitors: string[];
   maintenance_monitors: string[];
+  incident_pages: string[];
+  maintenance_pages: string[];
   created_at: Date;
 }
 
@@ -162,9 +164,9 @@ export async function GetAdminSubscribersPaginated(
     const incidentsSub = subscriptions.find((s) => s.event_type === "incidents");
     const maintenancesSub = subscriptions.find((s) => s.event_type === "maintenances");
 
-    const [incMonitors, mntMonitors] = await Promise.all([
-      incidentsSub ? db.getSubscriptionMonitorScopes(incidentsSub.id) : Promise.resolve([]),
-      maintenancesSub ? db.getSubscriptionMonitorScopes(maintenancesSub.id) : Promise.resolve([]),
+    const [incScopes, mntScopes] = await Promise.all([
+      incidentsSub ? db.getSubscriptionScopes(incidentsSub.id) : Promise.resolve({ monitors: [], pages: [] }),
+      maintenancesSub ? db.getSubscriptionScopes(maintenancesSub.id) : Promise.resolve({ monitors: [], pages: [] }),
     ]);
 
     subscribers.push({
@@ -175,8 +177,10 @@ export async function GetAdminSubscribersPaginated(
       maintenances_enabled: maintenancesSub?.status === "ACTIVE",
       incidents_subscription_id: incidentsSub?.id || null,
       maintenances_subscription_id: maintenancesSub?.id || null,
-      incident_monitors: incMonitors,
-      maintenance_monitors: mntMonitors,
+      incident_monitors: incScopes.monitors,
+      maintenance_monitors: mntScopes.monitors,
+      incident_pages: incScopes.pages,
+      maintenance_pages: mntScopes.pages,
       created_at: item.created_at,
     });
   }
@@ -358,6 +362,8 @@ export async function AdminAddSubscriber(
       maintenances_subscription_id: maintenancesSub?.id || null,
       incident_monitors: [],
       maintenance_monitors: [],
+      incident_pages: [],
+      maintenance_pages: [],
       created_at: method.created_at,
     },
   };
@@ -370,6 +376,7 @@ export async function AdminUpdateSubscriptionScope(
   methodId: number,
   eventType: SubscriptionEventType,
   monitorTags: string[],
+  pageSlugs: string[],
 ): Promise<{ success: boolean; error?: string }> {
   const subs = await db.getUserSubscriptionsV2({
     subscriber_method_id: methodId,
@@ -381,8 +388,63 @@ export async function AdminUpdateSubscriptionScope(
   if (subs.length > 1) {
     console.warn(`AdminUpdateSubscriptionScope: found ${subs.length} subscriptions for method ${methodId} / ${eventType}, using first`);
   }
-  await db.upsertSubscriptionMonitorScopes(subs[0].id, monitorTags);
+  await db.upsertSubscriptionScopes(subs[0].id, monitorTags, pageSlugs);
   return { success: true };
+}
+
+/**
+ * Returns pages and monitors accessible to a specific subscriber.
+ * Used to populate the admin scope picker with permission-filtered content.
+ * For linked subscribers: public + role-accessible content.
+ * For anonymous (no linked_user_id): public content only.
+ */
+export async function GetAccessibleScopesForSubscriber(methodId: number): Promise<{
+  pages: Array<{ slug: string; name: string }>;
+  monitors: Array<{ tag: string; name: string; page_slug: string }>;
+}> {
+  // Resolve the subscriber's linked app user (if any)
+  const method = await db.getSubscriberMethodById(methodId);
+  if (!method) return { pages: [], monitors: [] };
+  const subscriberUser = await db.getSubscriberUserById(method.subscriber_user_id);
+  const linkedUserId = subscriberUser?.linked_user_id ?? null;
+
+  // Build allowed monitors set
+  const publicMonitors = await GetMonitorsParsed({ status: "ACTIVE", is_hidden: "NO", is_public: 1 });
+  const allowedMonitors = new Map<string, string>(publicMonitors.map((m) => [m.tag, m.name]));
+
+  if (linkedUserId) {
+    const accessible = await db.getAccessibleResources(linkedUserId);
+    if (accessible.monitorTags.size > 0) {
+      const roleMonitors = await GetMonitorsParsed({
+        status: "ACTIVE",
+        is_hidden: "NO",
+        tags: [...accessible.monitorTags],
+      });
+      for (const m of roleMonitors) allowedMonitors.set(m.tag, m.name);
+    }
+  }
+
+  // Build pages list — include only pages that have at least one allowed monitor
+  const allPages = await GetAllPages();
+  const resultPages: Array<{ slug: string; name: string }> = [];
+  const resultMonitors: Array<{ tag: string; name: string; page_slug: string }> = [];
+
+  for (const p of allPages) {
+    const pageMonitors = await db.getPageMonitorsExcludeHidden(p.id);
+    const accessible = pageMonitors.filter((pm) => allowedMonitors.has(pm.monitor_tag));
+    if (accessible.length > 0) {
+      resultPages.push({ slug: p.page_path, name: p.page_title });
+      for (const pm of accessible) {
+        resultMonitors.push({
+          tag: pm.monitor_tag,
+          name: allowedMonitors.get(pm.monitor_tag)!,
+          page_slug: p.page_path,
+        });
+      }
+    }
+  }
+
+  return { pages: resultPages, monitors: resultMonitors };
 }
 
 /**
@@ -407,6 +469,7 @@ import { GetAllSiteData } from "./controller.js";
 import { siteDataToVariables } from "../notification/notification_utils.js";
 import { GetGeneralEmailTemplateById } from "./generalTemplateController.js";
 import { GetMonitorsParsed } from "./monitorsController.js";
+import { GetAllPages } from "./pagesController.js";
 
 interface SubscriberTokenPayload {
   subscriber_user_id: number;
@@ -656,8 +719,10 @@ export async function UpdateSubscriberPreferences(
   preferences: {
     incidents?: boolean;
     incident_monitors?: string[];
+    incident_pages?: string[];
     maintenances?: boolean;
     maintenance_monitors?: string[];
+    maintenance_pages?: string[];
   },
 ): Promise<{ success: boolean; error?: string }> {
   const verifyResult = await VerifySubscriberToken(token);
@@ -686,7 +751,20 @@ export async function UpdateSubscriberPreferences(
   }
   const filterTags = (tags: string[]) => tags.filter((t) => allowedTags.has(t));
 
-  if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined) {
+  // Build allowed page slugs only when page-scope fields are actually present
+  const allowedPageSlugs = new Set<string>();
+  if (preferences.incident_pages !== undefined || preferences.maintenance_pages !== undefined) {
+    const allPages = await GetAllPages();
+    for (const p of allPages) {
+      const pageMonitors = await db.getPageMonitorsExcludeHidden(p.id);
+      if (pageMonitors.some((pm) => allowedTags.has(pm.monitor_tag))) {
+        allowedPageSlugs.add(p.page_path);
+      }
+    }
+  }
+  const filterPages = (slugs: string[]) => slugs.filter((s) => allowedPageSlugs.has(s));
+
+  if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined || preferences.incident_pages !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
@@ -718,12 +796,16 @@ export async function UpdateSubscriberPreferences(
       }
     }
 
-    if (preferences.incident_monitors !== undefined && incidentSubId !== null) {
-      await db.upsertSubscriptionMonitorScopes(incidentSubId, filterTags(preferences.incident_monitors));
+    if ((preferences.incident_monitors !== undefined || preferences.incident_pages !== undefined) && incidentSubId !== null) {
+      await db.upsertSubscriptionScopes(
+        incidentSubId,
+        filterTags(preferences.incident_monitors ?? []),
+        filterPages(preferences.incident_pages ?? []),
+      );
     }
   }
 
-  if (preferences.maintenances !== undefined || preferences.maintenance_monitors !== undefined) {
+  if (preferences.maintenances !== undefined || preferences.maintenance_monitors !== undefined || preferences.maintenance_pages !== undefined) {
     const existingSub = await db.getUserSubscriptionsV2({
       subscriber_user_id: user.id,
       subscriber_method_id: method.id,
@@ -755,8 +837,12 @@ export async function UpdateSubscriberPreferences(
       }
     }
 
-    if (preferences.maintenance_monitors !== undefined && maintenanceSubId !== null) {
-      await db.upsertSubscriptionMonitorScopes(maintenanceSubId, filterTags(preferences.maintenance_monitors));
+    if ((preferences.maintenance_monitors !== undefined || preferences.maintenance_pages !== undefined) && maintenanceSubId !== null) {
+      await db.upsertSubscriptionScopes(
+        maintenanceSubId,
+        filterTags(preferences.maintenance_monitors ?? []),
+        filterPages(preferences.maintenance_pages ?? []),
+      );
     }
   }
 

@@ -368,7 +368,7 @@
             Set a fixed IANA timezone for the server. Leave empty to use the system default.
           </p>
           <Popover.Root bind:open={tzOpen}>
-            <Popover.Trigger>
+            <Popover.Trigger class="w-fit">
               <Button variant="outline" role="combobox" aria-expanded={tzOpen} class="w-72 justify-between font-normal">
                 {manualTimezone || "System default"}
                 <ChevronsUpDownIcon class="text-muted-foreground size-4 shrink-0" />

@@ -254,7 +254,7 @@
   });
 </script>
 
-<div class="container mx-auto space-y-6 py-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2">
       <Button variant={showFilters ? "default" : "outline"} size="sm" onclick={() => (showFilters = !showFilters)}>

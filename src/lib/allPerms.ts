@@ -182,6 +182,8 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   addMonitorToPage: "pages.write",
   removeMonitorFromPage: "pages.write",
   reorderPageMonitors: "pages.write",
+  applyPageDefaults: "pages.write",
+  applyMonitorDefaults: "monitors.write",
 
   // Triggers
   getTriggers: "triggers.read",
@@ -220,6 +222,7 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   adminDeleteSubscriber: "subscribers.write",
   adminAddSubscriber: "subscribers.write",
   adminUpdateSubscriptionScope: "subscribers.write",
+  getSubscriberAccessibleScopes: "subscribers.read",
 
   // Email Templates
   getGeneralEmailTemplates: "email_templates.read",

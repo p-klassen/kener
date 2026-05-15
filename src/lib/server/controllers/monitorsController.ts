@@ -20,6 +20,7 @@ import type {
 } from "../types/db.js";
 import type { MonitorFilter } from "../db/repositories/base.js";
 import db from "../db/db.js";
+import { GetPageByPathWithMonitors } from "./pagesController.js";
 import type { PaginationInput } from "../../types/common.js";
 import type { DayWiseStatus, NumberWithChange } from "../../types/monitor.js";
 import GC, { getBadgeStyle, type BadgeStyle } from "../../global-constants.js";
@@ -695,6 +696,140 @@ export const GetBadge = async (badgeType: BadgeType, params: BadgeParams): Promi
   return new Response(svg, {
     headers: { "Content-Type": "image/svg+xml" },
   });
+};
+
+export interface PageBadgeParams {
+  page_path: string;
+  label?: string | null;
+  labelColor?: string | null;
+  color?: string | null;
+  style?: string | null;
+  locale?: string | null;
+  downMin?: string | null;
+  degradedMin?: string | null;
+  sinceLast?: string | null;
+  hideDuration?: string | null;
+}
+
+export const GetPageBadge = async (badgeType: "status" | "uptime", params: PageBadgeParams): Promise<Response> => {
+  const pagePath = params.page_path === "_root_" ? "" : params.page_path;
+
+  const pageData = await GetPageByPathWithMonitors(pagePath);
+  if (!pageData) {
+    return new Response(ErrorSvg, { headers: { "Content-Type": "image/svg+xml" } });
+  }
+
+  const { page, monitors } = pageData;
+  const monitorTags = monitors.map((m) => m.monitor_tag);
+  let name = page.page_title;
+  let message: string;
+  let badgeColor: string = params.color || "#0079FF";
+
+  if (badgeType === "status") {
+    const downMin = Math.max(1, parseInt(params.downMin || "1") || 1);
+    const degradedMin = Math.max(1, parseInt(params.degradedMin || "1") || 1);
+
+    let downCount = 0;
+    let degradedCount = 0;
+
+    for (const tag of monitorTags) {
+      const lastObj = (await GetLastMonitoringValue(tag, () => GetLatestMonitoringData(tag))) as
+        | { status: string }
+        | undefined;
+      if (lastObj?.status === GC.DOWN) downCount++;
+      else if (lastObj?.status === GC.DEGRADED) degradedCount++;
+    }
+
+    let status: string;
+    if (monitorTags.length === 0) {
+      status = GC.NO_DATA;
+    } else if (downCount >= downMin) {
+      status = GC.DOWN;
+    } else if (degradedCount >= degradedMin) {
+      status = GC.DEGRADED;
+    } else {
+      status = GC.UP;
+    }
+
+    const i18nData = await db.getSiteDataByKey("i18n");
+    let i18nConfig: { defaultLocale: string; locales: Array<{ code: string; selected: boolean }> } | null = null;
+    if (i18nData?.value) {
+      try {
+        i18nConfig = typeof i18nData.value === "string" ? JSON.parse(i18nData.value) : i18nData.value;
+      } catch {
+        i18nConfig = null;
+      }
+    }
+    const defaultLocale = i18nConfig?.defaultLocale || "en";
+    const activatedCodes = new Set(i18nConfig?.locales?.filter((l) => l.selected).map((l) => l.code) ?? ["en"]);
+    const requestedLocale = params.locale || defaultLocale;
+    const locale =
+      activatedCodes.has(requestedLocale) && isLocaleAvailable(requestedLocale) ? requestedLocale : defaultLocale;
+
+    const statusLocaleKey: Record<string, string> = {
+      [GC.UP]: "Operational",
+      [GC.DEGRADED]: "Degraded",
+      [GC.DOWN]: "Down",
+      [GC.MAINTENANCE]: "Under Maintenance",
+      [GC.NO_DATA]: "No Status Available",
+    };
+    message = translate(locale, statusLocaleKey[status] || status, defaultLocale);
+
+    if (!params.color) {
+      let myColors = {} as Record<string, string>;
+      const siteColorsData = await db.getSiteDataByKey("colors");
+      if (siteColorsData?.value) {
+        try {
+          myColors = JSON.parse(siteColorsData.value);
+        } catch {
+          myColors = {};
+        }
+      }
+      const statusColors: Record<string, string> = {
+        UP: myColors.UP || "#00dfa2",
+        DEGRADED: myColors.DEGRADED || "#e6ca61",
+        DOWN: myColors.DOWN || "#ca3038",
+        MAINTENANCE: myColors.MAINTENANCE || "#6679cc",
+        NO_DATA: myColors.NO_DATA || "#9ca3af",
+      };
+      badgeColor = statusColors[status] || statusColors.NO_DATA;
+    }
+  } else {
+    // uptime badge
+    let sinceLast: number;
+    const sinceLastParam = params.sinceLast;
+    if (sinceLastParam == undefined || isNaN(Number(sinceLastParam)) || Number(sinceLastParam) < 60) {
+      sinceLast = 90 * 24 * 60 * 60;
+    } else {
+      sinceLast = Number(sinceLastParam);
+    }
+    const now = Math.floor(Date.now() / 1000);
+    const since = GetMinuteStartNowTimestampUTC() - sinceLast;
+    const hideDuration = params.hideDuration === "true";
+    const formatted = formatDuration(sinceLast);
+
+    let uptimeData: UptimeCalculatorResult = { uptime: "-", avgLatency: "-", maxLatency: "-", minLatency: "-" };
+
+    if (monitorTags.length > 0) {
+      const stats = await db.getStatusCountsByInterval(monitorTags, since, now - since, 1);
+      uptimeData = UptimeCalculator(stats);
+    }
+
+    message = uptimeData.uptime;
+    name = name + (hideDuration ? "" : ` ${formatted}`);
+  }
+
+  const label = (params.label || name).trim();
+  const format = {
+    label,
+    message,
+    color: badgeColor,
+    labelColor: params.labelColor || "#333",
+    style: getBadgeStyle(params.style ?? null),
+  };
+  const svg = makeBadge(format);
+
+  return new Response(svg, { headers: { "Content-Type": "image/svg+xml" } });
 };
 
 //calculate uptime for last N rows

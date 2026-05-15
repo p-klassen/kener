@@ -23,4 +23,8 @@ export class ImagesRepository extends BaseRepository {
       .select("id", "mime_type", "original_name", "width", "height", "size", "created_at")
       .orderBy("created_at", "desc");
   }
+
+  async getAllImagesWithData(): Promise<ImageRecord[]> {
+    return await this.knex("images").select("*").orderBy("created_at", "asc");
+  }
 }

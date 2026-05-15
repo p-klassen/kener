@@ -304,7 +304,7 @@
   });
 </script>
 
-<div class="flex w-full flex-col gap-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <!-- ── OIDC Card ───────────────────────────────────────────────────────── -->
   <Card.Root class="kener-card">
     <Card.Header>
@@ -460,7 +460,7 @@
           />
           <div>
             <Label for="oidc-auto-create">{$t("manage.authentication.auto_create_users")}</Label>
-            <p class="text-muted-foreground text-xs">{$t("manage.authentication.auto_create_hint")}</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.authentication.oidc_auto_create_hint")}</p>
           </div>
         </div>
 
@@ -777,7 +777,7 @@
           />
           <div>
             <Label for="ldap-auto-create">{$t("manage.authentication.auto_create_users")}</Label>
-            <p class="text-muted-foreground text-xs">{$t("manage.authentication.auto_create_hint")}</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.authentication.ldap_auto_create_hint")}</p>
           </div>
         </div>
 

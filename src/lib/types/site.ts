@@ -17,6 +17,7 @@ export interface SiteNavItem {
   name: string;
   url: string;
   iconURL: string;
+  openInNewTab?: boolean;
 }
 
 export interface SiteHero {
@@ -159,4 +160,19 @@ export interface GlobalMaintenanceNotificationSettings {
     ended: boolean;
   };
   reminder_buffer_hours: number;
+}
+
+export interface SitePageDefaults {
+  monitor_status_history_days: {
+    desktop: number;
+    mobile: number;
+  };
+  monitor_layout_style: "default-list" | "default-grid" | "compact-list" | "compact-grid";
+}
+
+export interface SiteMonitorDefaults {
+  uptime_formula_numerator: string;
+  uptime_formula_denominator: string;
+  monitor_status_history_days: { desktop: number; mobile: number };
+  sharing_options: { showShareBadgeMonitor: boolean; showShareEmbedMonitor: boolean };
 }

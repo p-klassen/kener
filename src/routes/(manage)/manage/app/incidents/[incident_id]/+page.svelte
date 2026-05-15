@@ -680,7 +680,7 @@
   });
 </script>
 
-<div class="container space-y-6 py-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <!-- Breadcrumb -->
   <div class="flex justify-between gap-2">
     <Breadcrumb.Root>

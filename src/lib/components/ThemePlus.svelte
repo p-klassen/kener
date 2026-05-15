@@ -61,6 +61,8 @@
     }
   });
 
+  const loggedInUser = $derived(page.data?.loggedInUser ?? null);
+
   function toggleMode() {
     if (mode.current === "light") {
       setMode("dark");
@@ -158,15 +160,30 @@
       {/if}
     </ButtonGroup.Root>
     <NotificationsPopover {eventsPath} monitorTags={monitor_tags} compact={true} />
-    {#if loginDetails}
-      <Button
-        size="sm"
-        href={loginDetails.url}
-        target="_blank"
-        class="bg-accent-foreground text-accent border-foreground/10 rounded-full border  text-xs font-semibold shadow-none  "
-      >
-        {loginDetails.label}
-      </Button>
+    {#if loggedInUser}
+      <div class="flex items-center gap-1">
+        <span class="text-foreground/60 hidden text-xs sm:inline">
+          {$t("manage.users.logged_in_as")} <strong>{loggedInUser.name}</strong>
+        </span>
+        {#if loginDetails}
+          <Button
+            size="sm"
+            href={loginDetails.url}
+            target="_blank"
+            class="bg-accent-foreground text-accent border-foreground/10 rounded-full border text-xs font-semibold shadow-none"
+          >
+            {loginDetails.label}
+          </Button>
+        {/if}
+        <Button
+          size="sm"
+          href={clientResolver(resolve, "/account/logout")}
+          variant="outline"
+          class="bg-background/80 dark:bg-background/70 border-foreground/10 rounded-full border text-xs shadow-none backdrop-blur-md"
+        >
+          {$t("manage.user_menu.log_out")}
+        </Button>
+      </div>
     {/if}
   </div>
 </div>

@@ -10,7 +10,7 @@
   import MenuIcon from "@lucide/svelte/icons/menu";
 
   let { data } = page;
-  const navItems: { name: string; url: string; iconURL: string }[] = data.navItems || [];
+  const navItems: { name: string; url: string; iconURL: string; openInNewTab?: boolean }[] = data.navItems || [];
   const { siteName, logo, globalPageVisibilitySettings } = data;
 
   const brandPath = $derived.by(() => {
@@ -25,8 +25,8 @@
     trackEvent("nav_brand_clicked", { name: siteName });
   }
 
-  function trackNavClick(item: { name: string; url: string }) {
-    trackEvent("nav_link_clicked", { name: item.name, external: item.url.startsWith("http") });
+  function trackNavClick(item: { name: string; url: string; openInNewTab?: boolean }) {
+    trackEvent("nav_link_clicked", { name: item.name, external: item.openInNewTab ?? item.url.startsWith("http") });
   }
 </script>
 
@@ -59,8 +59,8 @@
                     data-sveltekit-preload-data="off"
                     href={clientResolver(resolve, item.url)}
                     class="{navigationMenuTriggerStyle()} hover:border-border border border-transparent bg-transparent text-xs hover:bg-transparent"
-                    target={item.url.startsWith("http") ? "_blank" : undefined}
-                    rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
+                    target={item.openInNewTab ? "_blank" : undefined}
+                    rel={item.openInNewTab ? "noopener noreferrer" : undefined}
                     style="border-radius: var(--radius-3xl)"
                     onclick={() => trackNavClick(item)}
                   >
@@ -103,8 +103,8 @@
                 size="sm"
                 href={clientResolver(resolve, item.url)}
                 class="w-full justify-start rounded-full text-xs"
-                target={item.url.startsWith("http") ? "_blank" : undefined}
-                rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
+                target={item.openInNewTab ? "_blank" : undefined}
+                rel={item.openInNewTab ? "noopener noreferrer" : undefined}
                 onclick={() => trackNavClick(item)}
               >
                 {#if item.iconURL}

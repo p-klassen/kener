@@ -33,8 +33,10 @@ interface UpdatePreferencesRequest {
   token: string;
   incidents?: boolean;
   incident_monitors?: string[];
+  incident_pages?: string[];
   maintenances?: boolean;
   maintenance_monitors?: string[];
+  maintenance_pages?: string[];
 }
 
 interface LoginWithAccountRequest {
@@ -75,8 +77,10 @@ export default async function post(req: APIServerRequest): Promise<Response> {
         (body as UpdatePreferencesRequest).token,
         (body as UpdatePreferencesRequest).incidents,
         (body as UpdatePreferencesRequest).incident_monitors,
+        (body as UpdatePreferencesRequest).incident_pages,
         (body as UpdatePreferencesRequest).maintenances,
         (body as UpdatePreferencesRequest).maintenance_monitors,
+        (body as UpdatePreferencesRequest).maintenance_pages,
         config,
       );
     case "loginWithAccount":
@@ -126,9 +130,9 @@ async function handleGetPreferences(token: string, config: SubscriptionsConfig):
   const incidentSub = allSubs.find((s) => s.event_type === "incidents" && s.status === "ACTIVE");
   const maintenanceSub = allSubs.find((s) => s.event_type === "maintenances" && s.status === "ACTIVE");
 
-  const [incidentMonitors, maintenanceMonitors] = await Promise.all([
-    incidentSub ? db.getSubscriptionMonitorScopes(incidentSub.id) : Promise.resolve([]),
-    maintenanceSub ? db.getSubscriptionMonitorScopes(maintenanceSub.id) : Promise.resolve([]),
+  const [incidentScopes, maintenanceScopes] = await Promise.all([
+    incidentSub ? db.getSubscriptionScopes(incidentSub.id) : Promise.resolve({ monitors: [], pages: [] }),
+    maintenanceSub ? db.getSubscriptionScopes(maintenanceSub.id) : Promise.resolve({ monitors: [], pages: [] }),
   ]);
 
   return json({
@@ -139,8 +143,10 @@ async function handleGetPreferences(token: string, config: SubscriptionsConfig):
       incidents: config.methods?.emails?.incidents === true,
       maintenances: config.methods?.emails?.maintenances === true,
     },
-    incident_monitors: incidentMonitors,
-    maintenance_monitors: maintenanceMonitors,
+    incident_monitors: incidentScopes.monitors,
+    incident_pages: incidentScopes.pages,
+    maintenance_monitors: maintenanceScopes.monitors,
+    maintenance_pages: maintenanceScopes.pages,
   });
 }
 
@@ -148,15 +154,19 @@ async function handleUpdatePreferences(
   token: string,
   incidents: boolean | undefined,
   incidentMonitors: string[] | undefined,
+  incidentPages: string[] | undefined,
   maintenances: boolean | undefined,
   maintenanceMonitors: string[] | undefined,
+  maintenancePages: string[] | undefined,
   config: SubscriptionsConfig,
 ): Promise<Response> {
   const preferences: {
     incidents?: boolean;
     incident_monitors?: string[];
+    incident_pages?: string[];
     maintenances?: boolean;
     maintenance_monitors?: string[];
+    maintenance_pages?: string[];
   } = {};
 
   if (config.methods?.emails?.incidents) {
@@ -169,6 +179,12 @@ async function handleUpdatePreferences(
       }
       preferences.incident_monitors = incidentMonitors.slice(0, 500).map(String);
     }
+    if (incidentPages !== undefined) {
+      if (!Array.isArray(incidentPages)) {
+        return error(400, { message: "incident_pages must be an array" });
+      }
+      preferences.incident_pages = incidentPages.filter((s) => typeof s === "string").slice(0, 100);
+    }
   }
   if (config.methods?.emails?.maintenances) {
     if (maintenances !== undefined) {
@@ -179,6 +195,12 @@ async function handleUpdatePreferences(
         return error(400, { message: "maintenance_monitors must be an array" });
       }
       preferences.maintenance_monitors = maintenanceMonitors.slice(0, 500).map(String);
+    }
+    if (maintenancePages !== undefined) {
+      if (!Array.isArray(maintenancePages)) {
+        return error(400, { message: "maintenance_pages must be an array" });
+      }
+      preferences.maintenance_pages = maintenancePages.filter((s) => typeof s === "string").slice(0, 100);
     }
   }
 

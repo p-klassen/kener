@@ -8,7 +8,7 @@
   const apiDocsUrl = clientResolver(resolve, "/manage/api-spec");
 </script>
 
-<div class="flex w-full flex-col gap-6">
+<div class="flex w-full flex-col gap-4 p-4">
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-semibold">{$t("manage.api_docs.title")}</h1>

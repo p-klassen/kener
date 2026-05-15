@@ -315,7 +315,17 @@ export class SubscriptionSystemRepository extends BaseRepository {
             this.knex("subscription_monitor_scopes")
               .select(1)
               .whereRaw("subscription_id = us.id")
+              .where("scope_type", "monitor")
               .whereIn("monitor_tag", monitorTags),
+          )
+          .orWhereExists(
+            this.knex("subscription_monitor_scopes as sms")
+              .select(1)
+              .whereRaw("sms.subscription_id = us.id")
+              .where("sms.scope_type", "page")
+              .join("pages as p", "p.page_path", "sms.monitor_tag")
+              .join("pages_monitors as pm", "pm.page_id", "p.id")
+              .whereIn("pm.monitor_tag", monitorTags),
           );
       });
     }
@@ -506,18 +516,33 @@ export class SubscriptionSystemRepository extends BaseRepository {
     return { user, method, subscriptions };
   }
 
-  async upsertSubscriptionMonitorScopes(subscriptionId: number, monitorTags: string[]): Promise<void> {
-    await this.knex("subscription_monitor_scopes").where("subscription_id", subscriptionId).del();
-    if (monitorTags.length > 0) {
-      await this.knex("subscription_monitor_scopes").insert(
-        monitorTags.map((tag) => ({ subscription_id: subscriptionId, monitor_tag: tag })),
-      );
+  async upsertSubscriptionScopes(
+    subscriptionId: number,
+    monitorTags: string[],
+    pageSlugs: string[],
+  ): Promise<void> {
+    await this.knex("subscription_monitor_scopes")
+      .where("subscription_id", subscriptionId)
+      .del();
+    const rows: { subscription_id: number; monitor_tag: string; scope_type: string }[] = [];
+    for (const tag of monitorTags) {
+      rows.push({ subscription_id: subscriptionId, monitor_tag: tag, scope_type: "monitor" });
+    }
+    for (const slug of pageSlugs) {
+      rows.push({ subscription_id: subscriptionId, monitor_tag: slug, scope_type: "page" });
+    }
+    if (rows.length > 0) {
+      await this.knex("subscription_monitor_scopes").insert(rows);
     }
   }
 
-  async getSubscriptionMonitorScopes(subscriptionId: number): Promise<string[]> {
-    return await this.knex("subscription_monitor_scopes")
+  async getSubscriptionScopes(subscriptionId: number): Promise<{ monitors: string[]; pages: string[] }> {
+    const rows = await this.knex("subscription_monitor_scopes")
       .where("subscription_id", subscriptionId)
-      .pluck("monitor_tag");
+      .select("monitor_tag", "scope_type");
+    return {
+      monitors: rows.filter((r) => r.scope_type === "monitor").map((r) => r.monitor_tag),
+      pages: rows.filter((r) => r.scope_type === "page").map((r) => r.monitor_tag),
+    };
   }
 }

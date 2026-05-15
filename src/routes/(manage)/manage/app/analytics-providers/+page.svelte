@@ -302,7 +302,7 @@
   });
 </script>
 
-<div class="flex w-full flex-col gap-4 px-4">
+<div class="flex w-full flex-col gap-4 p-4">
   <div>
     {$t("manage.analytics.intro")}
     <a
@@ -398,7 +398,7 @@
                 {:else}
                   <SaveIcon class="mr-2 size-4" />
                 {/if}
-                {$t("manage.analytics.save_button")} {selectedAnalytics.label}
+                {$t("manage.common.save")}
               </Button>
             </div>
           </div>

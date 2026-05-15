@@ -14,6 +14,12 @@ declare global {
       maintenance?: import("$lib/server/types/db").MaintenanceRecord;
       // Set by hooks.server.ts for /api/pages/:page_path/* routes
       page?: import("$lib/server/types/db").PageRecord;
+      // Set by hooks.server.ts for /api/triggers/:id/* routes
+      trigger?: import("$lib/server/types/db").TriggerRecord;
+      // Set by hooks.server.ts for /api/monitors/:tag/alert-configs/:id/* routes
+      alertConfig?: import("$lib/server/types/db").MonitorAlertConfigWithTriggers;
+      // Set by hooks.server.ts for /api/images/:id/* routes
+      image?: import("$lib/server/types/db").ImageRecord;
     }
 
     interface PageData {
