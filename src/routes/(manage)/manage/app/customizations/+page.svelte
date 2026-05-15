@@ -885,16 +885,6 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
               <p class="text-muted-foreground mt-1 text-xs">{$t("manage.customizations.font_family_helper")}</p>
             </div>
           </div>
-          <div class="flex justify-end">
-            <Button onclick={saveFontUrl} disabled={savingFont || uploadingFont} variant="outline" size="sm">
-              {#if savingFont}
-                <Loader class="h-4 w-4 animate-spin" />
-              {:else}
-                <SaveIcon class="h-4 w-4" />
-              {/if}
-              {$t("manage.common.save")}
-            </Button>
-          </div>
         </div>
 
         <!-- Divider -->
@@ -1006,6 +996,16 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
         </div>
 
       </Card.Content>
+      <Card.Footer class="flex justify-end border-t pt-6">
+        <Button onclick={saveFontUrl} disabled={savingFont || uploadingFont}>
+          {#if savingFont}
+            <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
+          {/if}
+          {$t("manage.common.save")}
+        </Button>
+      </Card.Footer>
     </Card.Root>
 
     <!-- Theme Configuration Section -->
