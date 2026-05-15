@@ -1732,9 +1732,6 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
@@ -2130,9 +2127,6 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalServerError"
           }
         }
       },
@@ -2306,7 +2300,7 @@
         ],
         "operationId": "importData",
         "summary": "Import data",
-        "description": "Imports data from a payload previously exported via GET /api/v4/export. Existing records are updated; new records are created. Users are imported as inactive (passwords are not exported).",
+        "description": "Imports data from a payload previously exported via GET /api/v4/export. Existing records are updated; new records are created. Users are imported as inactive (passwords are not exported). Returns 200 (not 201) because the operation performs upserts, not pure creation.",
         "requestBody": {
           "required": true,
           "content": {
@@ -3309,19 +3303,26 @@
             "type": "string"
           },
           "trigger_type": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "trigger_desc": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "trigger_status": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "trigger_meta": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": true
           },
           "created_at": {
             "type": "string",
@@ -3349,12 +3350,16 @@
             "type": "string"
           },
           "trigger_desc": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "trigger_status": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "trigger_meta": {
             "type": "object"
@@ -3369,12 +3374,16 @@
             "type": "string"
           },
           "trigger_desc": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "trigger_status": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "trigger_meta": {
             "type": "object"
@@ -3407,7 +3416,8 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Monitor tags this alert config applies to. Populated from the URL path on create."
           },
           "alert_for": {
             "type": "string",
@@ -3427,8 +3437,10 @@
             "type": "integer"
           },
           "alert_description": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "create_incident": {
             "type": "string",
@@ -3469,8 +3481,10 @@
                   "type": "string"
                 },
                 "trigger_type": {
-                  "type": "string",
-                  "nullable": true
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               }
             }
@@ -3513,8 +3527,10 @@
             "type": "integer"
           },
           "alert_description": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "create_incident": {
             "type": "string",
@@ -3570,8 +3586,10 @@
             "type": "integer"
           },
           "alert_description": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "create_incident": {
             "type": "string",
@@ -3618,20 +3636,28 @@
             "type": "string"
           },
           "original_name": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "width": {
-            "type": "integer",
-            "nullable": true
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "height": {
-            "type": "integer",
-            "nullable": true
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "size": {
-            "type": "integer",
-            "nullable": true
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "created_at": {
             "type": "string",
