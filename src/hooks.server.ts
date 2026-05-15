@@ -210,6 +210,7 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
         };
         return json(errorResponse, { status: 404 });
       }
+      // Store trigger in locals for use in endpoints
       event.locals.trigger = trigger;
     }
   }

@@ -8,6 +8,15 @@ import type {
   BadRequestResponse,
 } from "$lib/types/api";
 
+function formatDateToISO(date: Date | string): string {
+  if (date instanceof Date) {
+    return date.toISOString();
+  }
+  // Handle string dates (e.g., from SQLite: "2026-01-27 16:07:19")
+  const parsed = new Date(date.replace(" ", "T") + "Z");
+  return parsed.toISOString();
+}
+
 function formatTrigger(t: TriggerRecord) {
   let meta: Record<string, unknown> = {};
   try {
@@ -22,8 +31,8 @@ function formatTrigger(t: TriggerRecord) {
     trigger_desc: t.trigger_desc,
     trigger_status: t.trigger_status,
     trigger_meta: meta,
-    created_at: new Date(t.created_at).toISOString(),
-    updated_at: new Date(t.updated_at).toISOString(),
+    created_at: formatDateToISO(t.created_at),
+    updated_at: formatDateToISO(t.updated_at),
   };
 }
 
