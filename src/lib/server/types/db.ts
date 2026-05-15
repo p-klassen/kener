@@ -92,8 +92,8 @@ export interface MonitorSettings {
   uptime_formula_numerator?: string;
   uptime_formula_denominator?: string;
   monitor_status_history_days?: {
-    desktop: number;
-    mobile: number;
+    desktop: number | null;
+    mobile: number | null;
   };
   sharing_options?: MonitorSharingOptions;
 }
