@@ -24,6 +24,9 @@ const MAINTENANCE_ID_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?maintenances\/(\d+)/;
 // Regex to match routes with page_path parameter
 const PAGE_PATH_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?pages\/([^/]+)/;
 
+// Regex to match routes with trigger id parameter
+const TRIGGER_ID_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?triggers\/(\d+)/;
+
 function isApiRoute(pathname: string): boolean {
   return pathname.startsWith(API_PATH_PREFIX);
 }
@@ -59,6 +62,11 @@ function extractMaintenanceId(pathname: string): number | null {
 function extractPagePath(pathname: string): string | null {
   const match = pathname.match(PAGE_PATH_ROUTE_REGEX);
   return match ? decodeURIComponent(match[1]) : null;
+}
+
+function extractTriggerId(pathname: string): number | null {
+  const match = pathname.match(TRIGGER_ID_ROUTE_REGEX);
+  return match ? parseInt(match[1], 10) : null;
 }
 
 // Content types that indicate a form submission (mirrors SvelteKit's internal CSRF check scope)
@@ -187,6 +195,22 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
       }
       // Store page in locals for use in endpoints
       event.locals.page = page;
+    }
+
+    // Validate trigger id exists for /api/(vX/)?triggers/:id/* routes
+    const triggerId = extractTriggerId(pathname);
+    if (triggerId) {
+      const trigger = await db.getTriggerByID(triggerId);
+      if (!trigger) {
+        const errorResponse: NotFoundResponse = {
+          error: {
+            code: "NOT_FOUND",
+            message: `Trigger with id '${triggerId}' not found`,
+          },
+        };
+        return json(errorResponse, { status: 404 });
+      }
+      event.locals.trigger = trigger;
     }
   }
 
