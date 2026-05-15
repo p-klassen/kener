@@ -5,6 +5,12 @@ import type { OidcConfig, LdapConfig } from "./authConfigController.js";
 
 export type ExportScope = "config" | "users_groups_roles" | "everything";
 
+type ExportedPageMonitor = {
+  monitor_tag: string;
+  monitor_settings_json: string | null;
+  position: number;
+};
+
 type ExportedMonitor = {
   tag: string;
   name: string;
@@ -33,6 +39,7 @@ interface ExportedPage {
   page_settings_json: string | null;
   is_public: number;
   visibility_mode: "hidden" | "teaser" | "locked";
+  monitors: ExportedPageMonitor[];
 }
 
 interface ExportedTrigger {
@@ -107,6 +114,27 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
     const { client_secret: _cs, ...oidcSafe } = oidcConfig;
     const { bind_password: _bp, ...ldapSafe } = ldapConfig;
 
+    const pagesWithMonitors: ExportedPage[] = await Promise.all(
+      pages.map(async (p) => {
+        const pageMonitors = await db.getPageMonitors(p.id);
+        return {
+          page_path: p.page_path,
+          page_title: p.page_title,
+          page_header: p.page_header,
+          page_subheader: p.page_subheader,
+          page_logo: p.page_logo,
+          page_settings_json: p.page_settings_json,
+          is_public: p.is_public,
+          visibility_mode: p.visibility_mode,
+          monitors: pageMonitors.map((m) => ({
+            monitor_tag: m.monitor_tag,
+            monitor_settings_json: m.monitor_settings_json,
+            position: m.position,
+          })),
+        };
+      }),
+    );
+
     payload.config = {
       site_data: siteData,
       monitors: monitors.map((m) => ({
@@ -127,16 +155,7 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
         monitor_settings_json: m.monitor_settings_json,
         external_url: m.external_url,
       })),
-      pages: pages.map((p) => ({
-        page_path: p.page_path,
-        page_title: p.page_title,
-        page_header: p.page_header,
-        page_subheader: p.page_subheader,
-        page_logo: p.page_logo,
-        page_settings_json: p.page_settings_json,
-        is_public: p.is_public,
-        visibility_mode: p.visibility_mode,
-      })),
+      pages: pagesWithMonitors,
       triggers: triggers.map((t) => ({
         name: t.name,
         trigger_type: t.trigger_type,
@@ -258,11 +277,25 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
 
     let pagesImported = 0;
     for (const p of pages ?? []) {
-      const existing = await db.getPageByPath(p.page_path);
+      const { monitors: pageMonitors, ...pageData } = p;
+      const existing = await db.getPageByPath(pageData.page_path);
+      let pageId: number;
       if (existing) {
-        await db.updatePage(existing.id, p);
+        await db.updatePage(existing.id, pageData);
+        pageId = existing.id;
       } else {
-        await db.createPage(p);
+        const created = await db.createPage(pageData);
+        pageId = created.id;
+      }
+      // Fully sync monitor assignments: clear current, re-add from export
+      await db.deletePageMonitorsByPageId(pageId);
+      for (const m of pageMonitors ?? []) {
+        await db.addMonitorToPage({
+          page_id: pageId,
+          monitor_tag: m.monitor_tag,
+          monitor_settings_json: m.monitor_settings_json ?? null,
+          position: m.position,
+        });
       }
       pagesImported++;
     }
@@ -290,13 +323,44 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
   }
 
   if (payload.users_groups_roles) {
-    const { roles, groups } = payload.users_groups_roles;
+    const { roles, groups, users } = payload.users_groups_roles;
 
+    // Import users — created as inactive/unverified since passwords are not exported
+    let usersImported = 0;
+    for (const u of users ?? []) {
+      const existing = await db.getUserByEmail(u.email);
+      if (!existing) {
+        await db.insertUser({
+          email: u.email,
+          name: u.name,
+          password_hash: "",
+          role_ids: [],
+          is_active: 0,
+          is_verified: 0,
+          is_owner: u.is_owner,
+          must_change_password: 1,
+        });
+        usersImported++;
+      }
+    }
+    imported.users = usersImported;
+
+    // Import roles — create new, sync permissions for existing non-readonly roles
     let rolesImported = 0;
     for (const r of roles ?? []) {
       if (r.readonly) continue;
       const existing = await db.getRoleById(r.id);
-      if (!existing) {
+      if (existing) {
+        const currentPerms = await db.getRolePermissions(r.id);
+        const currentPermIds = new Set(currentPerms.map((p) => p.permissions_id));
+        const newPermIds = new Set(r.permissions ?? []);
+        for (const pid of currentPermIds) {
+          if (!newPermIds.has(pid)) await db.removeRolePermission(r.id, pid);
+        }
+        for (const pid of newPermIds) {
+          if (!currentPermIds.has(pid)) await db.addRolePermission(r.id, pid);
+        }
+      } else {
         await db.insertRole({ id: r.id, role_name: r.role_name });
         for (const pid of r.permissions ?? []) {
           await db.addRolePermission(r.id, pid);
@@ -306,6 +370,7 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
     }
     imported.roles = rolesImported;
 
+    // Import groups — create new or sync roles for existing
     let groupsImported = 0;
     for (const g of groups ?? []) {
       const allGroups = await db.getAllGroups();
@@ -313,18 +378,20 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
       let groupId: number;
       if (existing) {
         groupId = existing.id;
+        // Sync role assignments: clear existing and re-add from export
+        const existingRoles = await db.getGroupRoles(groupId);
+        for (const gr of existingRoles) {
+          await db.removeGroupRole(groupId, gr.id);
+        }
       } else {
         const created = await db.createGroup({ name: g.name, description: g.description });
         groupId = created.id;
         groupsImported++;
       }
-
       const allRoles = await db.getAllRoles();
       for (const roleName of g.role_names ?? []) {
         const role = allRoles.find((r) => r.role_name === roleName);
-        if (role) {
-          await db.addGroupRole(groupId, role.id);
-        }
+        if (role) await db.addGroupRole(groupId, role.id);
       }
     }
     imported.groups = groupsImported;
