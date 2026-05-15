@@ -94,9 +94,11 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     const response: CreateAlertConfigResponse = { alert_config: formatAlertConfig(result) };
     return json(response, { status: 201 });
   } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to create alert config";
+    const isInternal = msg.startsWith("Failed to retrieve") || msg.startsWith("Failed to create");
     return json(
-      { error: { code: "BAD_REQUEST", message: e instanceof Error ? e.message : "Failed to create alert config" } },
-      { status: 400 },
+      { error: { code: isInternal ? "INTERNAL_ERROR" : "BAD_REQUEST", message: msg } },
+      { status: isInternal ? 500 : 400 },
     );
   }
 };

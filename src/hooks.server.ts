@@ -226,7 +226,7 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
     const alertConfigId = extractAlertConfigId(pathname);
     if (alertConfigId) {
       const alertConfig = await db.getMonitorAlertConfigWithTriggers(alertConfigId);
-      const monitorTagForCheck = extractMonitorTag(pathname);
+      const monitorTagForCheck = event.locals.monitor?.tag;
       if (!alertConfig || (monitorTagForCheck && !alertConfig.monitor_tags.includes(monitorTagForCheck))) {
         const errorResponse: NotFoundResponse = {
           error: {

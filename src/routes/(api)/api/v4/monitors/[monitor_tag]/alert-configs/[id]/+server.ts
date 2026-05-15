@@ -66,6 +66,25 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
     );
   }
 
+  // If alert_for is changing without alert_value, validate the existing value is still compatible
+  if (body.alert_for !== undefined && body.alert_value === undefined) {
+    const existingValue = existing.alert_value;
+    const newAlertFor = body.alert_for;
+    // STATUS expects a status string; LATENCY/UPTIME expect numeric strings
+    if (newAlertFor === "STATUS" && !["UP", "DOWN", "DEGRADED"].includes(existingValue)) {
+      return json(
+        { error: { code: "BAD_REQUEST", message: `Existing alert_value '${existingValue}' is not valid for alert_for 'STATUS'. Provide a new alert_value (UP, DOWN, or DEGRADED).` } },
+        { status: 400 },
+      );
+    }
+    if ((newAlertFor === "LATENCY" || newAlertFor === "UPTIME") && isNaN(Number(existingValue))) {
+      return json(
+        { error: { code: "BAD_REQUEST", message: `Existing alert_value '${existingValue}' is not valid for alert_for '${newAlertFor}'. Provide a new alert_value (a number).` } },
+        { status: 400 },
+      );
+    }
+  }
+
   try {
     const result = await UpdateMonitorAlertConfig({
       id: existing.id,
@@ -82,9 +101,11 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
     const response: UpdateAlertConfigResponse = { alert_config: formatAlertConfig(result) };
     return json(response);
   } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to update alert config";
+    const isInternal = msg.startsWith("Failed to retrieve") || msg.startsWith("Failed to update");
     return json(
-      { error: { code: "BAD_REQUEST", message: e instanceof Error ? e.message : "Failed to update alert config" } },
-      { status: 400 },
+      { error: { code: isInternal ? "INTERNAL_ERROR" : "BAD_REQUEST", message: msg } },
+      { status: isInternal ? 500 : 400 },
     );
   }
 };
