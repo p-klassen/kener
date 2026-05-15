@@ -4,6 +4,7 @@ import { GetOidcConfig, GetLdapConfig, SaveOidcConfig, SaveLdapConfig } from "./
 import type { OidcConfig, LdapConfig } from "./authConfigController.js";
 
 export type ExportScope = "config" | "users_groups_roles" | "everything";
+export const VALID_EXPORT_SCOPES: ExportScope[] = ["config", "users_groups_roles", "everything"];
 
 type ExportedImage = {
   id: string;

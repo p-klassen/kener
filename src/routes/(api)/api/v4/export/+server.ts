@@ -1,19 +1,17 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { exportData, type ExportScope } from "$lib/server/controllers/exportImportController";
+import { exportData, type ExportScope, VALID_EXPORT_SCOPES } from "$lib/server/controllers/exportImportController";
 import type { InternalServerErrorResponse } from "$lib/types/api";
-
-const VALID_SCOPES: ExportScope[] = ["config", "users_groups_roles", "everything"];
 
 export const GET: RequestHandler = async ({ url }) => {
 	const scopeParam = url.searchParams.get("scope") ?? "everything";
 
-	if (!VALID_SCOPES.includes(scopeParam as ExportScope)) {
+	if (!VALID_EXPORT_SCOPES.includes(scopeParam as ExportScope)) {
 		return json(
 			{
 				error: {
 					code: "BAD_REQUEST",
-					message: `Invalid scope '${scopeParam}'. Must be one of: ${VALID_SCOPES.join(", ")}`,
+					message: `Invalid scope '${scopeParam}'. Must be one of: ${VALID_EXPORT_SCOPES.join(", ")}`,
 				},
 			},
 			{ status: 400 },
