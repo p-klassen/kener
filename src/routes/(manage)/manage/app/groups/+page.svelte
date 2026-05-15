@@ -17,6 +17,7 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import TrashIcon from "@lucide/svelte/icons/trash-2";
+  import SaveIcon from "@lucide/svelte/icons/save";
   import UsersIcon from "@lucide/svelte/icons/users";
   import ShieldIcon from "@lucide/svelte/icons/shield";
 
@@ -27,6 +28,10 @@
     member_count: number;
     role_count: number;
   };
+
+  type Member = { id: number; name: string; email: string };
+  type Role = { id: string; role_name: string; readonly: number };
+  type User = { id: number; name: string; email: string };
 
   const apiUrl = clientResolver(resolve, "/manage/api");
 
@@ -50,6 +55,36 @@
   let editDesc = $state("");
   let saving = $state(false);
   let saveError = $state("");
+
+  // Members & roles state (loaded when sheet opens)
+  let sheetLoading = $state(false);
+  let members = $state<Member[]>([]);
+  let groupRoles = $state<Role[]>([]);
+  let allUsers = $state<User[]>([]);
+  let allRoles = $state<Role[]>([]);
+  let memberSearch = $state("");
+  let roleSearch = $state("");
+
+  const memberIds = $derived(new Set(members.map((m) => m.id)));
+  const groupRoleIds = $derived(new Set(groupRoles.map((r) => r.id)));
+
+  const availableUsers = $derived(
+    allUsers.filter(
+      (u) =>
+        !memberIds.has(u.id) &&
+        (memberSearch === "" ||
+          u.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+          u.email.toLowerCase().includes(memberSearch.toLowerCase())),
+    ),
+  );
+
+  const availableRoles = $derived(
+    allRoles.filter(
+      (r) =>
+        !groupRoleIds.has(r.id) &&
+        (roleSearch === "" || r.role_name.toLowerCase().includes(roleSearch.toLowerCase())),
+    ),
+  );
 
   async function apiCall(action: string, data: Record<string, unknown> = {}) {
     const res = await fetch(apiUrl, {
@@ -103,12 +138,32 @@
     }
   }
 
-  function openEditSheet(group: Group) {
+  async function openEditSheet(group: Group) {
     editingGroup = { ...group };
     editName = group.name;
     editDesc = group.description ?? "";
     saveError = "";
+    memberSearch = "";
+    roleSearch = "";
+    members = [];
+    groupRoles = [];
+    allUsers = [];
+    allRoles = [];
     showEditSheet = true;
+    sheetLoading = true;
+    try {
+      const usersResult = await apiCall("getUsers", { page: 1, limit: 1000 });
+      [members, groupRoles, allRoles] = await Promise.all([
+        apiCall("getGroupMembers", { groupId: group.id }),
+        apiCall("getGroupRoles", { groupId: group.id }),
+        apiCall("getRoles"),
+      ]);
+      allUsers = usersResult.users ?? usersResult;
+    } catch (e) {
+      toast.error($t("manage.group_detail.load_error"));
+    } finally {
+      sheetLoading = false;
+    }
   }
 
   async function saveGroup() {
@@ -121,18 +176,60 @@
         name: editName.trim(),
         description: editDesc.trim() || null,
       });
-      // Update local list
       groups = groups.map((g) =>
         g.id === editingGroup!.id
           ? { ...g, name: editName.trim(), description: editDesc.trim() || null }
-          : g
+          : g,
       );
-      showEditSheet = false;
       toast.success($t("manage.groups.save_success"));
     } catch (e: unknown) {
       saveError = e instanceof Error ? e.message : $t("manage.groups.error_save");
     } finally {
       saving = false;
+    }
+  }
+
+  async function addMember(userId: number) {
+    if (!editingGroup) return;
+    try {
+      await apiCall("addGroupMember", { groupId: editingGroup.id, userId });
+      members = await apiCall("getGroupMembers", { groupId: editingGroup.id });
+      groups = groups.map((g) => (g.id === editingGroup!.id ? { ...g, member_count: members.length } : g));
+    } catch (e) {
+      toast.error($t("manage.group_detail.add_member_error"));
+    }
+  }
+
+  async function removeMember(userId: number) {
+    if (!editingGroup) return;
+    try {
+      await apiCall("removeGroupMember", { groupId: editingGroup.id, userId });
+      members = members.filter((m) => m.id !== userId);
+      groups = groups.map((g) => (g.id === editingGroup!.id ? { ...g, member_count: members.length } : g));
+    } catch (e) {
+      toast.error($t("manage.group_detail.remove_member_error"));
+    }
+  }
+
+  async function addRole(roleId: string) {
+    if (!editingGroup) return;
+    try {
+      await apiCall("addGroupRole", { groupId: editingGroup.id, roleId });
+      groupRoles = await apiCall("getGroupRoles", { groupId: editingGroup.id });
+      groups = groups.map((g) => (g.id === editingGroup!.id ? { ...g, role_count: groupRoles.length } : g));
+    } catch (e) {
+      toast.error($t("manage.group_detail.add_role_error"));
+    }
+  }
+
+  async function removeRole(roleId: string) {
+    if (!editingGroup) return;
+    try {
+      await apiCall("removeGroupRole", { groupId: editingGroup.id, roleId });
+      groupRoles = groupRoles.filter((r) => r.id !== roleId);
+      groups = groups.map((g) => (g.id === editingGroup!.id ? { ...g, role_count: groupRoles.length } : g));
+    } catch (e) {
+      toast.error($t("manage.group_detail.remove_role_error"));
     }
   }
 
@@ -169,7 +266,7 @@
         </Table.Header>
         <Table.Body>
           {#each groups as group (group.id)}
-            <Table.Row class="cursor-pointer" onclick={() => goto(clientResolver(resolve, `/manage/app/groups/${group.id}`))}>
+            <Table.Row>
               <Table.Cell class="font-medium">{group.name}</Table.Cell>
               <Table.Cell class="text-muted-foreground">{group.description ?? "—"}</Table.Cell>
               <Table.Cell class="text-right">
@@ -183,7 +280,7 @@
                   <Button
                     variant="outline"
                     size="sm"
-                    onclick={(e) => { e.stopPropagation(); openEditSheet(group); }}
+                    onclick={() => openEditSheet(group)}
                   >
                     <PencilIcon class="mr-1 h-4 w-4" />
                     {$t("manage.common.edit")}
@@ -191,7 +288,7 @@
                   <Button
                     variant="ghost"
                     size="sm"
-                    onclick={(e) => { e.stopPropagation(); deleteTarget = group; }}
+                    onclick={() => { deleteTarget = group; }}
                   >
                     <TrashIcon class="mr-1 h-4 w-4 text-destructive" />
                     {$t("manage.common.delete")}
@@ -253,66 +350,165 @@
       <Sheet.Title>{$t("manage.groups.edit_sheet_title")}</Sheet.Title>
       <Sheet.Description>{$t("manage.groups.edit_sheet_desc")}</Sheet.Description>
     </Sheet.Header>
-    <div class="px-4">
-      {#if editingGroup}
-        <div class="space-y-6 py-6">
-          <!-- Stats -->
-          <div class="flex gap-4 text-sm">
-            <div class="flex items-center gap-1.5 text-muted-foreground">
-              <UsersIcon class="h-4 w-4" />
-              <span>{editingGroup.member_count} {$t("manage.groups.col_members")}</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-muted-foreground">
-              <ShieldIcon class="h-4 w-4" />
-              <span>{editingGroup.role_count} {$t("manage.groups.col_roles")}</span>
-            </div>
+
+    {#if editingGroup}
+      <div class="space-y-4 px-4 pb-6">
+        {#if sheetLoading}
+          <div class="text-muted-foreground flex items-center gap-2 py-4">
+            <Spinner class="h-4 w-4" />
+            {$t("manage.groups.loading")}
           </div>
+        {/if}
 
-          <!-- Name + Description -->
-          <Card.Root>
-            <Card.Content class="space-y-4 p-4">
-              <div class="space-y-1.5">
-                <Label for="edit-name">{$t("manage.groups.name_label")}</Label>
-                <Input
-                  id="edit-name"
-                  bind:value={editName}
-                  placeholder={$t("manage.groups.name_placeholder")}
-                  disabled={saving}
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="edit-desc">{$t("manage.groups.desc_label")}</Label>
-                <Input
-                  id="edit-desc"
-                  bind:value={editDesc}
-                  placeholder={$t("manage.groups.desc_placeholder")}
-                  disabled={saving}
-                />
-              </div>
-
-              {#if saveError}
-                <p class="text-destructive text-sm">{saveError}</p>
+        <!-- Name & Description -->
+        <Card.Root>
+          <Card.Content class="space-y-4 p-4">
+            <div class="space-y-1.5">
+              <Label for="edit-name">{$t("manage.groups.name_label")}</Label>
+              <Input
+                id="edit-name"
+                bind:value={editName}
+                placeholder={$t("manage.groups.name_placeholder")}
+                disabled={saving}
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="edit-desc">{$t("manage.groups.desc_label")}</Label>
+              <Input
+                id="edit-desc"
+                bind:value={editDesc}
+                placeholder={$t("manage.groups.desc_placeholder")}
+                disabled={saving}
+              />
+            </div>
+            {#if saveError}
+              <p class="text-destructive text-sm">{saveError}</p>
+            {/if}
+          </Card.Content>
+          <Card.Footer class="flex justify-end border-t pt-6">
+            <Button onclick={saveGroup} disabled={saving || !editName.trim()}>
+              {#if saving}
+                <Spinner class="h-4 w-4 animate-spin" />
+              {:else}
+                <SaveIcon class="h-4 w-4" />
               {/if}
+              {$t("manage.common.save")}
+            </Button>
+          </Card.Footer>
+        </Card.Root>
 
-              <div class="flex gap-2 pt-1">
-                <Button
-                  onclick={saveGroup}
-                  disabled={saving || !editName.trim()}
-                >
-                  {#if saving}<Spinner class="mr-1 h-4 w-4" />{/if}
-                  {$t("manage.groups.save_button")}
-                </Button>
-                <Button
-                  variant="outline"
-                  onclick={() => goto(clientResolver(resolve, `/manage/app/groups/${editingGroup!.id}`))}
-                >
-                  {$t("manage.groups.open_detail_button")}
-                </Button>
+        <!-- Members -->
+        <Card.Root>
+          <Card.Header class="pb-2">
+            <div class="flex items-center gap-2">
+              <UsersIcon class="h-4 w-4" />
+              <span class="font-medium">{$t("manage.group_detail.tab_members")} ({members.length})</span>
+            </div>
+          </Card.Header>
+          <Card.Content class="space-y-3 p-4 pt-0">
+            {#if members.length === 0 && !sheetLoading}
+              <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_members")}</p>
+            {:else}
+              <div class="space-y-1">
+                {#each members as m (m.id)}
+                  <div class="flex items-center justify-between rounded border px-3 py-2">
+                    <div>
+                      <span class="text-sm font-medium">{m.name}</span>
+                      <span class="text-muted-foreground ml-2 text-xs">{m.email}</span>
+                    </div>
+                    <Button variant="ghost" size="sm" onclick={() => removeMember(m.id)}>
+                      {$t("manage.group_detail.remove_button")}
+                    </Button>
+                  </div>
+                {/each}
               </div>
-            </Card.Content>
-          </Card.Root>
-        </div>
-      {/if}
-    </div>
+            {/if}
+
+            <div class="border-t pt-3">
+              <p class="mb-2 text-sm font-medium">{$t("manage.group_detail.add_members")}</p>
+              <Input
+                bind:value={memberSearch}
+                placeholder={$t("manage.group_detail.search_users")}
+                class="mb-2"
+              />
+              <div class="max-h-40 space-y-1 overflow-y-auto">
+                {#each availableUsers as u (u.id)}
+                  <div class="flex items-center justify-between rounded border px-3 py-2">
+                    <div>
+                      <span class="text-sm font-medium">{u.name}</span>
+                      <span class="text-muted-foreground ml-2 text-xs">{u.email}</span>
+                    </div>
+                    <Button variant="outline" size="sm" onclick={() => addMember(u.id)}>
+                      {$t("manage.groups.add_button_short")}
+                    </Button>
+                  </div>
+                {/each}
+                {#if availableUsers.length === 0 && !sheetLoading}
+                  <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_more_users")}</p>
+                {/if}
+              </div>
+            </div>
+          </Card.Content>
+        </Card.Root>
+
+        <!-- Roles -->
+        <Card.Root>
+          <Card.Header class="pb-2">
+            <div class="flex items-center gap-2">
+              <ShieldIcon class="h-4 w-4" />
+              <span class="font-medium">{$t("manage.group_detail.tab_roles")} ({groupRoles.length})</span>
+            </div>
+          </Card.Header>
+          <Card.Content class="space-y-3 p-4 pt-0">
+            {#if groupRoles.length === 0 && !sheetLoading}
+              <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_roles")}</p>
+            {:else}
+              <div class="space-y-1">
+                {#each groupRoles as r (r.id)}
+                  <div class="flex items-center justify-between rounded border px-3 py-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-medium">{r.role_name}</span>
+                      {#if r.readonly}
+                        <Badge variant="secondary">{$t("manage.group_detail.system_badge")}</Badge>
+                      {/if}
+                    </div>
+                    <Button variant="ghost" size="sm" onclick={() => removeRole(r.id)}>
+                      {$t("manage.group_detail.remove_button")}
+                    </Button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+
+            <div class="border-t pt-3">
+              <p class="mb-2 text-sm font-medium">{$t("manage.group_detail.add_roles")}</p>
+              <Input
+                bind:value={roleSearch}
+                placeholder={$t("manage.group_detail.search_roles")}
+                class="mb-2"
+              />
+              <div class="max-h-40 space-y-1 overflow-y-auto">
+                {#each availableRoles as r (r.id)}
+                  <div class="flex items-center justify-between rounded border px-3 py-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-medium">{r.role_name}</span>
+                      {#if r.readonly}
+                        <Badge variant="secondary">{$t("manage.group_detail.system_badge")}</Badge>
+                      {/if}
+                    </div>
+                    <Button variant="outline" size="sm" onclick={() => addRole(r.id)}>
+                      {$t("manage.groups.add_button_short")}
+                    </Button>
+                  </div>
+                {/each}
+                {#if availableRoles.length === 0 && !sheetLoading}
+                  <p class="text-muted-foreground text-sm">{$t("manage.group_detail.no_more_roles")}</p>
+                {/if}
+              </div>
+            </div>
+          </Card.Content>
+        </Card.Root>
+      </div>
+    {/if}
   </Sheet.Content>
 </Sheet.Root>
