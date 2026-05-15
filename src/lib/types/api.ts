@@ -497,3 +497,142 @@ export interface UpdatePageResponse {
 export interface DeletePageResponse {
   message: string;
 }
+
+// ============ Trigger API types ============
+
+export interface TriggerResponse {
+  id: number;
+  name: string;
+  trigger_type: string | null;
+  trigger_desc: string | null;
+  trigger_status: string | null;
+  trigger_meta: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GetTriggersListResponse {
+  triggers: TriggerResponse[];
+}
+
+export interface GetTriggerResponse {
+  trigger: TriggerResponse;
+}
+
+export interface CreateTriggerRequest {
+  name: string;
+  trigger_type: string;
+  trigger_desc?: string | null;
+  trigger_status?: string | null;
+  trigger_meta?: Record<string, unknown>;
+}
+
+export interface CreateTriggerResponse {
+  trigger: TriggerResponse;
+}
+
+export interface UpdateTriggerRequest {
+  trigger_type?: string;
+  trigger_desc?: string | null;
+  trigger_status?: string | null;
+  trigger_meta?: Record<string, unknown>;
+}
+
+export interface UpdateTriggerResponse {
+  trigger: TriggerResponse;
+}
+
+// ============ Alert Config API types ============
+
+export interface AlertConfigTriggerRef {
+  id: number;
+  name: string;
+  trigger_type: string | null;
+}
+
+export interface AlertConfigResponse {
+  id: number;
+  monitor_tags: string[];
+  alert_for: "STATUS" | "LATENCY" | "UPTIME";
+  alert_value: string;
+  failure_threshold: number;
+  success_threshold: number;
+  alert_description: string | null;
+  create_incident: "YES" | "NO";
+  is_active: "YES" | "NO";
+  severity: "CRITICAL" | "WARNING";
+  trigger_ids: number[];
+  triggers: AlertConfigTriggerRef[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GetAlertConfigsListResponse {
+  alert_configs: AlertConfigResponse[];
+}
+
+export interface GetAlertConfigResponse {
+  alert_config: AlertConfigResponse;
+}
+
+export interface CreateAlertConfigRequest {
+  alert_for: "STATUS" | "LATENCY" | "UPTIME";
+  alert_value: string;
+  failure_threshold: number;
+  success_threshold: number;
+  alert_description?: string | null;
+  create_incident?: "YES" | "NO";
+  is_active?: "YES" | "NO";
+  severity?: "CRITICAL" | "WARNING";
+  trigger_ids?: number[];
+}
+
+export interface CreateAlertConfigResponse {
+  alert_config: AlertConfigResponse;
+}
+
+export interface UpdateAlertConfigRequest {
+  alert_for?: "STATUS" | "LATENCY" | "UPTIME";
+  alert_value?: string;
+  failure_threshold?: number;
+  success_threshold?: number;
+  alert_description?: string | null;
+  create_incident?: "YES" | "NO";
+  is_active?: "YES" | "NO";
+  severity?: "CRITICAL" | "WARNING";
+  trigger_ids?: number[];
+}
+
+export interface UpdateAlertConfigResponse {
+  alert_config: AlertConfigResponse;
+}
+
+// ============ Image API types ============
+
+export interface ImageMetaResponse {
+  id: string;
+  mime_type: string;
+  original_name: string | null;
+  width: number | null;
+  height: number | null;
+  size: number | null;
+  created_at: string;
+}
+
+export interface GetImagesListResponse {
+  images: ImageMetaResponse[];
+}
+
+export interface GetImageResponse {
+  image: ImageMetaResponse;
+}
+
+export interface UploadImageResponse {
+  image: ImageMetaResponse;
+}
+
+// ============ Export/Import API types ============
+
+export interface ImportResultResponse {
+  imported: Record<string, number>;
+}
