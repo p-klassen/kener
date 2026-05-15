@@ -32,6 +32,7 @@
   let loading = $state(true);
   let saving = $state(false);
   let templates = $state<GeneralEmailTemplate[]>([]);
+  let selectedLocale = $state<string>("");
   let selectedTemplateId = $state<string>("");
 
   // Form state for selected template
@@ -39,14 +40,46 @@
   let templateHtmlBody = $state("");
   let templateTextBody = $state("");
 
-  // Derived: selected template
-  let selectedTemplate = $derived(templates.find((t) => t.template_id === selectedTemplateId));
+  function getLocale(id: string): string {
+    const dotIdx = id.lastIndexOf(".");
+    return dotIdx !== -1 ? id.slice(dotIdx + 1) : "en";
+  }
+
+  function getLocaleName(locale: string): string {
+    try {
+      return new Intl.DisplayNames(["en"], { type: "language" }).of(locale) ?? locale.toUpperCase();
+    } catch {
+      return locale.toUpperCase();
+    }
+  }
+
+  // Derived: unique sorted locales
+  let availableLocales = $derived(
+    [...new Set(templates.map((t) => getLocale(t.template_id)))].sort((a, b) => {
+      // Put "en" first
+      if (a === "en") return -1;
+      if (b === "en") return 1;
+      return a.localeCompare(b);
+    })
+  );
+
+  // Derived: templates filtered by selected locale
+  let filteredTemplates = $derived(
+    selectedLocale ? templates.filter((t) => getLocale(t.template_id) === selectedLocale) : []
+  );
 
   onMount(() => {
     fetchTemplates();
   });
 
-  // Handle template selection change
+  function handleLocaleSelect(locale: string) {
+    selectedLocale = locale;
+    selectedTemplateId = "";
+    templateSubject = "";
+    templateHtmlBody = "";
+    templateTextBody = "";
+  }
+
   function handleTemplateSelect(templateId: string) {
     selectedTemplateId = templateId;
     const template = templates.find((t) => t.template_id === templateId);
@@ -77,10 +110,6 @@
         toast.error(result.error);
       } else {
         templates = result;
-        // Auto-select first template if available
-        if (templates.length > 0 && !selectedTemplateId) {
-          handleTemplateSelect(templates[0].template_id);
-        }
       }
     } catch (error) {
       console.error("Error fetching templates:", error);
@@ -116,7 +145,6 @@
         toast.error(result.error);
       } else {
         toast.success($t("manage.templates.updated_toast"));
-        // Update local state
         const index = templates.findIndex((t) => t.template_id === selectedTemplateId);
         if (index !== -1) {
           templates[index] = {
@@ -135,18 +163,11 @@
     }
   }
 
-  function formatTemplateId(id: string): string {
+  function formatTemplateBase(id: string): string {
     const dotIdx = id.lastIndexOf(".");
-    if (dotIdx !== -1) {
-      const base = id.slice(0, dotIdx);
-      const locale = id.slice(dotIdx + 1).toUpperCase();
-      const title = base.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      return `${title} (${locale})`;
-    }
-    return id.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+    const base = dotIdx !== -1 ? id.slice(0, dotIdx) : id;
+    return base.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
-
-
 </script>
 
 <div class="flex w-full flex-col gap-4 p-4">
@@ -172,32 +193,61 @@
         <Card.Description>{$t("manage.templates.edit_desc")}</Card.Description>
       </Card.Header>
       <Card.Content class="space-y-6">
-        <!-- Template Selector -->
+        <!-- Language Selector -->
         <div class="space-y-2">
-          <Label for="template-select">{$t("manage.templates.select_label")}</Label>
+          <Label>{$t("manage.templates.language_label")}</Label>
           <Select.Root
             type="single"
-            value={selectedTemplateId}
+            value={selectedLocale}
             onValueChange={(value) => {
-              if (value) handleTemplateSelect(value);
+              if (value) handleLocaleSelect(value);
             }}
           >
             <Select.Trigger class="w-full md:w-[400px]">
-              {#if selectedTemplateId}
-                {formatTemplateId(selectedTemplateId)}
+              {#if selectedLocale}
+                {getLocaleName(selectedLocale)}
               {:else}
-                Select a template...
+                {$t("manage.templates.select_language_placeholder")}
               {/if}
             </Select.Trigger>
             <Select.Content>
-              {#each templates as template (template.template_id)}
-                <Select.Item value={template.template_id}>
-                  {formatTemplateId(template.template_id)}
+              {#each availableLocales as locale (locale)}
+                <Select.Item value={locale}>
+                  {getLocaleName(locale)}
                 </Select.Item>
               {/each}
             </Select.Content>
           </Select.Root>
         </div>
+
+        <!-- Template Selector (shown after language selected) -->
+        {#if selectedLocale}
+          <div class="space-y-2">
+            <Label>{$t("manage.templates.select_label")}</Label>
+            <Select.Root
+              type="single"
+              value={selectedTemplateId}
+              onValueChange={(value) => {
+                if (value) handleTemplateSelect(value);
+              }}
+            >
+              <Select.Trigger class="w-full md:w-[400px]">
+                {#if selectedTemplateId}
+                  {formatTemplateBase(selectedTemplateId)}
+                {:else}
+                  {$t("manage.templates.select_placeholder")}
+                {/if}
+              </Select.Trigger>
+              <Select.Content>
+                {#each filteredTemplates as template (template.template_id)}
+                  <Select.Item value={template.template_id}>
+                    {formatTemplateBase(template.template_id)}
+                  </Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
+          </div>
+        {/if}
 
         {#if selectedTemplateId}
           <!-- Subject -->
@@ -243,7 +293,7 @@
         {/if}
       </Card.Content>
       {#if selectedTemplateId}
-        <Card.Footer class="flex justify-end">
+        <Card.Footer class="flex justify-end border-t pt-6">
           <Button onclick={updateTemplate} disabled={saving}>
             {#if saving}
               <Loader class="size-4 animate-spin" />
