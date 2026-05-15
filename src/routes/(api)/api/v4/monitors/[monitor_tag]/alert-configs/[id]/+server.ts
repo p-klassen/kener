@@ -41,14 +41,18 @@ function formatAlertConfig(c: MonitorAlertConfigWithTriggers) {
 }
 
 export const GET: RequestHandler = async ({ locals }) => {
-  // Alert config is validated by middleware and available in locals
-  const response: GetAlertConfigResponse = { alert_config: formatAlertConfig(locals.alertConfig!) };
+  if (!locals.alertConfig) {
+    return json({ error: { code: "NOT_FOUND", message: "Alert config not found" } }, { status: 404 });
+  }
+  const response: GetAlertConfigResponse = { alert_config: formatAlertConfig(locals.alertConfig) };
   return json(response);
 };
 
 export const PATCH: RequestHandler = async ({ locals, request }) => {
-  // Alert config is validated by middleware and available in locals
-  const existing = locals.alertConfig!;
+  if (!locals.alertConfig) {
+    return json({ error: { code: "NOT_FOUND", message: "Alert config not found" } }, { status: 404 });
+  }
+  const existing = locals.alertConfig;
 
   let body: UpdateAlertConfigRequest;
   try {
@@ -111,7 +115,13 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
 };
 
 export const DELETE: RequestHandler = async ({ locals }) => {
-  // Alert config is validated by middleware and available in locals
-  await DeleteMonitorAlertConfig(locals.alertConfig!.id);
+  if (!locals.alertConfig) {
+    return json({ error: { code: "NOT_FOUND", message: "Alert config not found" } }, { status: 404 });
+  }
+  try {
+    await DeleteMonitorAlertConfig(locals.alertConfig.id);
+  } catch {
+    return json({ error: { code: "INTERNAL_ERROR", message: "Operation failed" } }, { status: 500 });
+  }
   return new Response(null, { status: 204 });
 };

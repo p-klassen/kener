@@ -37,7 +37,12 @@ function formatTrigger(t: TriggerRecord) {
 }
 
 export const GET: RequestHandler = async () => {
-  const triggers = await db.getTriggers({});
+  let triggers: Awaited<ReturnType<typeof db.getTriggers>>;
+  try {
+    triggers = await db.getTriggers({});
+  } catch {
+    return json({ error: { code: "INTERNAL_ERROR", message: "Operation failed" } }, { status: 500 });
+  }
   const response: GetTriggersListResponse = { triggers: triggers.map(formatTrigger) };
   return json(response);
 };
