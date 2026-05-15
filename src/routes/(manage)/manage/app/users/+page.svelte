@@ -443,7 +443,7 @@
     return "outline";
   }
 
-  let activeRoles = $derived(roles.filter((r) => r.status === "ACTIVE"));
+  let activeRoles = $derived(roles.filter((r) => r.status === "ACTIVE" && r.id !== "subscriber"));
 
   // Fetch roles
   async function fetchRoles() {
@@ -754,26 +754,6 @@
           <Input id="email" type="email" placeholder={$t("manage.users.email_placeholder")} bind:value={newUser.email} required />
         </div>
 
-        <div class="space-y-2">
-          <Label>{$t("manage.users.roles_label")}</Label>
-          <div class="space-y-2">
-            {#each activeRoles as role (role.id)}
-              <label class="flex items-center gap-2">
-                <Checkbox
-                  checked={newUser.role_ids.includes(role.id)}
-                  onCheckedChange={() => {
-                    newUser.role_ids = toggleRole(role.id, newUser.role_ids);
-                  }}
-                />
-                <span class="text-sm uppercase">{role.role_name}</span>
-              </label>
-            {/each}
-            {#if activeRoles.length === 0}
-              <p class="text-muted-foreground text-sm">{$t("manage.users.no_roles")}</p>
-            {/if}
-          </div>
-        </div>
-
         <!-- Account Type -->
         <div class="space-y-2">
           <Label>{$t("manage.users.account_type_label")}</Label>
@@ -795,6 +775,28 @@
             <p class="text-muted-foreground text-xs">{$t("manage.users.subscriber_no_manage_hint")}</p>
           {/if}
         </div>
+
+        {#if newUser.user_type === "user"}
+          <div class="space-y-2">
+            <Label>{$t("manage.users.roles_label")}</Label>
+            <div class="space-y-2">
+              {#each activeRoles as role (role.id)}
+                <label class="flex items-center gap-2">
+                  <Checkbox
+                    checked={newUser.role_ids.includes(role.id)}
+                    onCheckedChange={() => {
+                      newUser.role_ids = toggleRole(role.id, newUser.role_ids);
+                    }}
+                  />
+                  <span class="text-sm uppercase">{role.role_name}</span>
+                </label>
+              {/each}
+              {#if activeRoles.length === 0}
+                <p class="text-muted-foreground text-sm">{$t("manage.users.no_roles")}</p>
+              {/if}
+            </div>
+          </div>
+        {/if}
 
         {#if creatingUserError}
           <p class="text-destructive text-sm font-medium">{creatingUserError}</p>
@@ -876,6 +878,7 @@
           {/if}
 
           <!-- Update Role -->
+          {#if toEditUser.user_type !== "subscriber"}
           <Card.Root>
             <Card.Content class="p-4">
               <p class="mb-3 text-sm">
@@ -916,6 +919,7 @@
               </Button>
             </Card.Content>
           </Card.Root>
+          {/if}
 
           <!-- Account Type -->
           <Card.Root>

@@ -367,7 +367,13 @@ export const ManualUpdateUserData = async (forUserId: number, data: ManualUserUp
     if (!data.user_type || !["user", "subscriber"].includes(data.user_type)) {
       throw new Error("user_type must be 'user' or 'subscriber'");
     }
-    return await db.updateUserType(forUser.id, data.user_type);
+    await db.updateUserType(forUser.id, data.user_type);
+    if (data.user_type === "subscriber") {
+      await db.updateUserRoles(forUser.id, ["subscriber"]);
+    } else {
+      await db.updateUserRoles(forUser.id, []);
+    }
+    return;
   } else {
     throw new Error(`Unsupported update type: ${data.updateType}`);
   }
@@ -411,18 +417,23 @@ export const GetTotalUserPages = async (limit: number): Promise<number> => {
 //send invitation email to user for account creation
 export const SendInvitationEmail = async (email: string, role_ids: string[], name: string, user_type?: "user" | "subscriber") => {
   const effectiveUserType = user_type ?? "user";
-  if (effectiveUserType === "user" && (!role_ids || role_ids.length === 0)) {
+
+  const effectiveRoleIds = effectiveUserType === "subscriber" ? ["subscriber"] : role_ids;
+
+  if (effectiveUserType === "user" && (!effectiveRoleIds || effectiveRoleIds.length === 0)) {
     throw new Error("At least one role is required");
   }
 
-  // Validate all role_ids exist and are active
-  for (const roleId of (role_ids || [])) {
-    const role = await db.getRoleById(roleId);
-    if (!role) {
-      throw new Error(`Role "${roleId}" does not exist`);
-    }
-    if (role.status !== "ACTIVE") {
-      throw new Error(`Role "${roleId}" is not active`);
+  // Validate all role_ids exist and are active (skip for subscriber — role is system-managed)
+  if (effectiveUserType === "user") {
+    for (const roleId of (effectiveRoleIds || [])) {
+      const role = await db.getRoleById(roleId);
+      if (!role) {
+        throw new Error(`Role "${roleId}" does not exist`);
+      }
+      if (role.status !== "ACTIVE") {
+        throw new Error(`Role "${roleId}" is not active`);
+      }
     }
   }
 
@@ -441,9 +452,9 @@ export const SendInvitationEmail = async (email: string, role_ids: string[], nam
       email: normalizedEmail,
       password_hash: "",
       name: normalizedName,
-      role_ids: role_ids,
+      role_ids: effectiveRoleIds,
       is_active: 0,
-      user_type: user_type ?? "user",
+      user_type: effectiveUserType,
     });
   } catch (error: unknown) {
     // Handle database constraint errors
