@@ -225,6 +225,14 @@ export async function uploadImage(data: ImageUploadData): Promise<{ id: string; 
   };
 }
 
+function formatDateToISO(date: Date | string): string {
+  if (date instanceof Date) {
+    return date.toISOString();
+  }
+  // SQLite returns dates as "2026-01-27 16:07:19" (no T, no Z)
+  return new Date(date.replace(" ", "T") + "Z").toISOString();
+}
+
 export function formatImageMeta(img: ImageRecord) {
   return {
     id: img.id,
@@ -233,6 +241,6 @@ export function formatImageMeta(img: ImageRecord) {
     width: img.width,
     height: img.height,
     size: img.size,
-    created_at: new Date(img.created_at).toISOString(),
+    created_at: formatDateToISO(img.created_at),
   };
 }

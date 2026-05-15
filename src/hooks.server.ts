@@ -30,6 +30,9 @@ const TRIGGER_ID_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?triggers\/(\d+)/;
 // Regex to match alert config id under a monitor
 const ALERT_CONFIG_ID_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?monitors\/[^/]+\/alert-configs\/(\d+)/;
 
+// Regex to match routes with image id parameter
+const IMAGE_ID_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?images\/([^/]+)/;
+
 function isApiRoute(pathname: string): boolean {
   return pathname.startsWith(API_PATH_PREFIX);
 }
@@ -75,6 +78,11 @@ function extractTriggerId(pathname: string): number | null {
 function extractAlertConfigId(pathname: string): number | null {
   const match = pathname.match(ALERT_CONFIG_ID_ROUTE_REGEX);
   return match ? parseInt(match[1], 10) : null;
+}
+
+function extractImageId(pathname: string): string | null {
+  const match = pathname.match(IMAGE_ID_ROUTE_REGEX);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 // Content types that indicate a form submission (mirrors SvelteKit's internal CSRF check scope)
@@ -238,6 +246,23 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
       }
       // Store alert config in locals for use in endpoints
       event.locals.alertConfig = alertConfig;
+    }
+
+    // Validate image id exists for /api/(vX/)?images/:id/* routes
+    const imageId = extractImageId(pathname);
+    if (imageId) {
+      const image = await db.getImageById(imageId);
+      if (!image) {
+        const errorResponse: NotFoundResponse = {
+          error: {
+            code: "NOT_FOUND",
+            message: `Image with id '${imageId}' not found`,
+          },
+        };
+        return json(errorResponse, { status: 404 });
+      }
+      // Store image in locals for use in endpoints
+      event.locals.image = image;
     }
   }
 

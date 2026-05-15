@@ -67,6 +67,10 @@ export interface BadRequestResponse {
   };
 }
 
+export interface InternalServerErrorResponse {
+  error: { code: "INTERNAL_ERROR"; message: string };
+}
+
 // Monitor API types
 export interface MonitorSettings {
   uptime_formula_numerator?: string;

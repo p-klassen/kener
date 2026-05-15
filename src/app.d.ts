@@ -18,6 +18,8 @@ declare global {
       trigger?: import("$lib/server/types/db").TriggerRecord;
       // Set by hooks.server.ts for /api/monitors/:tag/alert-configs/:id/* routes
       alertConfig?: import("$lib/server/types/db").MonitorAlertConfigWithTriggers;
+      // Set by hooks.server.ts for /api/images/:id/* routes
+      image?: import("$lib/server/types/db").ImageRecord;
     }
 
     interface PageData {
