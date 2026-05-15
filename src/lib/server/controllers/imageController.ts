@@ -5,6 +5,13 @@ import db from "../db/db.js";
 import GC from "../../global-constants.js";
 import type { ImageRecord } from "../types/db.js";
 
+export class UploadValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UploadValidationError";
+  }
+}
+
 export interface ImageUploadData {
   base64: string; // base64 encoded image data (without data URI prefix)
   mimeType: string;
@@ -27,7 +34,7 @@ export async function uploadImage(data: ImageUploadData): Promise<{ id: string; 
   let mimeType = data.mimeType;
 
   if (!base64) {
-    throw new Error("Image data is required");
+    throw new UploadValidationError("Image data is required");
   }
 
   // Normalize browser-reported font MIME type aliases to canonical values
@@ -55,17 +62,17 @@ export async function uploadImage(data: ImageUploadData): Promise<{ id: string; 
     "font/ttf", "font/otf", "font/woff", "font/woff2",
   ];
   if (!allowedMimeTypes.includes(mimeType)) {
-    throw new Error(`Invalid image type. Allowed types: ${allowedMimeTypes.join(", ")}`);
+    throw new UploadValidationError(`Invalid image type. Allowed types: ${allowedMimeTypes.join(", ")}`);
   }
 
   // Decode base64 to buffer
   const imageBuffer = Buffer.from(base64, "base64");
   if (!imageBuffer.length) {
-    throw new Error("Invalid image data");
+    throw new UploadValidationError("Invalid image data");
   }
 
   if (imageBuffer.length > GC.MAX_UPLOAD_BYTES) {
-    throw new Error("Image is too large. Maximum upload size is 5MB");
+    throw new UploadValidationError(`Image is too large. Maximum upload size is ${GC.MAX_UPLOAD_BYTES / (1024 * 1024)}MB`);
   }
 
   const normalizedRequestedMime = mimeType === "image/jpg" ? "image/jpeg" : mimeType;
@@ -74,7 +81,7 @@ export async function uploadImage(data: ImageUploadData): Promise<{ id: string; 
 
   // Reject if content looks like SVG but client claims it's not SVG
   if (looksLikeSvg && normalizedRequestedMime !== "image/svg+xml") {
-    throw new Error("Image content does not match the declared MIME type");
+    throw new UploadValidationError("Image content does not match the declared MIME type");
   }
 
   // Store font files as-is, bypassing sharp
@@ -142,21 +149,21 @@ export async function uploadImage(data: ImageUploadData): Promise<{ id: string; 
 
   const detectedMimeType = metadata.format ? formatToMime[metadata.format] : undefined;
   if (!detectedMimeType) {
-    throw new Error("Could not detect a valid image format");
+    throw new UploadValidationError("Could not detect a valid image format");
   }
 
   // HEIC/HEIF files often have .jpg extension (e.g. iPhone photos); allow the mismatch
   const isHeicDetected = detectedMimeType === "image/heic" || detectedMimeType === "image/heif";
   const isHeicRequested = normalizedRequestedMime === "image/heic" || normalizedRequestedMime === "image/heif";
   if (normalizedRequestedMime !== detectedMimeType && !isHeicDetected && !isHeicRequested) {
-    throw new Error("Image MIME type does not match file content");
+    throw new UploadValidationError("Image MIME type does not match file content");
   }
 
   const sourceWidth = metadata.width || maxWidth;
   const sourceHeight = metadata.height || maxHeight;
 
   if (sourceWidth > GC.MAX_IMAGE_DIMENSION || sourceHeight > GC.MAX_IMAGE_DIMENSION) {
-    throw new Error(
+    throw new UploadValidationError(
       `Image dimensions exceed maximum allowed size of ${GC.MAX_IMAGE_DIMENSION}x${GC.MAX_IMAGE_DIMENSION}`,
     );
   }

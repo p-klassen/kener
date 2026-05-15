@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import db from "$lib/server/db/db";
-import { uploadImage, formatImageMeta } from "$lib/server/controllers/imageController";
+import { uploadImage, formatImageMeta, UploadValidationError } from "$lib/server/controllers/imageController";
 import type { GetImagesListResponse, UploadImageResponse, InternalServerErrorResponse } from "$lib/types/api";
 
 export const GET: RequestHandler = async () => {
@@ -66,13 +66,7 @@ export const POST: RequestHandler = async ({ request }) => {
     return json(response, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to upload image";
-    const isValidationError =
-      message.includes("Invalid image") ||
-      message.includes("too large") ||
-      message.includes("does not match") ||
-      message.includes("Image data is required") ||
-      message.includes("Could not detect") ||
-      message.includes("dimensions exceed");
+    const isValidationError = err instanceof UploadValidationError;
     return json(
       { error: { code: isValidationError ? "BAD_REQUEST" : "INTERNAL_ERROR", message } },
       { status: isValidationError ? 400 : 500 },
