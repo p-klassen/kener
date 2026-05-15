@@ -223,6 +223,7 @@ class DbImpl {
   getImageById!: ImagesRepository["getImageById"];
   deleteImage!: ImagesRepository["deleteImage"];
   getAllImages!: ImagesRepository["getAllImages"];
+  getAllImagesWithData!: ImagesRepository["getAllImagesWithData"];
 
   // ============ Pages ============
   createPage!: PagesRepository["createPage"];
@@ -638,6 +639,7 @@ class DbImpl {
     this.getImageById = this.images.getImageById.bind(this.images);
     this.deleteImage = this.images.deleteImage.bind(this.images);
     this.getAllImages = this.images.getAllImages.bind(this.images);
+    this.getAllImagesWithData = this.images.getAllImagesWithData.bind(this.images);
   }
 
   private bindPagesMethods(): void {

@@ -5,6 +5,16 @@ import type { OidcConfig, LdapConfig } from "./authConfigController.js";
 
 export type ExportScope = "config" | "users_groups_roles" | "everything";
 
+type ExportedImage = {
+  id: string;
+  data: string; // base64
+  mime_type: string;
+  original_name: string | null;
+  width: number | null;
+  height: number | null;
+  size: number | null;
+};
+
 type ExportedPageMonitor = {
   monitor_tag: string;
   monitor_settings_json: string | null;
@@ -82,6 +92,7 @@ export interface ExportPayload {
     monitors: ExportedMonitor[];
     pages: ExportedPage[];
     triggers: ExportedTrigger[];
+    images: ExportedImage[];
     auth?: {
       oidc: Omit<OidcConfig, "client_secret">;
       ldap: Omit<LdapConfig, "bind_password">;
@@ -102,11 +113,12 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
   };
 
   if (scope === "config" || scope === "everything") {
-    const [siteData, monitors, pages, triggers, oidcConfig, ldapConfig] = await Promise.all([
+    const [siteData, monitors, pages, triggers, images, oidcConfig, ldapConfig] = await Promise.all([
       db.getAllSiteData(),
       db.getMonitors({}),
       db.getAllPages(),
       db.getTriggers({}),
+      db.getAllImagesWithData(),
       GetOidcConfig(),
       GetLdapConfig(),
     ]);
@@ -156,6 +168,15 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
         external_url: m.external_url,
       })),
       pages: pagesWithMonitors,
+      images: images.map((img) => ({
+        id: img.id,
+        data: img.data,
+        mime_type: img.mime_type,
+        original_name: img.original_name,
+        width: img.width,
+        height: img.height,
+        size: img.size,
+      })),
       triggers: triggers.map((t) => ({
         name: t.name,
         trigger_type: t.trigger_type,
@@ -313,6 +334,24 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
       triggersImported++;
     }
     imported.triggers = triggersImported;
+
+    let imagesImported = 0;
+    for (const img of payload.config.images ?? []) {
+      const existing = await db.getImageById(img.id);
+      if (!existing) {
+        await db.insertImage({
+          id: img.id,
+          data: img.data,
+          mime_type: img.mime_type,
+          original_name: img.original_name ?? null,
+          width: img.width ?? null,
+          height: img.height ?? null,
+          size: img.size ?? null,
+        });
+        imagesImported++;
+      }
+    }
+    imported.images = imagesImported;
 
     if (payload.config.auth) {
       const { oidc, ldap } = payload.config.auth;
