@@ -27,6 +27,9 @@ const PAGE_PATH_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?pages\/([^/]+)/;
 // Regex to match routes with trigger id parameter
 const TRIGGER_ID_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?triggers\/(\d+)/;
 
+// Regex to match alert config id under a monitor
+const ALERT_CONFIG_ID_ROUTE_REGEX = /^\/api\/(?:v\d+\/)?monitors\/[^/]+\/alert-configs\/(\d+)/;
+
 function isApiRoute(pathname: string): boolean {
   return pathname.startsWith(API_PATH_PREFIX);
 }
@@ -66,6 +69,11 @@ function extractPagePath(pathname: string): string | null {
 
 function extractTriggerId(pathname: string): number | null {
   const match = pathname.match(TRIGGER_ID_ROUTE_REGEX);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function extractAlertConfigId(pathname: string): number | null {
+  const match = pathname.match(ALERT_CONFIG_ID_ROUTE_REGEX);
   return match ? parseInt(match[1], 10) : null;
 }
 
@@ -212,6 +220,24 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
       }
       // Store trigger in locals for use in endpoints
       event.locals.trigger = trigger;
+    }
+
+    // Validate alert config id for /api/(vX/)?monitors/:tag/alert-configs/:id/* routes
+    const alertConfigId = extractAlertConfigId(pathname);
+    if (alertConfigId) {
+      const alertConfig = await db.getMonitorAlertConfigWithTriggers(alertConfigId);
+      const monitorTagForCheck = extractMonitorTag(pathname);
+      if (!alertConfig || (monitorTagForCheck && !alertConfig.monitor_tags.includes(monitorTagForCheck))) {
+        const errorResponse: NotFoundResponse = {
+          error: {
+            code: "NOT_FOUND",
+            message: `Alert config with id '${alertConfigId}' not found`,
+          },
+        };
+        return json(errorResponse, { status: 404 });
+      }
+      // Store alert config in locals for use in endpoints
+      event.locals.alertConfig = alertConfig;
     }
   }
 

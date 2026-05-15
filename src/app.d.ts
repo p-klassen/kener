@@ -16,6 +16,8 @@ declare global {
       page?: import("$lib/server/types/db").PageRecord;
       // Set by hooks.server.ts for /api/triggers/:id/* routes
       trigger?: import("$lib/server/types/db").TriggerRecord;
+      // Set by hooks.server.ts for /api/monitors/:tag/alert-configs/:id/* routes
+      alertConfig?: import("$lib/server/types/db").MonitorAlertConfigWithTriggers;
     }
 
     interface PageData {
