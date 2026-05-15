@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Kener API v4",
-    "version": "4.1.0",
-    "description": "OpenAPI specification for Kener self-hosted API v4. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages\n\nNew in v4.1.0: Authentication configuration (OIDC, LDAP) stored under site config keys \"auth.oidc\" and \"auth.ldap\"."
+    "version": "4.2.0",
+    "description": "OpenAPI specification for Kener self-hosted API v4. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages\n\nNew in v4.1.0: Authentication configuration (OIDC, LDAP) stored under site config keys \"auth.oidc\" and \"auth.ldap\".\n\nNew in v4.2.0: Triggers, Alert Configs, Images (full CRUD with upload), and Export/Import endpoints."
   },
   "servers": [
     {
