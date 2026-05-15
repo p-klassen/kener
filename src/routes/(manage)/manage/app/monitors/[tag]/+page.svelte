@@ -18,7 +18,7 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { toast } from "svelte-sonner";
   import { goto } from "$app/navigation";
-  import type { SiteSubMenuOptions } from "$lib/types/site";
+  import type { SiteSubMenuOptions, SiteMonitorDefaults } from "$lib/types/site";
   import { t } from "$lib/stores/i18n";
 
   // Card components
@@ -35,6 +35,15 @@
   let { params }: PageProps = $props();
   const isNew = $derived(params.tag === "new");
 
+  const SYSTEM_MONITOR_DEFAULTS: SiteMonitorDefaults = {
+    uptime_formula_numerator: "up + maintenance",
+    uptime_formula_denominator: "up + maintenance + down + degraded",
+    monitor_status_history_days: { desktop: 90, mobile: 30 },
+    sharing_options: { showShareBadgeMonitor: false, showShareEmbedMonitor: false },
+  };
+
+  let monitorDefaults = $state<SiteMonitorDefaults>(structuredClone(SYSTEM_MONITOR_DEFAULTS));
+
   // Form state
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -48,9 +57,9 @@
   });
 
   // Status history days state
-  let statusHistoryDays = $state({
-    desktop: 90,
-    mobile: 30
+  let statusHistoryDays = $state<{ desktop: number | null; mobile: number | null }>({
+    desktop: null,
+    mobile: null,
   });
 
   // Pages state
@@ -140,8 +149,8 @@
             };
             if (settings.monitor_status_history_days) {
               statusHistoryDays = {
-                desktop: settings.monitor_status_history_days.desktop ?? 90,
-                mobile: settings.monitor_status_history_days.mobile ?? 30
+                desktop: settings.monitor_status_history_days.desktop ?? null,
+                mobile: settings.monitor_status_history_days.mobile ?? null,
               };
             }
           } catch (e) {
@@ -209,11 +218,42 @@
     }
   }
 
+  async function fetchMonitorDefaults() {
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getAllSiteData" }),
+      });
+      const data = await response.json();
+      if (data.monitorDefaults) {
+        const parsed =
+          typeof data.monitorDefaults === "string"
+            ? JSON.parse(data.monitorDefaults)
+            : data.monitorDefaults;
+        monitorDefaults = {
+          ...SYSTEM_MONITOR_DEFAULTS,
+          monitor_status_history_days: {
+            desktop:
+              parsed?.monitor_status_history_days?.desktop ??
+              SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days.desktop,
+            mobile:
+              parsed?.monitor_status_history_days?.mobile ??
+              SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days.mobile,
+          },
+        };
+      }
+    } catch (e) {
+      console.error("Failed to fetch monitor defaults", e);
+    }
+  }
+
   $effect(() => {
     fetchMonitor();
     fetchAvailableMonitors();
     fetchPages();
     getSiteLevelSharingConfig();
+    fetchMonitorDefaults();
   });
 
   let activeAccordionItem = $derived<string>(isNew ? "general" : "configuration");
@@ -368,7 +408,7 @@
           <Accordion.Content class="flex flex-col gap-4 text-balance">
             <!-- Status History Days Card -->
 
-            <StatusHistoryDaysCard bind:monitor {typeData} bind:statusHistoryDays />
+            <StatusHistoryDaysCard bind:monitor {typeData} bind:statusHistoryDays {monitorDefaults} />
           </Accordion.Content>
         </Accordion.Item>
       {/if}
