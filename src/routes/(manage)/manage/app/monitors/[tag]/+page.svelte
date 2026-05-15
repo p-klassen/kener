@@ -231,17 +231,22 @@
           typeof data.monitorDefaults === "string"
             ? JSON.parse(data.monitorDefaults)
             : data.monitorDefaults;
-        monitorDefaults = {
-          ...SYSTEM_MONITOR_DEFAULTS,
-          monitor_status_history_days: {
-            desktop:
-              parsed?.monitor_status_history_days?.desktop ??
-              SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days.desktop,
-            mobile:
-              parsed?.monitor_status_history_days?.mobile ??
-              SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days.mobile,
-          },
-        };
+        if (parsed && typeof parsed === "object") {
+          monitorDefaults = {
+            ...SYSTEM_MONITOR_DEFAULTS,
+            ...parsed,
+            monitor_status_history_days: {
+              desktop:
+                parsed?.monitor_status_history_days?.desktop ??
+                SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days.desktop,
+              mobile:
+                parsed?.monitor_status_history_days?.mobile ??
+                SYSTEM_MONITOR_DEFAULTS.monitor_status_history_days.mobile,
+            },
+          };
+        } else {
+          monitorDefaults = structuredClone(SYSTEM_MONITOR_DEFAULTS);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch monitor defaults", e);
