@@ -45,6 +45,21 @@
     },
     {
       "name": "Maintenance Events"
+    },
+    {
+      "name": "Triggers"
+    },
+    {
+      "name": "Alert Configs"
+    },
+    {
+      "name": "Images"
+    },
+    {
+      "name": "Export"
+    },
+    {
+      "name": "Import"
     }
   ],
   "paths": {
@@ -1685,6 +1700,646 @@
           }
         }
       }
+    },
+    "/api/v4/triggers": {
+      "get": {
+        "tags": [
+          "Triggers"
+        ],
+        "operationId": "listTriggers",
+        "summary": "List triggers",
+        "responses": {
+          "200": {
+            "description": "Trigger list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "triggers"
+                  ],
+                  "properties": {
+                    "triggers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Trigger"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Triggers"
+        ],
+        "operationId": "createTrigger",
+        "summary": "Create trigger",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Trigger created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "trigger"
+                  ],
+                  "properties": {
+                    "trigger": {
+                      "$ref": "#/components/schemas/Trigger"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v4/triggers/{trigger_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TriggerId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Triggers"
+        ],
+        "operationId": "getTrigger",
+        "summary": "Get trigger",
+        "responses": {
+          "200": {
+            "description": "Trigger",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "trigger"
+                  ],
+                  "properties": {
+                    "trigger": {
+                      "$ref": "#/components/schemas/Trigger"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Triggers"
+        ],
+        "operationId": "updateTrigger",
+        "summary": "Update trigger",
+        "description": "Updates a trigger. The `name` field cannot be changed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trigger updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "trigger"
+                  ],
+                  "properties": {
+                    "trigger": {
+                      "$ref": "#/components/schemas/Trigger"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Triggers"
+        ],
+        "operationId": "deleteTrigger",
+        "summary": "Delete trigger",
+        "responses": {
+          "204": {
+            "description": "Trigger deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v4/monitors/{monitor_tag}/alert-configs": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MonitorTag"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Alert Configs"
+        ],
+        "operationId": "listAlertConfigs",
+        "summary": "List alert configs for a monitor",
+        "responses": {
+          "200": {
+            "description": "Alert config list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "alert_configs"
+                  ],
+                  "properties": {
+                    "alert_configs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AlertConfig"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Alert Configs"
+        ],
+        "operationId": "createAlertConfig",
+        "summary": "Create alert config",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Alert config created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "alert_config"
+                  ],
+                  "properties": {
+                    "alert_config": {
+                      "$ref": "#/components/schemas/AlertConfig"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v4/monitors/{monitor_tag}/alert-configs/{alert_config_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MonitorTag"
+        },
+        {
+          "$ref": "#/components/parameters/AlertConfigId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Alert Configs"
+        ],
+        "operationId": "getAlertConfig",
+        "summary": "Get alert config",
+        "responses": {
+          "200": {
+            "description": "Alert config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "alert_config"
+                  ],
+                  "properties": {
+                    "alert_config": {
+                      "$ref": "#/components/schemas/AlertConfig"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Alert Configs"
+        ],
+        "operationId": "updateAlertConfig",
+        "summary": "Update alert config",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlertConfigRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Alert config updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "alert_config"
+                  ],
+                  "properties": {
+                    "alert_config": {
+                      "$ref": "#/components/schemas/AlertConfig"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Alert Configs"
+        ],
+        "operationId": "deleteAlertConfig",
+        "summary": "Delete alert config",
+        "responses": {
+          "204": {
+            "description": "Alert config deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v4/images": {
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "operationId": "listImages",
+        "summary": "List images",
+        "description": "Returns image metadata only. The binary data field is never included in list responses.",
+        "responses": {
+          "200": {
+            "description": "Image list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "images"
+                  ],
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ImageMeta"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "operationId": "uploadImage",
+        "summary": "Upload image",
+        "description": "Uploads an image or font file. Supported types: image/png, image/jpeg, image/webp, image/heic, image/svg+xml, font/ttf, font/otf, font/woff, font/woff2. Maximum size: 2MB.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Image uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "$ref": "#/components/schemas/ImageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v4/images/{image_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ImageId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "operationId": "getImage",
+        "summary": "Get image metadata",
+        "responses": {
+          "200": {
+            "description": "Image metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "$ref": "#/components/schemas/ImageMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Images"
+        ],
+        "operationId": "deleteImage",
+        "summary": "Delete image",
+        "responses": {
+          "204": {
+            "description": "Image deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v4/export": {
+      "get": {
+        "tags": [
+          "Export"
+        ],
+        "operationId": "exportData",
+        "summary": "Export data",
+        "description": "Exports all data as a JSON payload. Use the `scope` parameter to control which data is included.",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "What to export (default: everything)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "config",
+                "users_groups_roles",
+                "everything"
+              ],
+              "default": "everything"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Export payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Full export payload. Structure depends on the requested scope."
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v4/import": {
+      "post": {
+        "tags": [
+          "Import"
+        ],
+        "operationId": "importData",
+        "summary": "Import data",
+        "description": "Imports data from a payload previously exported via GET /api/v4/export. Existing records are updated; new records are created. Users are imported as inactive (passwords are not exported).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Full export payload as returned by GET /api/v4/export"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1758,6 +2413,30 @@
         "required": true,
         "schema": {
           "type": "integer"
+        }
+      },
+      "TriggerId": {
+        "name": "trigger_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "AlertConfigId": {
+        "name": "alert_config_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "ImageId": {
+        "name": "image_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
         }
       }
     },
@@ -2608,6 +3287,371 @@
           "end_date_time": {
             "type": "integer",
             "description": "Must be greater than start_date_time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Trigger": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "trigger_type",
+          "trigger_meta",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "trigger_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_desc": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_meta": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTriggerRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "trigger_type",
+          "trigger_meta"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "trigger_type": {
+            "type": "string"
+          },
+          "trigger_desc": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_meta": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateTriggerRequest": {
+        "type": "object",
+        "properties": {
+          "trigger_type": {
+            "type": "string"
+          },
+          "trigger_desc": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_meta": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AlertConfig": {
+        "type": "object",
+        "required": [
+          "id",
+          "monitor_tags",
+          "alert_for",
+          "alert_value",
+          "failure_threshold",
+          "success_threshold",
+          "create_incident",
+          "is_active",
+          "severity",
+          "trigger_ids",
+          "triggers",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "monitor_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alert_for": {
+            "type": "string",
+            "enum": [
+              "STATUS",
+              "LATENCY",
+              "UPTIME"
+            ]
+          },
+          "alert_value": {
+            "type": "string"
+          },
+          "failure_threshold": {
+            "type": "integer"
+          },
+          "success_threshold": {
+            "type": "integer"
+          },
+          "alert_description": {
+            "type": "string",
+            "nullable": true
+          },
+          "create_incident": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO"
+            ]
+          },
+          "is_active": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "CRITICAL",
+              "WARNING"
+            ]
+          },
+          "trigger_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "trigger_type": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateAlertConfigRequest": {
+        "type": "object",
+        "required": [
+          "alert_for",
+          "alert_value",
+          "failure_threshold",
+          "success_threshold"
+        ],
+        "properties": {
+          "alert_for": {
+            "type": "string",
+            "enum": [
+              "STATUS",
+              "LATENCY",
+              "UPTIME"
+            ]
+          },
+          "alert_value": {
+            "type": "string"
+          },
+          "failure_threshold": {
+            "type": "integer"
+          },
+          "success_threshold": {
+            "type": "integer"
+          },
+          "alert_description": {
+            "type": "string",
+            "nullable": true
+          },
+          "create_incident": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO"
+            ],
+            "default": "NO"
+          },
+          "is_active": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO"
+            ],
+            "default": "YES"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "CRITICAL",
+              "WARNING"
+            ],
+            "default": "CRITICAL"
+          },
+          "trigger_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateAlertConfigRequest": {
+        "type": "object",
+        "properties": {
+          "alert_for": {
+            "type": "string",
+            "enum": [
+              "STATUS",
+              "LATENCY",
+              "UPTIME"
+            ]
+          },
+          "alert_value": {
+            "type": "string"
+          },
+          "failure_threshold": {
+            "type": "integer"
+          },
+          "success_threshold": {
+            "type": "integer"
+          },
+          "alert_description": {
+            "type": "string",
+            "nullable": true
+          },
+          "create_incident": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO"
+            ]
+          },
+          "is_active": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "CRITICAL",
+              "WARNING"
+            ]
+          },
+          "trigger_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ImageMeta": {
+        "type": "object",
+        "required": [
+          "id",
+          "mime_type",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "original_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "width": {
+            "type": "integer",
+            "nullable": true
+          },
+          "height": {
+            "type": "integer",
+            "nullable": true
+          },
+          "size": {
+            "type": "integer",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ImportResult": {
+        "type": "object",
+        "required": [
+          "imported"
+        ],
+        "properties": {
+          "imported": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Counts of imported items per resource type"
           }
         },
         "additionalProperties": false
