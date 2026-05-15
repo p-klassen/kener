@@ -1017,6 +1017,8 @@
     "manage.authentication.oidc_redirect_uri_hint": "Leave blank to use the default: <origin>/account/oidc/callback",
     "manage.authentication.auto_create_users": "Auto-create users",
     "manage.authentication.auto_create_hint": "Automatically create a Kener account on first OIDC/LDAP login.",
+    "manage.authentication.oidc_auto_create_hint": "Automatically create a Kener account on first OIDC login.",
+    "manage.authentication.ldap_auto_create_hint": "Automatically create a Kener account on first LDAP login.",
     "manage.authentication.default_roles": "Default roles for new users",
     "manage.authentication.sync_groups": "Sync groups / roles",
     "manage.authentication.sync_groups_hint": "Map provider groups to Kener roles on every login.",

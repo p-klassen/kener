@@ -460,7 +460,7 @@
           />
           <div>
             <Label for="oidc-auto-create">{$t("manage.authentication.auto_create_users")}</Label>
-            <p class="text-muted-foreground text-xs">{$t("manage.authentication.auto_create_hint")}</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.authentication.oidc_auto_create_hint")}</p>
           </div>
         </div>
 
@@ -777,7 +777,7 @@
           />
           <div>
             <Label for="ldap-auto-create">{$t("manage.authentication.auto_create_users")}</Label>
-            <p class="text-muted-foreground text-xs">{$t("manage.authentication.auto_create_hint")}</p>
+            <p class="text-muted-foreground text-xs">{$t("manage.authentication.ldap_auto_create_hint")}</p>
           </div>
         </div>
 
