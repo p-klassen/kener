@@ -385,22 +385,15 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
     }
     imported.users = usersImported;
 
-    // Import roles — create new, sync permissions for existing non-readonly roles
+    // Import roles — only create new roles, never modify existing role permissions.
+    // Syncing permissions for existing roles via any API key would allow privilege
+    // escalation (a stolen key could grant itself admin rights). Existing roles are
+    // intentionally left unchanged; use the manage UI for role permission edits.
     let rolesImported = 0;
     for (const r of roles ?? []) {
       if (r.readonly) continue;
       const existing = await db.getRoleById(r.id);
-      if (existing) {
-        const currentPerms = await db.getRolePermissions(r.id);
-        const currentPermIds = new Set(currentPerms.map((p) => p.permissions_id));
-        const newPermIds = new Set(r.permissions ?? []);
-        for (const pid of currentPermIds) {
-          if (!newPermIds.has(pid)) await db.removeRolePermission(r.id, pid);
-        }
-        for (const pid of newPermIds) {
-          if (!currentPermIds.has(pid)) await db.addRolePermission(r.id, pid);
-        }
-      } else {
+      if (!existing) {
         await db.insertRole({ id: r.id, role_name: r.role_name });
         for (const pid of r.permissions ?? []) {
           await db.addRolePermission(r.id, pid);
