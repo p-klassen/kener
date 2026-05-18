@@ -181,6 +181,8 @@
     accountDialogOpen = true;
   }
 
+  let logoutForm = $state<HTMLFormElement | null>(null);
+
   async function saveLocale(locale: string) {
     savingLocale = true;
     localeError = "";
@@ -264,20 +266,16 @@
           </DropdownMenu.Item>
         </DropdownMenu.Group>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item>
-          {#snippet child({ props })}
-            <form method="POST" action={clientResolver(resolve, "/account/logout")} class="w-full">
-              <Button {...props} type="submit" variant="ghost" class="w-full justify-start">
-                <LogoutIcon />
-                {$t("manage.user_menu.log_out")}
-              </Button>
-            </form>
-          {/snippet}
+        <DropdownMenu.Item onclick={() => logoutForm?.submit()}>
+          <LogoutIcon />
+          {$t("manage.user_menu.log_out")}
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </Sidebar.MenuItem>
 </Sidebar.Menu>
+
+<form bind:this={logoutForm} method="POST" action={clientResolver(resolve, "/account/logout")} class="hidden"></form>
 
 <Dialog.Root bind:open={accountDialogOpen}>
   <Dialog.Content class="max-w-md">
