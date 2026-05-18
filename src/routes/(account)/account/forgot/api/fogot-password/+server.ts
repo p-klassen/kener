@@ -1,4 +1,4 @@
-import { HashPassword, GenerateToken, VerifyToken, GetAllSiteData } from "$lib/server/controllers/controller.js";
+import { HashPassword, ForgotPasswordJWT, VerifyToken, GetAllSiteData } from "$lib/server/controllers/controller.js";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import db from "$lib/server/db/db.js";
@@ -16,12 +16,12 @@ export const POST: RequestHandler = async ({ request }) => {
 
   let userDB = await db.getUserByEmail(email);
   if (!!!userDB) {
-    let errorMessage = "User does not exist";
-    return json({ error: errorMessage }, { status: 401 });
+    // Return success regardless to prevent user enumeration
+    return json({ success: true });
   }
 
-  // Generate token
-  const token = await GenerateToken({
+  // Generate token with 1-hour cryptographic expiry
+  const token = await ForgotPasswordJWT({
     email: userDB.email,
     generatedAt: Date.now(),
   });

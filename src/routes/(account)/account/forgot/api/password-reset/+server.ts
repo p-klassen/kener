@@ -39,8 +39,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   let userDB = await db.getUserByEmail(email);
   if (!!!userDB) {
-    let errorMessage = "User does not exist";
-    return json({ error: errorMessage }, { status: 401 });
+    return json({ error: "Invalid or expired token" }, { status: 400 });
   }
   // Validate password strength
   if (!ValidatePassword(newPassword)) {

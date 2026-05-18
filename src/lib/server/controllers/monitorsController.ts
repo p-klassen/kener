@@ -6,6 +6,7 @@ import {
   UnparsePercentage,
   UptimeCalculator,
 } from "../tool.js";
+import { timingSafeEqual } from "crypto";
 import { getCache, setCache } from "../cache/cache.js";
 import type {
   MonitorRecordInsert,
@@ -344,7 +345,12 @@ export const RegisterHeartbeat = async (tag: string, secret: string): Promise<st
   try {
     let heartbeatConfig = typeData;
     let heartbeatSecret = heartbeatConfig.secretString;
-    if (heartbeatSecret === secret) {
+    const secretsMatch =
+      heartbeatSecret != null &&
+      secret != null &&
+      heartbeatSecret.length === secret.length &&
+      timingSafeEqual(Buffer.from(heartbeatSecret), Buffer.from(secret));
+    if (secretsMatch) {
       // Store last heartbeat in seconds (DB uses seconds). Heartbeat evaluator tolerates older ms values.
       let nowSec = GetNowTimestampUTC();
 

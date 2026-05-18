@@ -86,11 +86,17 @@ export function InsertKeyValue(key: string, value: string): Promise<number[]> {
   return db.insertOrUpdateSiteData(key, value, f.data_type);
 }
 
+// These keys contain credentials (smtp_pass, resend_api_key) and must never be
+// included in the general site-data payload sent to the manage UI. Dedicated
+// endpoints (getSmtpStatus, getResendStatus) expose only the safe subsets.
+const SENSITIVE_SITE_DATA_KEYS = new Set(["smtp", "resend"]);
+
 export async function GetAllSiteData(): Promise<SiteDataTransformed> {
   let data = await db.getAllSiteData();
   //return all data as key value pairs, transform using data_type
   const transformedData: Record<string, unknown> = {};
   for (const d of data) {
+    if (SENSITIVE_SITE_DATA_KEYS.has(d.key)) continue;
     if (d.data_type === "object") {
       transformedData[d.key] = JSON.parse(d.value);
     } else {

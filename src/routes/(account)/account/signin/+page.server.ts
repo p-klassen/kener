@@ -52,7 +52,7 @@ export const actions: Actions = {
 
     const userDB = await GetUserByEmail(email);
     if (!userDB) {
-      return fail(401, { error: "User does not exist", values: { email } });
+      return fail(401, { error: "Invalid password or Email", values: { email } });
     }
 
     const passwordStored = await GetUserPasswordHashById(userDB.id);

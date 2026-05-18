@@ -145,7 +145,7 @@ export async function GetLayoutServerData(cookies: Cookies, request: Request): P
     announcement: siteData.announcement,
     eventDisplaySettings: siteData.eventDisplaySettings || seedSiteData.eventDisplaySettings,
     socialPreviewImage: siteData.socialPreviewImage,
-    customCSS: siteData.customCSS,
+    customCSS: siteData.customCSS ? siteData.customCSS.replace(/<[^>]*>/g, "") : undefined,
     globalPageVisibilitySettings: siteData.globalPageVisibilitySettings || seedSiteData.globalPageVisibilitySettings,
     dateAndTimeFormat: siteData.dateAndTimeFormat || seedSiteData.dateAndTimeFormat,
     metaSiteTitle: siteData.metaSiteTitle,

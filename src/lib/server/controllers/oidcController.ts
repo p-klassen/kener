@@ -64,9 +64,10 @@ export async function GetOidcAuthorizationUrl(
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
 
-  cookies.set("oidc_state", state, { path: "/", httpOnly: true, maxAge: 600, sameSite: "lax" });
-  cookies.set("oidc_nonce", nonce, { path: "/", httpOnly: true, maxAge: 600, sameSite: "lax" });
-  cookies.set("oidc_code_verifier", codeVerifier, { path: "/", httpOnly: true, maxAge: 600, sameSite: "lax" });
+  const isSecure = process.env.ORIGIN?.startsWith("https://") ?? false;
+  cookies.set("oidc_state", state, { path: "/", httpOnly: true, maxAge: 600, sameSite: "lax", secure: isSecure });
+  cookies.set("oidc_nonce", nonce, { path: "/", httpOnly: true, maxAge: 600, sameSite: "lax", secure: isSecure });
+  cookies.set("oidc_code_verifier", codeVerifier, { path: "/", httpOnly: true, maxAge: 600, sameSite: "lax", secure: isSecure });
 
   const redirectUri = config.redirect_uri || buildDefaultRedirectUri();
   const scopes = config.scopes || "openid email profile";
