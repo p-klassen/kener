@@ -19,6 +19,7 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import CopyIcon from "@lucide/svelte/icons/copy";
   import TrashIcon from "@lucide/svelte/icons/trash-2";
+  import SaveIcon from "@lucide/svelte/icons/save";
   import UserMinusIcon from "@lucide/svelte/icons/user-minus";
   import UserPlusIcon from "@lucide/svelte/icons/user-plus";
   import EyeIcon from "@lucide/svelte/icons/eye";
@@ -622,6 +623,8 @@
       <Button onclick={handleEditRole} disabled={editingRole}>
         {#if editingRole}
           <Spinner class="mr-2 h-4 w-4" />
+        {:else}
+          <SaveIcon class="mr-2 h-4 w-4" />
         {/if}
         {$t("manage.common.save")}
       </Button>
@@ -830,6 +833,8 @@
             <Button onclick={savePermissions} disabled={savingPermissions}>
               {#if savingPermissions}
                 <Spinner class="mr-2 h-4 w-4" />
+              {:else}
+                <SaveIcon class="mr-2 h-4 w-4" />
               {/if}
               {$t("manage.roles.perm_save_button")}
             </Button>
@@ -1024,7 +1029,11 @@
           <div class="flex justify-end gap-2">
             <Button variant="outline" onclick={() => (visibilityRoleId = null)}>{$t("manage.common.cancel")}</Button>
             <Button onclick={saveVisibility} disabled={visSaving}>
-              {#if visSaving}<Spinner class="mr-2 h-4 w-4" />{/if}
+              {#if visSaving}
+                <Spinner class="mr-2 h-4 w-4" />
+              {:else}
+                <SaveIcon class="mr-2 h-4 w-4" />
+              {/if}
               {$t("manage.common.save")}
             </Button>
           </div>

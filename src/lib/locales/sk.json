@@ -1235,6 +1235,9 @@
     "manage.site_config.toast_monitor_defaults_error": "Failed to save monitor defaults",
     "manage.site_config.toast_monitor_apply_error": "Failed to apply monitor defaults",
     "manage.common.prev_page": "Previous page",
-    "manage.common.next_page": "Next page"
+    "manage.common.next_page": "Next page",
+    "subscribe.scope.notify_about": "Notify me about:",
+    "subscribe.scope.all_monitors": "All monitors",
+    "subscribe.scope.specific": "Specific pages / monitors"
   }
 }

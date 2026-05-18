@@ -1225,6 +1225,9 @@
     "manage.templates.select_language_placeholder": "Sprache auswählen...",
     "manage.authentication.oidc_auto_create_hint": "Beim ersten OIDC-Login automatisch ein Kener-Konto anlegen.",
     "manage.authentication.ldap_auto_create_hint": "Beim ersten LDAP-Login automatisch ein Kener-Konto anlegen.",
-    "manage.groups.add_button_short": "Hinzufügen"
+    "manage.groups.add_button_short": "Hinzufügen",
+    "subscribe.scope.notify_about": "Benachrichtige mich über:",
+    "subscribe.scope.all_monitors": "Alle Monitore",
+    "subscribe.scope.specific": "Bestimmte Seiten / Monitore"
   }
 }

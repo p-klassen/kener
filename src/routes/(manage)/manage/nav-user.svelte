@@ -6,6 +6,7 @@
   import UserCircleIcon from "@lucide/svelte/icons/user-circle";
   import CheckIcon from "@lucide/svelte/icons/check";
   import LoaderIcon from "@lucide/svelte/icons/loader";
+  import SaveIcon from "@lucide/svelte/icons/save";
 
   import * as Avatar from "$lib/components/ui/avatar/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -315,6 +316,7 @@
             {:else if nameSuccess}
               <CheckIcon class="size-4" />
             {:else}
+              <SaveIcon class="size-4" />
               {$t("manage.common.save")}
             {/if}
           </Button>
@@ -377,6 +379,7 @@
           {:else if emailSuccess}
             <CheckIcon class="size-4" />
           {:else}
+            <SaveIcon class="size-4" />
             {$t("manage.user_menu.update_email")}
           {/if}
         </Button>
@@ -445,6 +448,7 @@
             <CheckIcon class="size-4" />
             {$t("manage.user_menu.updated")}
           {:else}
+            <SaveIcon class="size-4" />
             {$t("manage.user_menu.update_password")}
           {/if}
         </Button>

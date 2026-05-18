@@ -13,6 +13,7 @@
   import ArrowLeft from "@lucide/svelte/icons/arrow-left";
   import LogOut from "@lucide/svelte/icons/log-out";
   import Loader2 from "@lucide/svelte/icons/loader-2";
+  import SaveIcon from "@lucide/svelte/icons/save";
   import Bell from "@lucide/svelte/icons/bell";
   import AlertTriangle from "@lucide/svelte/icons/alert-triangle";
   import Wrench from "@lucide/svelte/icons/wrench";
@@ -544,15 +545,15 @@
                 </div>
                 {#if incidentsEnabled && (availableMonitors.length > 0 || availablePages.length > 0)}
                   <div class="bg-muted/50 ml-8 space-y-3 rounded-md p-3">
-                    <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
+                    <p class="text-muted-foreground text-xs font-medium">{$t("subscribe.scope.notify_about")}</p>
                     <div class="flex flex-col gap-1">
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
                         <input type="radio" name="incident-scope" value="all" bind:group={incidentScope} />
-                        {$t("All monitors")}
+                        {$t("subscribe.scope.all_monitors")}
                       </label>
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
                         <input type="radio" name="incident-scope" value="specific" bind:group={incidentScope} />
-                        {$t("Specific pages / monitors")}
+                        {$t("subscribe.scope.specific")}
                       </label>
                     </div>
                     {#if incidentScope === "specific"}
@@ -597,8 +598,10 @@
                     <Button size="sm" class="w-full" onclick={() => saveMonitorScope("incidents")} disabled={savingIncidentScope}>
                       {#if savingIncidentScope}
                         <Loader2 class="mr-2 h-3 w-3 animate-spin" />
+                      {:else}
+                        <SaveIcon class="mr-2 h-3 w-3" />
                       {/if}
-                      {$t("Save")}
+                      {$t("manage.common.save")}
                     </Button>
                   </div>
                 {/if}
@@ -675,8 +678,10 @@
                     <Button size="sm" class="w-full" onclick={() => saveMonitorScope("maintenances")} disabled={savingMaintenanceScope}>
                       {#if savingMaintenanceScope}
                         <Loader2 class="mr-2 h-3 w-3 animate-spin" />
+                      {:else}
+                        <SaveIcon class="mr-2 h-3 w-3" />
                       {/if}
-                      {$t("Save")}
+                      {$t("manage.common.save")}
                     </Button>
                   </div>
                 {/if}

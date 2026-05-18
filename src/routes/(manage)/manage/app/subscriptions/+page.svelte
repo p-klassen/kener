@@ -25,6 +25,7 @@
   import Filter from "@lucide/svelte/icons/filter";
   import Pencil from "@lucide/svelte/icons/pencil";
   import Loader from "@lucide/svelte/icons/loader";
+  import SaveIcon from "@lucide/svelte/icons/save";
 
   import type { SubscriptionsConfig } from "$lib/server/types/db.js";
   import AlertCircleIcon from "@lucide/svelte/icons/octagon-alert";
@@ -800,6 +801,8 @@
         <Button onclick={saveScope} disabled={savingScope}>
           {#if savingScope}
             <Loader class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="mr-2 h-4 w-4" />
           {/if}
           {$t("manage.common.save")}
         </Button>
