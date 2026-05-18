@@ -263,7 +263,7 @@
                   <InputGroup.Addon>
                     <MailIcon />
                   </InputGroup.Addon>
-                  <InputGroup.Input id="email" type="email" placeholder="you@example.com" bind:value={email} required />
+                  <InputGroup.Input id="email" type="email" bind:value={email} required />
                 </InputGroup.Root>
               </Field.Field>
             </Field.Group>
