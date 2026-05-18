@@ -1,4 +1,5 @@
 import GC from "../../global-constants.js";
+import vm from "vm";
 // @ts-expect-error - gamedig does not have type declarations
 import { GameDig } from "gamedig";
 import { DefaultGamedigEval, GAMEDIG_SOCKET_TIMEOUT, GAMEDIG_TIMEOUT } from "../../anywhere.js";
@@ -49,13 +50,9 @@ class GamedigCall {
 
     // Eval
     let evalResp: EvalResponse | undefined = undefined;
-    const evalFunction = new Function(
-      "responseTime",
-      "responseRaw",
-      `return (${gamedigEval})(responseTime, responseRaw);`,
-    );
     try {
-      evalResp = await evalFunction(responseTime, responseRaw);
+      const evalContext = vm.createContext({ responseTime, responseRaw, Promise });
+      evalResp = await vm.runInNewContext(`(${gamedigEval})(responseTime, responseRaw)`, evalContext);
     } catch (error: unknown) {
       let errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.length > 200) {

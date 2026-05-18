@@ -1,4 +1,5 @@
-import { randomBytes, createHash } from "crypto";
+import { randomBytes, createHash, createPublicKey } from "crypto";
+import jwt from "jsonwebtoken";
 import db from "../db/db.js";
 import { GenerateToken, CookieConfig, HashPassword } from "./commonController.js";
 import { GetOidcConfig, type OidcConfig, type OidcGroupMapping } from "./authConfigController.js";
@@ -16,6 +17,14 @@ interface OidcProviderMetadata {
 
 // Cache discovery metadata for the session lifetime
 let discoveryCache: { issuer: string; meta: OidcProviderMetadata; fetchedAt: number } | null = null;
+
+function isLocalOrMetadataHost(host: string): boolean {
+  const h = host.toLowerCase().trim();
+  if (h === "localhost" || h === "::1" || h === "0.0.0.0") return true;
+  if (/^127\./.test(h)) return true;
+  if (/^169\.254\./.test(h)) return true;
+  return false;
+}
 
 async function discoverProvider(config: OidcConfig): Promise<OidcProviderMetadata> {
   // Use manually configured endpoints if all provided
@@ -35,6 +44,15 @@ async function discoverProvider(config: OidcConfig): Promise<OidcProviderMetadat
   }
 
   const discoveryUrl = config.issuer_url.replace(/\/$/, "") + "/.well-known/openid-configuration";
+  try {
+    const parsed = new URL(discoveryUrl);
+    if (isLocalOrMetadataHost(parsed.hostname)) {
+      throw new Error("OIDC issuer URL must not point to local or link-local addresses");
+    }
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes("OIDC issuer")) throw e;
+    throw new Error("OIDC issuer URL is not a valid URL");
+  }
   const resp = await fetch(discoveryUrl);
   if (!resp.ok) {
     throw new Error(`OIDC discovery failed: ${resp.status} ${resp.statusText}`);
@@ -42,6 +60,51 @@ async function discoverProvider(config: OidcConfig): Promise<OidcProviderMetadat
   const meta = (await resp.json()) as OidcProviderMetadata;
   discoveryCache = { issuer: config.issuer_url, meta, fetchedAt: now };
   return meta;
+}
+
+// JsonWebKey from DOM lib omits `kid`; extend it for JWKS key selection
+type JwkEntry = JsonWebKey & { kid?: string };
+
+let jwksCache: { uri: string; keys: JwkEntry[]; fetchedAt: number } | null = null;
+
+async function fetchJwks(jwksUri: string): Promise<JwkEntry[]> {
+  const now = Date.now();
+  if (jwksCache && jwksCache.uri === jwksUri && now - jwksCache.fetchedAt < 300_000) {
+    return jwksCache.keys;
+  }
+  const resp = await fetch(jwksUri);
+  if (!resp.ok) throw new Error(`Failed to fetch JWKS: ${resp.status}`);
+  const data = (await resp.json()) as { keys: JwkEntry[] };
+  jwksCache = { uri: jwksUri, keys: data.keys, fetchedAt: now };
+  return data.keys;
+}
+
+async function verifyIdToken(
+  idToken: string,
+  jwksUri: string,
+  clientId: string,
+  expectedNonce: string | undefined,
+): Promise<Record<string, unknown>> {
+  const parts = idToken.split(".");
+  if (parts.length !== 3) throw new Error("Invalid id_token format");
+
+  const header = JSON.parse(Buffer.from(parts[0], "base64url").toString()) as { kid?: string };
+  const keys = await fetchJwks(jwksUri);
+  const jwk = header.kid ? keys.find((k) => k.kid === header.kid) : keys[0];
+  if (!jwk) throw new Error("No matching JWK found for id_token key ID");
+
+  const publicKey = createPublicKey({ key: jwk as JsonWebKey, format: "jwk" });
+
+  const decoded = jwt.verify(idToken, publicKey, {
+    algorithms: ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "PS256", "PS384", "PS512"],
+    audience: clientId,
+  }) as Record<string, unknown>;
+
+  if (expectedNonce && decoded.nonce !== expectedNonce) {
+    throw new Error("OIDC id_token nonce mismatch — possible replay attack");
+  }
+
+  return decoded;
 }
 
 function generateCodeVerifier(): string {
@@ -135,6 +198,11 @@ export async function HandleOidcCallback(
   }
 
   const tokens = (await tokenResp.json()) as { access_token: string; id_token?: string };
+
+  // Verify id_token signature and nonce if present
+  if (tokens.id_token && meta.jwks_uri) {
+    await verifyIdToken(tokens.id_token, meta.jwks_uri, config.client_id, nonce ?? undefined);
+  }
 
   // Fetch user info
   const userInfoResp = await fetch(meta.userinfo_endpoint, {

@@ -5,6 +5,7 @@ import * as cheerio from "cheerio";
 import { DefaultAPIEval } from "../../anywhere.js";
 import version from "../../version.js";
 import https from "https";
+import vm from "vm";
 import { performance } from "node:perf_hooks";
 import type { ApiMonitor, EvalResponse, MonitoringResult } from "../types/monitor.js";
 
@@ -134,14 +135,8 @@ class ApiCall {
     let modules = { cheerio };
 
     try {
-      const evalFunction = new Function(
-        "statusCode",
-        "responseTime",
-        "responseRaw",
-        "modules",
-        `return (${monitorEval})(statusCode, responseTime, responseRaw, modules);`,
-      );
-      evalResp = await evalFunction(statusCode, latency, resp, modules);
+      const evalContext = vm.createContext({ statusCode, responseTime: latency, responseRaw: resp, modules, Promise });
+      evalResp = await vm.runInNewContext(`(${monitorEval})(statusCode, responseTime, responseRaw, modules)`, evalContext);
     } catch (error: unknown) {
       if (error instanceof Error) {
         if (error.message.length > 200) {

@@ -5,6 +5,14 @@ import { GetLdapConfig, type LdapConfig, type LdapGroupMapping } from "./authCon
 import type { UserRecordPublic } from "../types/db.js";
 import { randomBytes } from "crypto";
 
+function isLocalOrMetadataHost(host: string): boolean {
+  const h = host.toLowerCase().trim();
+  if (h === "localhost" || h === "::1" || h === "0.0.0.0") return true;
+  if (/^127\./.test(h)) return true;
+  if (/^169\.254\./.test(h)) return true;
+  return false;
+}
+
 export async function AuthenticateWithLdap(
   username: string,
   password: string,
@@ -12,6 +20,7 @@ export async function AuthenticateWithLdap(
   const config = await GetLdapConfig();
   if (!config.enabled) throw new Error("LDAP is not enabled");
   if (!config.host) throw new Error("LDAP host is not configured");
+  if (isLocalOrMetadataHost(config.host)) throw new Error("LDAP host must not be a local or link-local address");
 
   const url = config.use_tls
     ? `ldaps://${config.host}:${config.port || 636}`
@@ -181,6 +190,9 @@ function escapeLdapFilter(value: string): string {
 }
 
 export async function TestLdapConnection(config: LdapConfig): Promise<{ success: boolean; message: string }> {
+  if (!config.host || isLocalOrMetadataHost(config.host)) {
+    return { success: false, message: "LDAP host must not be a local or link-local address" };
+  }
   const url = config.use_tls
     ? `ldaps://${config.host}:${config.port || 636}`
     : `ldap://${config.host}:${config.port || 389}`;

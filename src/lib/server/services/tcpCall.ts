@@ -1,4 +1,5 @@
 import { TCP } from "../ping.js";
+import vm from "vm";
 import GC from "../../global-constants.js";
 import { DefaultTCPEval } from "../../anywhere.js";
 import type { TcpMonitor, MonitoringResult, EvalResponse } from "../types/monitor.js";
@@ -43,8 +44,8 @@ class TcpCall {
     let evalResp: EvalResponse | undefined = undefined;
 
     try {
-      const evalFunction = new Function("arrayOfPings", `return (${tcpEval})(arrayOfPings);`);
-      evalResp = await evalFunction(arrayOfPings);
+      const evalContext = vm.createContext({ arrayOfPings, Promise });
+      evalResp = await vm.runInNewContext(`(${tcpEval})(arrayOfPings)`, evalContext);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       console.log(`Error in tcpEval for ${tag}`, message);

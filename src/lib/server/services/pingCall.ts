@@ -1,4 +1,5 @@
 import { Ping } from "../ping.js";
+import vm from "vm";
 import GC from "../../global-constants.js";
 import { DefaultPingEval } from "../../anywhere.js";
 import type { PingMonitor, MonitoringResult, EvalResponse } from "../types/monitor.js";
@@ -37,8 +38,8 @@ class PingCall {
     let evalResp: EvalResponse | undefined = undefined;
 
     try {
-      const evalFunction = new Function("arrayOfPings", `return (${pingEval})(arrayOfPings);`);
-      evalResp = await evalFunction(arrayOfPings);
+      const evalContext = vm.createContext({ arrayOfPings, Promise });
+      evalResp = await vm.runInNewContext(`(${pingEval})(arrayOfPings)`, evalContext);
     } catch (error: unknown) {
       console.log(`Error in pingEval for ${tag}`, (error as Error).message);
       return {
