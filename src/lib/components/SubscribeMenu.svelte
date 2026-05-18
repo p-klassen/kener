@@ -625,15 +625,15 @@
                 </div>
                 {#if maintenancesEnabled && (availableMonitors.length > 0 || availablePages.length > 0)}
                   <div class="bg-muted/50 ml-8 space-y-3 rounded-md p-3">
-                    <p class="text-muted-foreground text-xs font-medium">{$t("Notify me about:")}</p>
+                    <p class="text-muted-foreground text-xs font-medium">{$t("subscribe.scope.notify_about")}</p>
                     <div class="flex flex-col gap-1">
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
                         <input type="radio" name="maintenance-scope" value="all" bind:group={maintenanceScope} />
-                        {$t("All monitors")}
+                        {$t("subscribe.scope.all_monitors")}
                       </label>
                       <label class="flex cursor-pointer items-center gap-2 text-sm">
                         <input type="radio" name="maintenance-scope" value="specific" bind:group={maintenanceScope} />
-                        {$t("Specific pages / monitors")}
+                        {$t("subscribe.scope.specific")}
                       </label>
                     </div>
                     {#if maintenanceScope === "specific"}
