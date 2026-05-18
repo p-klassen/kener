@@ -11,8 +11,15 @@ import db from "$lib/server/db/db.js";
 import { GetGeneralEmailTemplateById } from "$lib/server/controllers/generalTemplateController";
 import { siteDataToVariables } from "$lib/server/notification/notification_utils";
 import sendEmail from "$lib/server/notification/email_notification.js";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 
 export const POST: RequestHandler = async ({ request }) => {
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit("password-reset", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
+  if (!rl.allowed) {
+    return json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const body = await request.json();
   const { receivedToken, newPassword } = body;
 

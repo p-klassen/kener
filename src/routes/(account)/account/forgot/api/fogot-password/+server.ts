@@ -5,8 +5,15 @@ import db from "$lib/server/db/db.js";
 import { GetGeneralEmailTemplateByIdAndLocale } from "$lib/server/controllers/generalTemplateController";
 import { siteDataToVariables } from "$lib/server/notification/notification_utils";
 import sendEmail from "$lib/server/notification/email_notification.js";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 
 export const POST: RequestHandler = async ({ request }) => {
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit("forgot-password", ip, { windowMs: 15 * 60 * 1000, maxRequests: 5 });
+  if (!rl.allowed) {
+    return json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
+
   const body = await request.json();
   const { email } = body;
 

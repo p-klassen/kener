@@ -10,6 +10,7 @@ import {
 import { VerifyPassword, GenerateToken, CookieConfig } from "$lib/server/controllers/commonController";
 import { AuthenticateWithLdap } from "$lib/server/controllers/ldapController.js";
 import { GetOidcConfig, GetLdapConfig } from "$lib/server/controllers/authConfigController.js";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 import constants from "$lib/global-constants";
 import serverResolve from "$lib/server/resolver.js";
 
@@ -37,6 +38,12 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 
 export const actions: Actions = {
   login: async ({ request, cookies }) => {
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit("login", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
+    if (!rl.allowed) {
+      return fail(429, { error: "Too many login attempts. Please try again later.", values: { email: "" } });
+    }
+
     const formData = await request.formData();
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
@@ -101,6 +108,12 @@ export const actions: Actions = {
     throw redirect(302, serverResolve(loginPermissions.size > 0 ? "/manage/app/site-configurations" : "/"));
   },
   ldap: async ({ request, cookies }) => {
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit("ldap-login", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
+    if (!rl.allowed) {
+      return fail(429, { error: "Too many login attempts. Please try again later.", values: { ldap_username: "" } });
+    }
+
     const formData = await request.formData();
     const username = String(formData.get("ldap_username") ?? "").trim();
     const password = String(formData.get("ldap_password") ?? "");
