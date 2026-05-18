@@ -162,9 +162,6 @@
     <NotificationsPopover {eventsPath} monitorTags={monitor_tags} compact={true} />
     {#if loggedInUser}
       <div class="flex items-center gap-1">
-        <span class="text-foreground/60 hidden text-xs sm:inline">
-          {$t("manage.users.logged_in_as")} <strong>{loggedInUser.name}</strong>
-        </span>
         {#if loginDetails}
           <Button
             size="sm"
@@ -181,7 +178,7 @@
           variant="outline"
           class="bg-background/80 dark:bg-background/70 border-foreground/10 rounded-full border text-xs shadow-none backdrop-blur-md"
         >
-          {$t("manage.user_menu.log_out")}
+          {loggedInUser.name} – {$t("manage.user_menu.log_out")}
         </Button>
       </div>
     {/if}

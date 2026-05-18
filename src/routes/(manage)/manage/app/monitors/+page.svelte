@@ -253,12 +253,12 @@
               </Table.Cell>
               <Table.Cell>
                 <Badge variant={(data.status || "INACTIVE") === "ACTIVE" ? "default" : "destructive"}>
-                  {data.status || "INACTIVE"}
+                  {(data.status || "INACTIVE") === "ACTIVE" ? $t("manage.monitors.status_active") : $t("manage.monitors.status_inactive")}
                 </Badge>
               </Table.Cell>
               <Table.Cell>
                 <Badge variant={data.is_hidden === "YES" ? "destructive" : "outline"}>
-                  {data.is_hidden === "YES" ? "YES" : "NO"}
+                  {data.is_hidden === "YES" ? $t("manage.common.yes") : $t("manage.common.no")}
                 </Badge>
               </Table.Cell>
               <Table.Cell>
@@ -284,7 +284,7 @@
         </p>
         {#if totalPages > 1}
           <div class="flex items-center gap-2">
-            <Button variant="outline" size="icon" disabled={pageNo === 1} onclick={() => goToPage(pageNo - 1)}>
+            <Button variant="outline" size="icon" aria-label={$t("manage.common.prev_page")} disabled={pageNo === 1} onclick={() => goToPage(pageNo - 1)}>
               <ChevronLeftIcon class="size-4" />
             </Button>
             <div class="flex items-center gap-1">
@@ -316,7 +316,7 @@
                 </Button>
               {/if}
             </div>
-            <Button variant="outline" size="icon" disabled={pageNo === totalPages} onclick={() => goToPage(pageNo + 1)}>
+            <Button variant="outline" size="icon" aria-label={$t("manage.common.next_page")} disabled={pageNo === totalPages} onclick={() => goToPage(pageNo + 1)}>
               <ChevronRightIcon class="size-4" />
             </Button>
           </div>

@@ -12,6 +12,7 @@
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
   import type { PageProps } from "./$types";
 
   let { data, form }: PageProps = $props();
@@ -39,25 +40,23 @@
 </script>
 
 <svelte:head>
-  <title>{!isAdminAccountCreated ? "Create Admin Account" : "Sign In"}</title>
+  <title>{!isAdminAccountCreated ? $t("account.signin.title_create") : $t("account.signin.title_signin")}</title>
 </svelte:head>
 <div class="flex min-h-screen items-center justify-center p-4">
   <Card.Root class="kener-card w-full max-w-md">
     <Card.Header>
-      <Card.Title>{!isAdminAccountCreated ? "Create Admin Account" : "Sign In"}</Card.Title>
+      <Card.Title>{!isAdminAccountCreated ? $t("account.signin.title_create") : $t("account.signin.title_signin")}</Card.Title>
       <Card.Description>
-        {!isAdminAccountCreated
-          ? "Set up your admin account to get started"
-          : "Enter your credentials to access the dashboard"}
+        {!isAdminAccountCreated ? $t("account.signin.desc_create") : $t("account.signin.desc_signin")}
       </Card.Description>
     </Card.Header>
     <Card.Content>
       {#if !isSetupComplete}
         <Alert.Root variant="destructive">
           <AlertCircleIcon />
-          <Alert.Title>Set up not completed.</Alert.Title>
+          <Alert.Title>{$t("account.signin.setup_incomplete_title")}</Alert.Title>
           <Alert.Description>
-            <p>Please make sure to set the below environment variables:</p>
+            <p>{$t("account.signin.setup_incomplete_desc")}</p>
             <ul class="list-inside list-disc text-sm">
               <li>KENER_SECRET_KEY</li>
               <li>ORIGIN</li>
@@ -69,7 +68,7 @@
               class="text-destructive w-full justify-start underline"
               href="https://kener.ing/docs/v4/setup/environment-variables"
             >
-              Go to docs
+              {$t("account.signin.go_to_docs")}
             </Button>
           </Alert.Description>
         </Alert.Root>
@@ -77,7 +76,7 @@
         {#if oidcError}
           <Alert.Root variant="destructive" class="mb-4">
             <AlertCircleIcon />
-            <Alert.Title>SSO Login failed</Alert.Title>
+            <Alert.Title>{$t("account.signin.sso_failed_title")}</Alert.Title>
             <Alert.Description>{oidcError}</Alert.Description>
           </Alert.Root>
         {/if}
@@ -103,7 +102,7 @@
                 onclick={() => (authMode = authMode === "ldap" ? "local" : "ldap")}
               >
                 <LockIcon class="mr-2 h-4 w-4" />
-                {authMode === "ldap" ? "Use email/password instead" : "Sign in with LDAP/AD"}
+                {authMode === "ldap" ? $t("account.signin.ldap_toggle_local") : $t("account.signin.ldap_toggle")}
               </Button>
             {/if}
           </div>
@@ -111,7 +110,7 @@
           {#if (oidcEnabled || ldapEnabled) && authMode === "local"}
             <div class="relative mb-4 flex items-center gap-2">
               <div class="border-border flex-1 border-t"></div>
-              <span class="text-muted-foreground text-xs">or use email</span>
+              <span class="text-muted-foreground text-xs">{$t("account.signin.or_use_email")}</span>
               <div class="border-border flex-1 border-t"></div>
             </div>
           {/if}
@@ -126,28 +125,28 @@
             {#if form?.error}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
-                <Alert.Title>Login failed</Alert.Title>
+                <Alert.Title>{$t("account.signin.login_failed_title")}</Alert.Title>
                 <Alert.Description>{form.error}</Alert.Description>
               </Alert.Root>
             {/if}
 
             <Field.Group>
               <Field.Field>
-                <Field.Label for="ldap_username">Username</Field.Label>
+                <Field.Label for="ldap_username">{$t("account.signin.username_label")}</Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon><UserIcon /></InputGroup.Addon>
                   <InputGroup.Input
                     id="ldap_username"
                     name="ldap_username"
                     type="text"
-                    placeholder="username"
+                    placeholder={$t("account.signin.username_placeholder")}
                     required
                   />
                 </InputGroup.Root>
               </Field.Field>
 
               <Field.Field>
-                <Field.Label for="ldap_password">Password</Field.Label>
+                <Field.Label for="ldap_password">{$t("account.signin.password_label")}</Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon><LockIcon /></InputGroup.Addon>
                   <InputGroup.Input
@@ -161,6 +160,7 @@
                   <InputGroup.Addon align="inline-end">
                     <InputGroup.Button
                       type="button"
+                      aria-label={showLdapPassword ? "Hide password" : "Show password"}
                       size="icon-xs"
                       onclick={() => (showLdapPassword = !showLdapPassword)}
                     >
@@ -177,7 +177,7 @@
 
             <div class="mt-6">
               <Button type="submit" class="w-full" disabled={ldapLoading}>
-                {ldapLoading ? "Signing In..." : "Sign In with LDAP"}
+                {ldapLoading ? $t("account.signin.signing_in") : $t("account.signin.ldap_signin_button")}
               </Button>
             </div>
           </form>
@@ -190,7 +190,7 @@
             {#if form?.error}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
-                <Alert.Title>{!isAdminAccountCreated ? "Signup failed" : "Login failed"}</Alert.Title>
+                <Alert.Title>{!isAdminAccountCreated ? $t("account.signin.signup_failed_title") : $t("account.signin.login_failed_title")}</Alert.Title>
                 <Alert.Description>{form.error}</Alert.Description>
               </Alert.Root>
             {/if}
@@ -198,14 +198,14 @@
             <Field.Group>
               {#if !isAdminAccountCreated}
                 <Field.Field>
-                  <Field.Label for="name">Name</Field.Label>
+                  <Field.Label for="name">{$t("account.signin.name_label")}</Field.Label>
                   <InputGroup.Root>
                     <InputGroup.Addon><UserIcon /></InputGroup.Addon>
                     <InputGroup.Input
                       id="name"
                       name="name"
                       type="text"
-                      placeholder="Your name"
+                      placeholder={$t("account.signin.name_placeholder")}
                       value={nameValue}
                       required
                     />
@@ -214,14 +214,14 @@
               {/if}
 
               <Field.Field class="relative flex flex-col gap-1">
-                <Field.Label for="email">Email</Field.Label>
+                <Field.Label for="email">{$t("account.signin.email_label")}</Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon><MailIcon /></InputGroup.Addon>
                   <InputGroup.Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={$t("account.signin.email_placeholder")}
                     value={emailValue}
                     required
                   />
@@ -230,14 +230,14 @@
 
               <Field.Field class="relative flex flex-col gap-1">
                 <Field.Label for="password" class="relative">
-                  Password
+                  {$t("account.signin.password_label")}
                   <Button
                     variant="link"
                     size="sm"
                     class="text-muted-foreground absolute top-0 right-0 h-auto p-0 text-xs"
                     href="/account/forgot"
                   >
-                    Forgot?
+                    {$t("account.signin.forgot_password")}
                   </Button>
                 </Field.Label>
                 <InputGroup.Root>
@@ -268,7 +268,7 @@
                 </InputGroup.Root>
                 {#if !isAdminAccountCreated}
                   <Field.Description>
-                    Password must contain at least 8 characters, one uppercase, one lowercase, and one number.
+                    {$t("account.signin.password_hint")}
                   </Field.Description>
                 {/if}
               </Field.Field>
@@ -277,9 +277,9 @@
             <div class="mt-6">
               <Button type="submit" class="w-full" disabled={loading}>
                 {#if loading}
-                  {!isAdminAccountCreated ? "Creating Account..." : "Signing In..."}
+                  {!isAdminAccountCreated ? $t("account.signin.creating_account") : $t("account.signin.signing_in")}
                 {:else}
-                  {!isAdminAccountCreated ? "Create Account" : "Sign In"}
+                  {!isAdminAccountCreated ? $t("account.signin.create_account_button") : $t("account.signin.signin_button")}
                 {/if}
               </Button>
             </div>

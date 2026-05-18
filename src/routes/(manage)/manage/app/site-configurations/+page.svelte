@@ -334,7 +334,7 @@
         }
       }
     } catch (e) {
-      toast.error("Failed to load site data");
+      toast.error($t("manage.site_config.toast_load_error"));
     } finally {
       loading = false;
     }
@@ -361,10 +361,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Site information saved successfully");
+        toast.success($t("manage.site_config.toast_site_info_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save site information");
+      toast.error($t("manage.site_config.toast_site_info_error"));
     } finally {
       savingSiteInfo = false;
     }
@@ -386,10 +386,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Logo saved successfully");
+        toast.success($t("manage.site_config.toast_logo_save_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save logo");
+      toast.error($t("manage.site_config.toast_logo_save_error"));
     } finally {
       savingLogo = false;
     }
@@ -411,10 +411,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Favicon saved successfully");
+        toast.success($t("manage.site_config.toast_favicon_save_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save favicon");
+      toast.error($t("manage.site_config.toast_favicon_save_error"));
     } finally {
       savingFavicon = false;
     }
@@ -440,10 +440,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Social preview & SEO settings saved successfully");
+        toast.success($t("manage.site_config.toast_seo_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save social preview & SEO settings");
+      toast.error($t("manage.site_config.toast_seo_error"));
     } finally {
       savingSocialPreviewImage = false;
     }
@@ -470,10 +470,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Navigation saved successfully");
+        toast.success($t("manage.site_config.toast_nav_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save navigation");
+      toast.error($t("manage.site_config.toast_nav_error"));
     } finally {
       savingNav = false;
     }
@@ -494,10 +494,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Sub menu options saved successfully");
+        toast.success($t("manage.site_config.toast_submenu_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save sub menu options");
+      toast.error($t("manage.site_config.toast_submenu_error"));
     } finally {
       savingSubMenuOptions = false;
     }
@@ -524,10 +524,10 @@
         toast.error(result.error);
       } else {
         globalPageVisibilitySettings = payload;
-        toast.success("Global page visibility settings saved successfully");
+        toast.success($t("manage.site_config.toast_visibility_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save global page visibility settings");
+      toast.error($t("manage.site_config.toast_visibility_error"));
     } finally {
       savingGlobalPageVisibilitySettings = false;
     }
@@ -555,10 +555,10 @@
         toast.error(result.error);
       } else {
         dataRetentionPolicy.retentionDays = safeRetentionDays;
-        toast.success("Data retention policy saved successfully");
+        toast.success($t("manage.site_config.toast_retention_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save data retention policy");
+      toast.error($t("manage.site_config.toast_retention_error"));
     } finally {
       savingDataRetentionPolicy = false;
     }
@@ -580,10 +580,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Event display settings saved successfully");
+        toast.success($t("manage.site_config.toast_events_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save event display settings");
+      toast.error($t("manage.site_config.toast_events_error"));
     } finally {
       savingEventDisplaySettings = false;
     }
@@ -623,10 +623,10 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Sitemap settings saved successfully");
+        toast.success($t("manage.site_config.toast_sitemap_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save sitemap settings");
+      toast.error($t("manage.site_config.toast_sitemap_error"));
     } finally {
       savingSitemap = false;
     }
@@ -635,7 +635,7 @@
   async function saveMaintenanceNotificationSettings() {
     const bufferHours = Number(maintenanceNotificationSettings.reminder_buffer_hours);
     if (!Number.isFinite(bufferHours) || bufferHours < 1) {
-      toast.error("Reminder buffer hours must be a number of at least 1");
+      toast.error($t("manage.site_config.toast_reminder_error"));
       return;
     }
     savingMaintenanceNotificationSettings = true;
@@ -663,10 +663,10 @@
         toast.error(result.error);
       } else {
         maintenanceNotificationSettings.reminder_buffer_hours = payload.reminder_buffer_hours;
-        toast.success("Maintenance notification settings saved successfully");
+        toast.success($t("manage.site_config.toast_maint_saved"));
       }
     } catch (e) {
-      toast.error("Failed to save maintenance notification settings");
+      toast.error($t("manage.site_config.toast_maint_error"));
     } finally {
       savingMaintenanceNotificationSettings = false;
     }
@@ -680,13 +680,13 @@
     // Validate file type
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Invalid file type. Allowed: PNG, JPG, SVG, WebP");
+      toast.error($t("manage.site_config.toast_invalid_file"));
       return;
     }
 
     // Validate file size (max 2MB)
     if (file.size > GC.MAX_UPLOAD_BYTES) {
-      toast.error(`File too large. Maximum size is ${GC.MAX_UPLOAD_BYTES / (1024 * 1024)}MB`);
+      toast.error($t("manage.site_config.toast_file_too_large", { size: String(GC.MAX_UPLOAD_BYTES / (1024 * 1024)) }));
       return;
     }
 
@@ -730,12 +730,22 @@
         } else {
           siteData.favicon = result.url;
         }
-        toast.success(
-          `${type === "logo" ? "Logo" : type === "favicon" ? "Favicon" : "Social preview image"} uploaded successfully`
-        );
+        if (type === "logo") {
+          toast.success($t("manage.site_config.toast_logo_uploaded"));
+        } else if (type === "favicon") {
+          toast.success($t("manage.site_config.toast_favicon_uploaded"));
+        } else {
+          toast.success($t("manage.site_config.toast_seo_uploaded"));
+        }
       }
     } catch (e) {
-      toast.error(`Failed to upload ${type}`);
+      if (type === "logo") {
+        toast.error($t("manage.site_config.toast_upload_logo_error"));
+      } else if (type === "favicon") {
+        toast.error($t("manage.site_config.toast_upload_favicon_error"));
+      } else {
+        toast.error($t("manage.site_config.toast_upload_seo_error"));
+      }
     } finally {
       if (type === "logo") {
         uploadingLogo = false;
@@ -755,7 +765,7 @@
     if (!file) return;
 
     if (file.size > 102400) {
-      toast.error("File size should be less than 100KB");
+      toast.error($t("manage.site_config.toast_icon_size_error"));
       return;
     }
 
@@ -784,7 +794,7 @@
         nav[index].iconURL = result.url;
       }
     } catch (e) {
-      toast.error("Failed to upload icon");
+      toast.error($t("manage.site_config.toast_icon_error"));
     } finally {
       nav[index].uploading = false;
     }
@@ -840,7 +850,7 @@
     const mobile = Number(pageDefaults.monitor_status_history_days.mobile);
     if (!Number.isFinite(desktop) || desktop < 1 || desktop > 365 ||
         !Number.isFinite(mobile)  || mobile < 1  || mobile > 365) {
-      toast.error("History days must be between 1 and 365");
+      toast.error($t("manage.site_config.toast_history_range_error"));
       return;
     }
     savingPageDefaults = true;
@@ -867,7 +877,7 @@
         }
       }
     } catch {
-      toast.error("Failed to save page defaults");
+      toast.error($t("manage.site_config.toast_page_defaults_error"));
     } finally {
       savingPageDefaults = false;
     }
@@ -891,7 +901,7 @@
         toast.success($t("manage.site_config.page_defaults_apply_success"));
       }
     } catch {
-      toast.error("Failed to apply page defaults");
+      toast.error($t("manage.site_config.toast_apply_defaults_error"));
     } finally {
       applyingPageDefaults = false;
       showApplyAllConfirm = false;
@@ -924,7 +934,7 @@
         }
       }
     } catch {
-      toast.error("Failed to save monitor defaults");
+      toast.error($t("manage.site_config.toast_monitor_defaults_error"));
     } finally {
       savingMonitorDefaults = false;
     }
@@ -948,7 +958,7 @@
         toast.success($t("manage.site_config.monitor_defaults_apply_success"));
       }
     } catch {
-      toast.error("Failed to apply monitor defaults");
+      toast.error($t("manage.site_config.toast_monitor_apply_error"));
     } finally {
       applyingMonitorDefaults = false;
       showApplyAllMonitorConfirm = false;
