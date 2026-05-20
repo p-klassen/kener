@@ -1343,6 +1343,12 @@
     "account.invitation.err_expired": "This invitation link has expired. Please ask your administrator to send a new one.",
     "account.invitation.err_no_user": "No invitation found for this email address.",
     "account.invitation.err_already_accepted": "This invitation has already been accepted. Please sign in instead.",
-    "page.logo_alt": "Page Logo"
+    "page.logo_alt": "Page Logo",
+    "account.forgot.err_rate_limited": "Too many requests. Please try again later.",
+    "account.forgot.err_template_not_found": "Email template not found. Please contact support.",
+    "account.forgot.err_invalid_token": "Invalid or expired reset link. Please request a new one.",
+    "account.forgot.err_token_expired": "Reset link has expired. Please request a new password reset.",
+    "account.forgot.err_password_invalid": "Password does not meet the requirements.",
+    "page.meta.title_fallback": "Status Page"
   }
 }

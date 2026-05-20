@@ -1343,6 +1343,12 @@
     "account.invitation.err_expired": "Dieser Einladungslink ist abgelaufen. Bitte bitten Sie Ihren Administrator, einen neuen zu senden.",
     "account.invitation.err_no_user": "Keine Einladung für diese E-Mail-Adresse gefunden.",
     "account.invitation.err_already_accepted": "Diese Einladung wurde bereits angenommen. Bitte melden Sie sich an.",
-    "page.logo_alt": "Seitenlogo"
+    "page.logo_alt": "Seitenlogo",
+    "account.forgot.err_rate_limited": "Zu viele Anfragen. Bitte versuche es später noch einmal.",
+    "account.forgot.err_template_not_found": "E-Mail-Vorlage nicht gefunden. Bitte kontaktiere den Support.",
+    "account.forgot.err_invalid_token": "Ungültiger oder abgelaufener Reset-Link. Bitte fordere einen neuen an.",
+    "account.forgot.err_token_expired": "Reset-Link ist abgelaufen. Bitte fordere eine neue Passwortzurücksetzung an.",
+    "account.forgot.err_password_invalid": "Das Passwort erfüllt nicht die Anforderungen.",
+    "page.meta.title_fallback": "Statusseite"
   }
 }

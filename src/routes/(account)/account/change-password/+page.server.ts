@@ -30,11 +30,11 @@ export const actions: Actions = {
     if (!newPassword || !confirmPassword) {
       return fail(400, { errorKey: "account.change_password.err_fields_required" });
     }
-    if (!ValidatePassword(newPassword)) {
-      return fail(400, { errorKey: "account.change_password.err_password_invalid" });
-    }
     if (newPassword !== confirmPassword) {
       return fail(400, { errorKey: "account.change_password.err_passwords_no_match" });
+    }
+    if (!ValidatePassword(newPassword)) {
+      return fail(400, { errorKey: "account.change_password.err_password_invalid" });
     }
 
     const passwordHash = await HashPassword(newPassword);

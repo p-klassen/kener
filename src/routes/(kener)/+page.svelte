@@ -121,8 +121,8 @@
     <title>{data.pageDetails.page_title} - {data.siteName}</title>
     <meta property="og:title" content={data.pageDetails.page_title + " - " + data.siteName} />
   {:else}
-    <title>{data.siteName} - Status Page</title>
-    <meta property="og:title" content={data.siteName + " - Status Page"} />
+    <title>{data.siteName} - {$t("page.meta.title_fallback")}</title>
+    <meta property="og:title" content={data.siteName + " - " + $t("page.meta.title_fallback")} />
   {/if}
   {#if data.metaPageDescription}
     <meta name="description" content={data.metaPageDescription} />
@@ -131,8 +131,8 @@
     <meta name="description" content={data.pageDetails.page_header} />
     <meta property="og:description" content={data.pageDetails.page_header} />
   {:else}
-    <meta name="description" content={(data.pageDetails?.page_title || "Status Page") + " - Status Page"} />
-    <meta property="og:description" content={(data.pageDetails?.page_title || "Status Page") + " - Status Page"} />
+    <meta name="description" content={(data.pageDetails?.page_title || $t("page.meta.title_fallback")) + " - " + $t("page.meta.title_fallback")} />
+    <meta property="og:description" content={(data.pageDetails?.page_title || $t("page.meta.title_fallback")) + " - " + $t("page.meta.title_fallback")} />
   {/if}
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />

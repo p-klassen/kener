@@ -25,15 +25,17 @@
   import { i18n, t } from "$lib/stores/i18n";
   import GlobeIcon from "@lucide/svelte/icons/globe";
   import * as Select from "$lib/components/ui/select/index.js";
+  import { Separator } from "$lib/components/ui/separator/index.js";
 
   let user = $state<UserRecordPublic>(page.data.userDb);
   let nameAbbr = $derived(
     user.name
       .split(" ")
+      .filter(Boolean)
       .map((n) => n[0])
       .join("")
       .slice(0, 2)
-      .toUpperCase()
+      .toUpperCase() || "?"
   );
 
   const sidebar = Sidebar.useSidebar();
@@ -97,7 +99,7 @@
       });
       const resp = await response.json();
       if (resp.error) {
-        nameError = resp.error;
+        nameError = resp.errorKey ? $t(resp.errorKey) : $t("manage.user_menu.error_save_name");
       } else {
         user.name = myName;
         nameSuccess = true;
@@ -125,7 +127,7 @@
       });
       const resp = await response.json();
       if (resp.error) {
-        passwordError = resp.error;
+        passwordError = resp.errorKey ? $t(resp.errorKey) : $t("manage.user_menu.error_update_password");
       } else {
         myPassword = "";
         plainPassword = "";
@@ -151,7 +153,7 @@
       });
       const resp = await response.json();
       if (resp.error) {
-        emailError = resp.error;
+        emailError = resp.errorKey ? $t(resp.errorKey) : $t("manage.user_menu.error_change_email");
       } else {
         user.email = newEmail;
         newEmail = "";
@@ -194,7 +196,7 @@
       });
       const resp = await response.json();
       if (resp.error) {
-        localeError = resp.error;
+        localeError = resp.errorKey ? $t(resp.errorKey) : $t("manage.user_menu.error_save_locale");
       } else {
         currentLocale = locale;
         await i18n.setLocale(locale);
@@ -392,7 +394,7 @@
       </form>
       {/if}
 
-      <hr />
+      <Separator />
 
       <!-- Password Section (hidden for external auth users) -->
       {#if user.auth_provider === "local"}

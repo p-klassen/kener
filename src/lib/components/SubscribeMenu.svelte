@@ -129,6 +129,7 @@
     const token = localStorage.getItem(STORAGE_KEY);
     if (!token) {
       if (seq !== initSeq) return;
+      errorMessage = "";
       currentView = "login";
       return;
     }
@@ -333,9 +334,13 @@
         const data = await res.json();
         availableMonitors = data.monitors || [];
         availablePages = data.pages || [];
+      } else {
+        availableMonitors = [];
+        availablePages = [];
       }
     } catch (_err) {
-      // scope picker simply won't show monitor/page list
+      availableMonitors = [];
+      availablePages = [];
     }
   }
 
@@ -466,7 +471,7 @@
           </div>
 
           {#if errorMessage}
-            <p class="text-destructive text-sm">{errorMessage}</p>
+            <p class="text-destructive text-sm" role="alert">{errorMessage}</p>
           {/if}
 
           <Button onclick={handleLogin} disabled={isSubmitting} class="w-full">
@@ -498,7 +503,7 @@
           </div>
 
           {#if errorMessage}
-            <p class="text-destructive text-center text-sm">{errorMessage}</p>
+            <p class="text-destructive text-center text-sm" role="alert">{errorMessage}</p>
           {/if}
 
           <div class="flex gap-2">
@@ -544,11 +549,12 @@
                   <div class="flex items-center gap-3">
                     <AlertTriangle class="h-5 w-5 text-orange-500" />
                     <div>
-                      <Label class="font-medium">{$t("subscribe.incidents_label")}</Label>
+                      <Label for="switch-incidents" class="font-medium">{$t("subscribe.incidents_label")}</Label>
                       <p class="text-muted-foreground text-xs">{$t("subscribe.incidents_desc")}</p>
                     </div>
                   </div>
                   <Switch
+                    id="switch-incidents"
                     checked={incidentsEnabled}
                     onCheckedChange={(value) => handlePreferenceChange("incidents", value)}
                   />
@@ -603,7 +609,7 @@
                       </div>
                     {/if}
                     {#if incidentScopeError}
-                      <p class="text-destructive text-xs">{incidentScopeError}</p>
+                      <p class="text-destructive text-xs" role="alert">{incidentScopeError}</p>
                     {/if}
                     <Button size="sm" class="w-full" onclick={() => saveMonitorScope("incidents")} disabled={savingIncidentScope}>
                       {#if savingIncidentScope}
@@ -624,11 +630,12 @@
                   <div class="flex items-center gap-3">
                     <Wrench class="h-5 w-5 text-blue-500" />
                     <div>
-                      <Label class="font-medium">{$t("subscribe.maintenance_label")}</Label>
+                      <Label for="switch-maintenances" class="font-medium">{$t("subscribe.maintenance_label")}</Label>
                       <p class="text-muted-foreground text-xs">{$t("subscribe.maintenance_desc")}</p>
                     </div>
                   </div>
                   <Switch
+                    id="switch-maintenances"
                     checked={maintenancesEnabled}
                     onCheckedChange={(value) => handlePreferenceChange("maintenances", value)}
                   />
@@ -683,7 +690,7 @@
                       </div>
                     {/if}
                     {#if maintenanceScopeError}
-                      <p class="text-destructive text-xs">{maintenanceScopeError}</p>
+                      <p class="text-destructive text-xs" role="alert">{maintenanceScopeError}</p>
                     {/if}
                     <Button size="sm" class="w-full" onclick={() => saveMonitorScope("maintenances")} disabled={savingMaintenanceScope}>
                       {#if savingMaintenanceScope}
@@ -700,12 +707,12 @@
           </div>
 
           {#if errorMessage}
-            <p class="text-destructive text-sm">{errorMessage}</p>
+            <p class="text-destructive text-sm" role="alert">{errorMessage}</p>
           {/if}
         </div>
       {:else if currentView === "error"}
         <div class="flex flex-col items-center gap-4 py-8">
-          <p class="text-destructive text-sm">{errorMessage || $t("subscribe.error.generic")}</p>
+          <p class="text-destructive text-sm" role="alert">{errorMessage || $t("subscribe.error.generic")}</p>
           {#if !isAccountLinked}
             <Button variant="outline" size="sm" onclick={initDialog}>
               {$t("subscribe.error.retry")}

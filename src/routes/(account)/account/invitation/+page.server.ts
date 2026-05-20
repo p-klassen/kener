@@ -4,9 +4,6 @@ import db from "$lib/server/db/db.js";
 import { GetUserPasswordHashById } from "$lib/server/controllers/userController.js";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
-  // Clear any existing session
-  cookies.delete("kener-user", { path: "/" });
-
   const view = url.searchParams.get("view") || "";
   const token = url.searchParams.get("token") || "";
 
@@ -67,9 +64,11 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     };
   }
 
+  // Clear any existing session only when the invitation link is valid and the user will set a password
+  cookies.delete("kener-user", { path: "/" });
+
   return {
     valid: true,
-    error: "",
     token,
     email: user.email,
     name: user.name,

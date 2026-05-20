@@ -5,6 +5,7 @@
   import * as Field from "$lib/components/ui/field/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
   import LockIcon from "@lucide/svelte/icons/lock";
+  import CheckIcon from "@lucide/svelte/icons/check";
   import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
   import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
@@ -13,12 +14,12 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { t } from "$lib/stores/i18n";
-  const { data } = $props();
+  import type { PageData } from "./$types";
+
+  const { data }: { data: PageData } = $props();
 
   const valid: boolean = $derived(data.valid);
-  const error: string = $derived(
-    data.errorKey ? $t(data.errorKey as string) : (data.error || "")
-  );
+  const error: string = $derived(data.errorKey ? $t(data.errorKey as string) : "");
   const token: string = $derived(data.token);
   const email: string = $derived(data.email || "");
   const name: string = $derived(data.name || "");
@@ -31,22 +32,14 @@
   let newPassword = $state("");
   let confirmPassword = $state("");
 
+  let hasDigit = $derived(/\d/.test(newPassword));
+  let hasLowercase = $derived(/[a-z]/.test(newPassword));
+  let hasUppercase = $derived(/[A-Z]/.test(newPassword));
+  let hasMinLength = $derived(newPassword.length >= 8);
+  let passwordsMatch = $derived(newPassword === confirmPassword && newPassword !== "");
+  let isPasswordValid = $derived(hasDigit && hasLowercase && hasUppercase && hasMinLength && passwordsMatch);
+
   async function handleAcceptInvitation() {
-    if (!newPassword || !confirmPassword) {
-      toast.error($t("account.invitation.err_fill_fields"));
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error($t("account.invitation.err_passwords_no_match"));
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      toast.error($t("account.invitation.err_password_too_short"));
-      return;
-    }
-
     loading = true;
     try {
       const response = await fetch(clientResolver(resolve, "/account/invitation/api/accept-invitation"), {
@@ -58,7 +51,7 @@
       const responseData = await response.json();
 
       if (!response.ok) {
-        toast.error(responseData.error || $t("account.invitation.err_failed"));
+        toast.error(responseData.errorKey ? $t(responseData.errorKey) : $t("account.invitation.err_failed"));
         return;
       }
 
@@ -130,12 +123,14 @@
               <Field.Label for="newPassword">{$t("account.invitation.password_label")}</Field.Label>
               <InputGroup.Root>
                 <InputGroup.Addon>
-                  <LockIcon />
+                  <LockIcon aria-hidden="true" />
                 </InputGroup.Addon>
                 <InputGroup.Input
                   id="newPassword"
+                  name="newPassword"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
+                  autocomplete="new-password"
                   bind:value={newPassword}
                   required
                 />
@@ -158,18 +153,36 @@
               <Field.Description>
                 {$t("account.invitation.password_hint")}
               </Field.Description>
+              <div class="text-muted-foreground text-xs">
+                <ul class="mt-1 grid grid-cols-2 gap-1">
+                  <li class:text-green-500={hasDigit}>
+                    {#if hasDigit}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_digit")}
+                  </li>
+                  <li class:text-green-500={hasLowercase}>
+                    {#if hasLowercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_lowercase")}
+                  </li>
+                  <li class:text-green-500={hasUppercase}>
+                    {#if hasUppercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_uppercase")}
+                  </li>
+                  <li class:text-green-500={hasMinLength}>
+                    {#if hasMinLength}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_min")}
+                  </li>
+                </ul>
+              </div>
             </Field.Field>
 
             <Field.Field class="relative flex flex-col gap-1">
               <Field.Label for="confirmPassword">{$t("account.invitation.confirm_password_label")}</Field.Label>
               <InputGroup.Root>
                 <InputGroup.Addon>
-                  <LockIcon />
+                  <LockIcon aria-hidden="true" />
                 </InputGroup.Addon>
                 <InputGroup.Input
                   id="confirmPassword"
+                  name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
+                  autocomplete="new-password"
                   bind:value={confirmPassword}
                   required
                 />
@@ -193,7 +206,7 @@
           </Field.Group>
 
           <div class="mt-6">
-            <Button type="submit" class="w-full" disabled={loading}>
+            <Button type="submit" class="w-full" disabled={loading || !isPasswordValid}>
               {#if loading}
                 {$t("account.invitation.btn_activating")}
               {:else}

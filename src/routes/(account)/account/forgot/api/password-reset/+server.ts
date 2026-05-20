@@ -1,68 +1,50 @@
 import {
   HashPassword,
-  GenerateToken,
   VerifyToken,
-  GetAllSiteData,
   ValidatePassword,
 } from "$lib/server/controllers/controller.js";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import db from "$lib/server/db/db.js";
-import { GetGeneralEmailTemplateById } from "$lib/server/controllers/generalTemplateController";
-import { siteDataToVariables } from "$lib/server/notification/notification_utils";
-import sendEmail from "$lib/server/notification/email_notification.js";
 import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 
 export const POST: RequestHandler = async ({ request }) => {
   const ip = getClientIp(request);
   const rl = await checkRateLimit("password-reset", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
   if (!rl.allowed) {
-    return json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    return json({ errorKey: "account.forgot.err_rate_limited" }, { status: 429 });
   }
 
   const body = await request.json();
   const { receivedToken, newPassword } = body;
 
   if (!receivedToken) {
-    return json({ error: "Token is required" }, { status: 400 });
+    return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
-  let data = await VerifyToken(receivedToken);
-  if (!data) {
-    return json({ error: "Invalid or expired token" }, { status: 400 });
+  const tokenData = await VerifyToken(receivedToken);
+  if (!tokenData) {
+    return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
-  let email = data.email;
-  if (!email) {
-    return json({ error: "Invalid token data" }, { status: 400 });
+  const email = tokenData.email;
+  const generatedAt = tokenData.generatedAt;
+  if (!email || !generatedAt) {
+    return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
-  let generatedAt = data.generatedAt;
-  if (!generatedAt) {
-    return json({ error: "Invalid token data" }, { status: 400 });
-  }
-  let currentTime = Date.now();
   // Check if token is expired (1 hour = 3600000 milliseconds)
-  if (currentTime - generatedAt > 3600000) {
-    return json({ error: "Token has expired" }, { status: 400 });
+  if (Date.now() - generatedAt > 3600000) {
+    return json({ errorKey: "account.forgot.err_token_expired" }, { status: 400 });
   }
 
-  let userDB = await db.getUserByEmail(email);
-  if (!!!userDB) {
-    return json({ error: "Invalid or expired token" }, { status: 400 });
+  const userDB = await db.getUserByEmail(email);
+  if (!userDB) {
+    return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
-  // Validate password strength
   if (!ValidatePassword(newPassword)) {
-    return json(
-      {
-        error: "Password must contain at least 8 characters, one uppercase letter, one lowercase letter and one number",
-      },
-      { status: 400 },
-    );
+    return json({ errorKey: "account.forgot.err_password_invalid" }, { status: 400 });
   }
-  let password_hash = await HashPassword(newPassword);
-  await db.updateUserPassword({
-    id: userDB.id,
-    password_hash: password_hash,
-  });
-  //also update updateIsVerified
+  const password_hash = await HashPassword(newPassword);
+  await db.updateUserPassword({ id: userDB.id, password_hash });
   await db.updateIsVerified(userDB.id, 1);
+
   return json({ success: true });
 };

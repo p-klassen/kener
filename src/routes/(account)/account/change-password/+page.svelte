@@ -61,7 +61,7 @@
             <Field.Label for="newPassword">{$t("account.change_password.new_password_label")}</Field.Label>
             <InputGroup.Root>
               <InputGroup.Addon>
-                <LockIcon />
+                <LockIcon aria-hidden="true" />
               </InputGroup.Addon>
               <InputGroup.Input
                 id="newPassword"
@@ -111,7 +111,7 @@
             <Field.Label for="confirmPassword">{$t("account.change_password.confirm_password_label")}</Field.Label>
             <InputGroup.Root>
               <InputGroup.Addon>
-                <LockIcon />
+                <LockIcon aria-hidden="true" />
               </InputGroup.Addon>
               <InputGroup.Input
                 id="confirmPassword"

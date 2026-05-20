@@ -7,13 +7,16 @@
   import MailIcon from "@lucide/svelte/icons/mail";
   import LockIcon from "@lucide/svelte/icons/lock";
   import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
+  import CheckIcon from "@lucide/svelte/icons/check";
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
   import EyeOpenIcon from "@lucide/svelte/icons/eye";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { t } from "$lib/stores/i18n";
-  const { data } = $props();
+  import type { PageData } from "./$types";
+
+  const { data }: { data: PageData } = $props();
 
   const view: string = $derived(data.view);
   const token: string = $derived(data.token);
@@ -27,6 +30,13 @@
   let email = $state("");
   let newPassword = $state("");
   let confirmPassword = $state("");
+
+  let hasDigit = $derived(/\d/.test(newPassword));
+  let hasLowercase = $derived(/[a-z]/.test(newPassword));
+  let hasUppercase = $derived(/[A-Z]/.test(newPassword));
+  let hasMinLength = $derived(newPassword.length >= 8);
+  let passwordsMatch = $derived(newPassword === confirmPassword && newPassword !== "");
+  let isPasswordValid = $derived(hasDigit && hasLowercase && hasUppercase && hasMinLength && passwordsMatch);
 
   async function handleRequestReset() {
     if (!email || !email.includes("@")) {
@@ -45,7 +55,7 @@
       const responseData = await response.json();
 
       if (!response.ok) {
-        toast.error(responseData.error || $t("account.forgot.err_send_failed"));
+        toast.error(responseData.errorKey ? $t(responseData.errorKey) : $t("account.forgot.err_send_failed"));
         return;
       }
 
@@ -59,21 +69,6 @@
   }
 
   async function handlePasswordReset() {
-    if (!newPassword || !confirmPassword) {
-      toast.error($t("account.forgot.err_fill_fields"));
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error($t("account.forgot.err_passwords_no_match"));
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      toast.error($t("account.forgot.err_password_too_short"));
-      return;
-    }
-
     loading = true;
     try {
       const response = await fetch(clientResolver(resolve, "/account/forgot/api/password-reset"), {
@@ -85,7 +80,7 @@
       const responseData = await response.json();
 
       if (!response.ok) {
-        toast.error(responseData.error || $t("account.forgot.err_reset_failed"));
+        toast.error(responseData.errorKey ? $t(responseData.errorKey) : $t("account.forgot.err_reset_failed"));
         return;
       }
 
@@ -143,12 +138,14 @@
                 <Field.Label for="newPassword">{$t("account.forgot.new_password_label")}</Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon>
-                    <LockIcon />
+                    <LockIcon aria-hidden="true" />
                   </InputGroup.Addon>
                   <InputGroup.Input
                     id="newPassword"
+                    name="newPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
+                    autocomplete="new-password"
                     bind:value={newPassword}
                     required
                   />
@@ -169,18 +166,36 @@
                   </InputGroup.Addon>
                 </InputGroup.Root>
                 <Field.Description>{$t("account.forgot.password_hint")}</Field.Description>
+                <div class="text-muted-foreground text-xs">
+                  <ul class="mt-1 grid grid-cols-2 gap-1">
+                    <li class:text-green-500={hasDigit}>
+                      {#if hasDigit}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_digit")}
+                    </li>
+                    <li class:text-green-500={hasLowercase}>
+                      {#if hasLowercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_lowercase")}
+                    </li>
+                    <li class:text-green-500={hasUppercase}>
+                      {#if hasUppercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_uppercase")}
+                    </li>
+                    <li class:text-green-500={hasMinLength}>
+                      {#if hasMinLength}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_min")}
+                    </li>
+                  </ul>
+                </div>
               </Field.Field>
 
               <Field.Field class="relative flex flex-col gap-1">
                 <Field.Label for="confirmPassword">{$t("account.forgot.confirm_password_label")}</Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon>
-                    <LockIcon />
+                    <LockIcon aria-hidden="true" />
                   </InputGroup.Addon>
                   <InputGroup.Input
                     id="confirmPassword"
+                    name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="••••••••"
+                    autocomplete="new-password"
                     bind:value={confirmPassword}
                     required
                   />
@@ -204,7 +219,7 @@
             </Field.Group>
 
             <div class="mt-6">
-              <Button type="submit" class="w-full" disabled={loading}>
+              <Button type="submit" class="w-full" disabled={loading || !isPasswordValid}>
                 {#if loading}
                   {$t("account.forgot.btn_resetting")}
                 {:else}
@@ -260,9 +275,9 @@
                 <Field.Label for="email">{$t("account.signin.email_label")}</Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon>
-                    <MailIcon />
+                    <MailIcon aria-hidden="true" />
                   </InputGroup.Addon>
-                  <InputGroup.Input id="email" type="email" bind:value={email} required />
+                  <InputGroup.Input id="email" type="email" autocomplete="email" bind:value={email} required />
                 </InputGroup.Root>
               </Field.Field>
             </Field.Group>
