@@ -1349,6 +1349,9 @@
     "account.forgot.err_invalid_token": "Invalid or expired reset link. Please request a new one.",
     "account.forgot.err_token_expired": "Reset link has expired. Please request a new password reset.",
     "account.forgot.err_password_invalid": "Password does not meet the requirements.",
-    "page.meta.title_fallback": "Status Page"
+    "page.meta.title_fallback": "Status Page",
+    "account.change_password.err_unauthorized": "You are not authorized to change your password this way.",
+    "manage.user_menu.current_password_label": "Current password",
+    "subscribe.btn_logout": "Sign out of notifications"
   }
 }

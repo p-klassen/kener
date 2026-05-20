@@ -154,6 +154,7 @@
   </div>
 {:else if data.locked && data.lockedMode === 'teaser'}
   <div class="flex flex-col gap-3 sm:gap-4">
+    <ThemePlus monitor_tags={data.monitorTags} />
     <div class="flex flex-col gap-2 px-3 py-2 sm:px-4">
       {#if data.pageDetails?.page_logo}
         <img
@@ -218,7 +219,7 @@
       {#if data.ongoingIncidents && data.ongoingIncidents.length > 0}
         <div class="flex flex-col gap-3">
           {#each data.ongoingIncidents as incident, i (incident.id ?? i)}
-            <div class=" rounded-3xl border p-3 sm:p-4">
+            <div class="rounded-3xl border p-3 sm:p-4">
               <IncidentItem {incident} />
             </div>
           {/each}

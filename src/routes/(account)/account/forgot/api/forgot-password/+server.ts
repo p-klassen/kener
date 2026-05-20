@@ -28,11 +28,8 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ success: true });
   }
 
-  // Generate token with 1-hour cryptographic expiry
-  const token = await ForgotPasswordJWT({
-    email: userDB.email,
-    generatedAt: Date.now(),
-  });
+  // Token expiry enforced by JWT exp claim (1 h) in ForgotPasswordJWT
+  const token = await ForgotPasswordJWT({ email: userDB.email });
 
   const siteData = await GetAllSiteData();
   const siteVars = siteDataToVariables(siteData);
@@ -42,7 +39,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
   const template = await GetGeneralEmailTemplateByIdAndLocale("forgot_password", userDB.preferred_locale);
   if (!template) {
-    return json({ errorKey: "account.forgot.err_template_not_found" }, { status: 404 });
+    console.error(`forgot-password: email template 'forgot_password' not found for locale '${userDB.preferred_locale}'`);
+    return json({ success: true });
   }
 
   const emailVars = {

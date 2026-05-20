@@ -22,6 +22,9 @@ export const actions: Actions = {
     if (!loggedInUser) {
       throw redirect(302, serverResolve("/account/signin"));
     }
+    if (!loggedInUser.must_change_password) {
+      return fail(403, { errorKey: "account.change_password.err_unauthorized" });
+    }
 
     const formData = await request.formData();
     const newPassword = String(formData.get("newPassword") ?? "");

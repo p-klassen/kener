@@ -14,7 +14,6 @@
   import LogOut from "@lucide/svelte/icons/log-out";
   import Loader2 from "@lucide/svelte/icons/loader-2";
   import SaveIcon from "@lucide/svelte/icons/save";
-  import Bell from "@lucide/svelte/icons/bell";
   import AlertTriangle from "@lucide/svelte/icons/alert-triangle";
   import Wrench from "@lucide/svelte/icons/wrench";
   import { t } from "$lib/stores/i18n";
@@ -73,6 +72,8 @@
   let maintenanceScopeError = $state("");
   let savingIncidentScope = $state(false);
   let savingMaintenanceScope = $state(false);
+  let togglingIncidents = $state(false);
+  let togglingMaintenances = $state(false);
 
   let initSeq = 0;
 
@@ -245,8 +246,14 @@
   }
 
   async function handlePreferenceChange(type: "incidents" | "maintenances", value: boolean) {
+    if (type === "incidents" && togglingIncidents) return;
+    if (type === "maintenances" && togglingMaintenances) return;
+
     const token = localStorage.getItem(STORAGE_KEY);
     if (!token) { currentView = "login"; return; }
+
+    if (type === "incidents") togglingIncidents = true;
+    else togglingMaintenances = true;
 
     // Optimistic update — revert on failure
     if (type === "incidents") incidentsEnabled = value;
@@ -290,6 +297,9 @@
       errorMessage = $t("subscribe.error.network");
       if (type === "incidents") incidentsEnabled = !value;
       else maintenancesEnabled = !value;
+    } finally {
+      if (type === "incidents") togglingIncidents = false;
+      else togglingMaintenances = false;
     }
   }
 
@@ -430,7 +440,7 @@
   <Dialog.Content class="max-w-sm rounded-3xl max-h-[90vh] overflow-y-auto">
     <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
-        <Bell class="h-5 w-5" />
+        <ICONS.Bell class="h-5 w-5" />
         {$t("subscribe.dialog_title")}
       </Dialog.Title>
       <Dialog.Description>
@@ -535,8 +545,8 @@
                 <span class="text-sm font-medium">{subscriberEmail}</span>
               </div>
               {#if !isAccountLinked}
-                <Button variant="ghost" size="icon-sm" onclick={handleLogout} class="rounded-btn">
-                  <LogOut class="h-4 w-4" />
+                <Button variant="ghost" size="icon-sm" onclick={handleLogout} class="rounded-btn" aria-label={$t("subscribe.btn_logout")}>
+                  <LogOut class="h-4 w-4" aria-hidden="true" />
                 </Button>
               {/if}
             </div>
@@ -556,6 +566,7 @@
                   <Switch
                     id="switch-incidents"
                     checked={incidentsEnabled}
+                    disabled={togglingIncidents}
                     onCheckedChange={(value) => handlePreferenceChange("incidents", value)}
                   />
                 </div>
@@ -637,6 +648,7 @@
                   <Switch
                     id="switch-maintenances"
                     checked={maintenancesEnabled}
+                    disabled={togglingMaintenances}
                     onCheckedChange={(value) => handlePreferenceChange("maintenances", value)}
                   />
                 </div>

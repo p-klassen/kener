@@ -175,7 +175,7 @@
     {#if data.ongoingIncidents && data.ongoingIncidents.length > 0}
       <div class="flex flex-col gap-3">
         {#each data.ongoingIncidents as incident, i (incident.id ?? i)}
-          <div class=" rounded-3xl border p-3 sm:p-4">
+          <div class="rounded-3xl border p-3 sm:p-4">
             <IncidentItem {incident} />
           </div>
         {/each}

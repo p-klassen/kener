@@ -21,19 +21,12 @@ export const POST: RequestHandler = async ({ request }) => {
   if (!receivedToken) {
     return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
+  // VerifyToken calls jwt.verify which enforces the exp claim (1 h set by ForgotPasswordJWT)
   const tokenData = await VerifyToken(receivedToken);
-  if (!tokenData) {
+  if (!tokenData || !tokenData.email) {
     return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
   const email = tokenData.email;
-  const generatedAt = tokenData.generatedAt;
-  if (!email || !generatedAt) {
-    return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
-  }
-  // Check if token is expired (1 hour = 3600000 milliseconds)
-  if (Date.now() - generatedAt > 3600000) {
-    return json({ errorKey: "account.forgot.err_token_expired" }, { status: 400 });
-  }
 
   const userDB = await db.getUserByEmail(email);
   if (!userDB) {

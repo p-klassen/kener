@@ -10,7 +10,6 @@ export const load: PageServerLoad = async ({ url }) => {
 
   if (view !== "confirm_token" || !token) {
     return {
-      valid: false,
       errorKey: "account.verify.err_invalid_link",
     };
   }
@@ -18,7 +17,6 @@ export const load: PageServerLoad = async ({ url }) => {
   const tokenData = await VerifyToken(token);
   if (!tokenData) {
     return {
-      valid: false,
       errorKey: "account.verify.err_invalid_expired",
     };
   }
@@ -26,7 +24,6 @@ export const load: PageServerLoad = async ({ url }) => {
   const email = tokenData.email;
   if (!email) {
     return {
-      valid: false,
       errorKey: "account.verify.default_error",
     };
   }
@@ -34,7 +31,6 @@ export const load: PageServerLoad = async ({ url }) => {
   const validTill = tokenData.validTill;
   if (!validTill || Date.now() > validTill) {
     return {
-      valid: false,
       errorKey: "account.verify.err_expired",
     };
   }
@@ -42,7 +38,6 @@ export const load: PageServerLoad = async ({ url }) => {
   const user = await db.getUserByEmail(email);
   if (!user) {
     return {
-      valid: false,
       errorKey: "account.verify.err_no_user",
     };
   }

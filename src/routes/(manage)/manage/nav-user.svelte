@@ -367,7 +367,7 @@
           placeholder={$t("manage.user_menu.new_email_placeholder")}
           disabled={changingEmail}
         />
-        <Label for="email-current-password">{$t("manage.user_menu.current_password_placeholder")}</Label>
+        <Label for="email-current-password">{$t("manage.user_menu.current_password_label")}</Label>
         <Input
           id="email-current-password"
           type="password"
@@ -413,6 +413,7 @@
           placeholder={$t("manage.user_menu.new_password")}
           disabled={resettingPass}
         />
+        <Label for="confirm-password">{$t("manage.user_menu.confirm_password")}</Label>
         <Input
           id="confirm-password"
           type="password"

@@ -1349,6 +1349,9 @@
     "account.forgot.err_invalid_token": "Ungültiger oder abgelaufener Reset-Link. Bitte fordere einen neuen an.",
     "account.forgot.err_token_expired": "Reset-Link ist abgelaufen. Bitte fordere eine neue Passwortzurücksetzung an.",
     "account.forgot.err_password_invalid": "Das Passwort erfüllt nicht die Anforderungen.",
-    "page.meta.title_fallback": "Statusseite"
+    "page.meta.title_fallback": "Statusseite",
+    "account.change_password.err_unauthorized": "Du bist nicht berechtigt, dein Passwort auf diesem Weg zu ändern.",
+    "manage.user_menu.current_password_label": "Aktuelles Passwort",
+    "subscribe.btn_logout": "Von Benachrichtigungen abmelden"
   }
 }

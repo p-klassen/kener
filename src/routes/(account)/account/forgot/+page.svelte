@@ -69,6 +69,7 @@
   }
 
   async function handlePasswordReset() {
+    if (!isPasswordValid) return;
     loading = true;
     try {
       const response = await fetch(clientResolver(resolve, "/account/forgot/api/password-reset"), {
@@ -277,7 +278,7 @@
                   <InputGroup.Addon>
                     <MailIcon aria-hidden="true" />
                   </InputGroup.Addon>
-                  <InputGroup.Input id="email" type="email" autocomplete="email" bind:value={email} required />
+                  <InputGroup.Input id="email" name="email" type="email" autocomplete="email" bind:value={email} required />
                 </InputGroup.Root>
               </Field.Field>
             </Field.Group>
