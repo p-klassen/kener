@@ -63,11 +63,10 @@
   let hasDigit = $derived(/\d/.test(myPassword));
   let hasLowercase = $derived(/[a-z]/.test(myPassword));
   let hasUppercase = $derived(/[A-Z]/.test(myPassword));
-  let hasLetter = $derived(/[a-zA-Z]/.test(myPassword));
   let hasMinLength = $derived(myPassword.length >= 8);
   let passwordsMatch = $derived(myPassword === plainPassword && myPassword !== "");
   let isPasswordValid = $derived(
-    hasDigit && hasLowercase && hasUppercase && hasLetter && hasMinLength && passwordsMatch
+    hasDigit && hasLowercase && hasUppercase && hasMinLength && passwordsMatch
   );
 
   // Role badge styling
@@ -105,7 +104,7 @@
         setTimeout(() => (nameSuccess = false), 2000);
       }
     } catch {
-      nameError = "Error while saving name";
+      nameError = $t("manage.user_menu.error_save_name");
     } finally {
       savingName = false;
     }
@@ -134,7 +133,7 @@
         setTimeout(() => (passwordSuccess = false), 2000);
       }
     } catch {
-      passwordError = "Error while updating password";
+      passwordError = $t("manage.user_menu.error_update_password");
     } finally {
       resettingPass = false;
     }
@@ -161,7 +160,7 @@
         setTimeout(() => (emailSuccess = false), 3000);
       }
     } catch {
-      emailError = "Error changing email";
+      emailError = $t("manage.user_menu.error_change_email");
     } finally {
       changingEmail = false;
     }
@@ -201,7 +200,7 @@
         await i18n.setLocale(locale);
       }
     } catch {
-      localeError = "Error saving language preference";
+      localeError = $t("manage.user_menu.error_save_locale");
     } finally {
       savingLocale = false;
     }
@@ -420,7 +419,7 @@
         />
 
         <div class="text-muted-foreground text-xs">
-          <p class="mb-1 font-medium">Password requirements:</p>
+          <p class="mb-1 font-medium">{$t("manage.user_menu.password_requirements")}</p>
           <ul class="grid grid-cols-2 gap-1">
             <li class:text-green-500={hasDigit}>
               {#if hasDigit}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_digit")}

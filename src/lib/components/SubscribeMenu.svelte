@@ -74,6 +74,11 @@
   let savingIncidentScope = $state(false);
   let savingMaintenanceScope = $state(false);
 
+  let initSeq = 0;
+
+  $effect(() => { if (incidentScope === "all") incidentScopeError = ""; });
+  $effect(() => { if (maintenanceScope === "all") maintenanceScopeError = ""; });
+
   $effect(() => {
     if (open) {
       initDialog();
@@ -81,20 +86,21 @@
   });
 
   async function initDialog() {
+    const seq = ++initSeq;
     currentView = "loading";
 
     // Logged-in app users get auto-linked — no OTP flow needed
     if ($page.data?.loggedInUser) {
       isAccountLinked = true;
-      await loginWithAccount();
+      await loginWithAccount(seq);
       return;
     }
 
     isAccountLinked = false;
-    await checkExistingToken();
+    await checkExistingToken(seq);
   }
 
-  async function loginWithAccount() {
+  async function loginWithAccount(seq: number) {
     try {
       const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
         method: "POST",
@@ -102,6 +108,7 @@
         body: JSON.stringify({ action: "loginWithAccount" })
       });
 
+      if (seq !== initSeq) return;
       if (!response.ok) {
         currentView = "error";
         errorMessage = $t("Failed to link account for notifications");
@@ -110,25 +117,26 @@
 
       const data = await response.json();
       localStorage.setItem(STORAGE_KEY, data.token);
-      await loadPreferences(data.token);
+      await loadPreferences(data.token, seq);
     } catch (_err) {
+      if (seq !== initSeq) return;
       currentView = "error";
       errorMessage = $t("Network error. Please try again.");
     }
   }
 
-  async function checkExistingToken() {
+  async function checkExistingToken(seq: number) {
     const token = localStorage.getItem(STORAGE_KEY);
     if (!token) {
+      if (seq !== initSeq) return;
       currentView = "login";
       return;
     }
 
-    await loadPreferences(token);
+    await loadPreferences(token, seq);
   }
 
-  async function loadPreferences(token: string) {
-    currentView = "loading";
+  async function loadPreferences(token: string, seq: number = initSeq) {
     try {
       const response = await fetch(clientResolver(resolve, "/dashboard-apis/subscription"), {
         method: "POST",
@@ -136,6 +144,7 @@
         body: JSON.stringify({ action: "getPreferences", token })
       });
 
+      if (seq !== initSeq) return;
       if (!response.ok) {
         localStorage.removeItem(STORAGE_KEY);
         currentView = isAccountLinked ? "error" : "login";
@@ -150,6 +159,7 @@
 
       // Fetch monitors/pages then initialize scope state
       await fetchAvailableMonitors();
+      if (seq !== initSeq) return;
       const incMons: string[] = data.incident_monitors || [];
       const incPages: string[] = data.incident_pages || [];
       const mntMons: string[] = data.maintenance_monitors || [];
@@ -163,6 +173,7 @@
 
       currentView = "preferences";
     } catch (_err) {
+      if (seq !== initSeq) return;
       localStorage.removeItem(STORAGE_KEY);
       currentView = isAccountLinked ? "error" : "login";
     }
@@ -185,7 +196,6 @@
       });
 
       if (!response.ok) {
-        const data = await response.json();
         errorMessage = $t("Failed to send verification code");
         return;
       }
@@ -218,7 +228,6 @@
       });
 
       if (!response.ok) {
-        const data = await response.json();
         errorMessage = $t("Verification failed");
         return;
       }
@@ -226,7 +235,7 @@
       const data = await response.json();
       localStorage.setItem(STORAGE_KEY, data.token);
       trackEvent("subscribe_otp_verified", { source: "subscribe_menu" });
-      await checkExistingToken();
+      await checkExistingToken(initSeq);
     } catch (err) {
       errorMessage = $t("Network error. Please try again.");
     } finally {
@@ -237,6 +246,10 @@
   async function handlePreferenceChange(type: "incidents" | "maintenances", value: boolean) {
     const token = localStorage.getItem(STORAGE_KEY);
     if (!token) { currentView = "login"; return; }
+
+    // Optimistic update — revert on failure
+    if (type === "incidents") incidentsEnabled = value;
+    else maintenancesEnabled = value;
 
     // Only include monitor/page scope when disabling — enabling defers scope to the picker
     const body: Record<string, unknown> = { action: "updatePreferences", token, [type]: value };
@@ -270,9 +283,6 @@
         else maintenancesEnabled = !value;
         return;
       }
-
-      if (type === "incidents") incidentsEnabled = value;
-      else maintenancesEnabled = value;
 
       trackEvent("subscribe_pref_toggled", { source: "subscribe_menu", type, value });
     } catch (_err) {
@@ -399,7 +409,7 @@
     variant="outline"
     size="sm"
     class="rounded-btn bg-background/80 dark:bg-background/70 border-foreground/10 border text-xs backdrop-blur-md"
-    aria-label="Subscribe"
+    aria-label={$t("Subscribe")}
     onclick={() => {
       open = true;
       trackEvent("subscribe_opened", { source: "theme_plus" });

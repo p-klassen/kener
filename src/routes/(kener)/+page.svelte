@@ -28,7 +28,7 @@
   let monitorBarErrorByTag = $state<Record<string, string>>({});
   let requestVersion = 0;
   let viewType = $derived<"compact-list" | "default-list" | "default-grid" | "compact-grid" | undefined>(
-    pageSettings?.monitor_layout_style
+    pageSettings?.monitor_layout_style ?? undefined
   );
   let isCompact = $derived(viewType === "compact-list" || viewType === "compact-grid");
 

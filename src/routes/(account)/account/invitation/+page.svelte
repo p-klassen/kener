@@ -12,6 +12,7 @@
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
+  import { t } from "$lib/stores/i18n";
   const { data } = $props();
 
   const valid: boolean = $derived(data.valid);
@@ -30,17 +31,17 @@
 
   async function handleAcceptInvitation() {
     if (!newPassword || !confirmPassword) {
-      toast.error("Please fill in all fields");
+      toast.error($t("account.invitation.err_fill_fields"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error($t("account.invitation.err_passwords_no_match"));
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error($t("account.invitation.err_password_too_short"));
       return;
     }
 
@@ -55,14 +56,14 @@
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Failed to set password");
+        toast.error(data.error || $t("account.invitation.err_failed"));
         return;
       }
 
       accountActivated = true;
-      toast.success("Account activated successfully!");
+      toast.success($t("account.invitation.success_activated"));
     } catch (e) {
-      toast.error("An error occurred. Please try again.");
+      toast.error($t("account.invitation.err_occurred"));
     } finally {
       loading = false;
     }
@@ -75,7 +76,7 @@
 </script>
 
 <svelte:head>
-  <title>Accept Invitation</title>
+  <title>{$t("account.invitation.title")}</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">
@@ -86,13 +87,13 @@
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
           <AlertCircleIcon class="h-8 w-8 text-red-600" />
         </div>
-        <Card.Title>Invalid Invitation</Card.Title>
+        <Card.Title>{$t("account.invitation.title_invalid")}</Card.Title>
         <Card.Description>{error}</Card.Description>
       </Card.Header>
       <Card.Content>
         <Button href={clientResolver(resolve, "/account/signin")} class="w-full">
           <ArrowLeftIcon class="mr-2 h-4 w-4" />
-          Go to Sign In
+          {$t("account.invitation.btn_go_signin")}
         </Button>
       </Card.Content>
     {:else if accountActivated}
@@ -101,31 +102,30 @@
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
           <CheckCircleIcon class="h-8 w-8 text-green-600" />
         </div>
-        <Card.Title>Account Activated</Card.Title>
+        <Card.Title>{$t("account.invitation.title_activated")}</Card.Title>
         <Card.Description>
-          Your account has been set up successfully. You can now sign in with your new password.
+          {$t("account.invitation.activated_desc")}
         </Card.Description>
       </Card.Header>
       <Card.Content>
         <Button href={clientResolver(resolve, "/account/signin")} class="w-full">
           <ArrowLeftIcon class="mr-2 h-4 w-4" />
-          Go to Sign In
+          {$t("account.invitation.btn_go_signin")}
         </Button>
       </Card.Content>
     {:else}
       <!-- Set Password View -->
       <Card.Header>
-        <Card.Title>Welcome, {name}!</Card.Title>
+        <Card.Title>{$t("account.invitation.welcome_greeting")} {name}!</Card.Title>
         <Card.Description>
-          You've been invited to join as <strong>{email}</strong>. Create a password to activate your account and get
-          started.
+          {$t("account.invitation.welcome_desc_before")} <strong>{email}</strong>. {$t("account.invitation.welcome_desc_after")}
         </Card.Description>
       </Card.Header>
       <Card.Content>
         <form onsubmit={handleSubmit}>
           <Field.Group>
             <Field.Field class="relative flex flex-col gap-1">
-              <Field.Label for="newPassword">Password</Field.Label>
+              <Field.Label for="newPassword">{$t("account.invitation.password_label")}</Field.Label>
               <InputGroup.Root>
                 <InputGroup.Addon>
                   <LockIcon />
@@ -140,8 +140,8 @@
                 <InputGroup.Addon align="inline-end">
                   <InputGroup.Button
                     type="button"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    title={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? $t("account.invitation.hide_password") : $t("account.invitation.show_password")}
+                    title={showPassword ? $t("account.invitation.hide_password") : $t("account.invitation.show_password")}
                     size="icon-xs"
                     onclick={() => (showPassword = !showPassword)}
                   >
@@ -154,12 +154,12 @@
                 </InputGroup.Addon>
               </InputGroup.Root>
               <Field.Description>
-                Password must contain at least 8 characters, one uppercase, one lowercase, and one number.
+                {$t("account.invitation.password_hint")}
               </Field.Description>
             </Field.Field>
 
             <Field.Field class="relative flex flex-col gap-1">
-              <Field.Label for="confirmPassword">Confirm Password</Field.Label>
+              <Field.Label for="confirmPassword">{$t("account.invitation.confirm_password_label")}</Field.Label>
               <InputGroup.Root>
                 <InputGroup.Addon>
                   <LockIcon />
@@ -174,8 +174,8 @@
                 <InputGroup.Addon align="inline-end">
                   <InputGroup.Button
                     type="button"
-                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                    aria-label={showConfirmPassword ? $t("account.invitation.hide_password") : $t("account.invitation.show_password")}
+                    title={showConfirmPassword ? $t("account.invitation.hide_password") : $t("account.invitation.show_password")}
                     size="icon-xs"
                     onclick={() => (showConfirmPassword = !showConfirmPassword)}
                   >
@@ -193,9 +193,9 @@
           <div class="mt-6">
             <Button type="submit" class="w-full" disabled={loading}>
               {#if loading}
-                Activating Account...
+                {$t("account.invitation.btn_activating")}
               {:else}
-                Activate Account
+                {$t("account.invitation.btn_activate")}
               {/if}
             </Button>
           </div>
@@ -203,7 +203,7 @@
           <div class="mt-4 text-center">
             <Button variant="link" href={clientResolver(resolve, "/account/signin")} class="text-sm">
               <ArrowLeftIcon class="mr-1 h-3 w-3" />
-              Back to Sign In
+              {$t("account.invitation.btn_back_signin")}
             </Button>
           </div>
         </form>
