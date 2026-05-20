@@ -89,6 +89,7 @@
   async function initDialog() {
     const seq = ++initSeq;
     currentView = "loading";
+    errorMessage = "";
 
     // Logged-in app users get auto-linked — no OTP flow needed
     if ($page.data?.loggedInUser) {
@@ -219,6 +220,7 @@
       return;
     }
 
+    const seq = initSeq;
     isSubmitting = true;
     errorMessage = "";
 
@@ -237,7 +239,7 @@
       const data = await response.json();
       localStorage.setItem(STORAGE_KEY, data.token);
       trackEvent("subscribe_otp_verified", { source: "subscribe_menu" });
-      await checkExistingToken(initSeq);
+      await checkExistingToken(seq);
     } catch (err) {
       errorMessage = $t("subscribe.error.network");
     } finally {
@@ -471,7 +473,7 @@
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder={$t("account.signin.email_placeholder")}
                 class="pl-10"
                 bind:value={email}
                 disabled={isSubmitting}

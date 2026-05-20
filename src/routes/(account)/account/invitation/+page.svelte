@@ -40,6 +40,7 @@
   let isPasswordValid = $derived(hasDigit && hasLowercase && hasUppercase && hasMinLength && passwordsMatch);
 
   async function handleAcceptInvitation() {
+    if (!isPasswordValid) return;
     loading = true;
     try {
       const response = await fetch(clientResolver(resolve, "/account/invitation/api/accept-invitation"), {

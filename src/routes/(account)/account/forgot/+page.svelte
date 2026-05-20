@@ -39,7 +39,7 @@
   let isPasswordValid = $derived(hasDigit && hasLowercase && hasUppercase && hasMinLength && passwordsMatch);
 
   async function handleRequestReset() {
-    if (!email || !email.includes("@")) {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       toast.error($t("account.forgot.err_email_required"));
       return;
     }
