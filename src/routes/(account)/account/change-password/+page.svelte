@@ -7,14 +7,25 @@
   import LockIcon from "@lucide/svelte/icons/lock";
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
   import EyeOpenIcon from "@lucide/svelte/icons/eye";
+  import CheckIcon from "@lucide/svelte/icons/check";
   import type { ActionData } from "./$types";
   import { t } from "$lib/stores/i18n";
 
   const { form }: { form: ActionData } = $props();
+  const formError = $derived(form?.errorKey ? $t(form.errorKey as string) : undefined);
 
   let loading = $state(false);
   let showNew = $state(false);
   let showConfirm = $state(false);
+  let newPassword = $state("");
+  let confirmPassword = $state("");
+
+  let hasDigit = $derived(/\d/.test(newPassword));
+  let hasLowercase = $derived(/[a-z]/.test(newPassword));
+  let hasUppercase = $derived(/[A-Z]/.test(newPassword));
+  let hasMinLength = $derived(newPassword.length >= 8);
+  let passwordsMatch = $derived(newPassword === confirmPassword && newPassword !== "");
+  let isPasswordValid = $derived(hasDigit && hasLowercase && hasUppercase && hasMinLength && passwordsMatch);
 </script>
 
 <svelte:head>
@@ -42,8 +53,8 @@
         }}
       >
         <Field.Group>
-          {#if form?.error}
-            <p class="text-sm text-destructive" role="alert">{form.error}</p>
+          {#if formError}
+            <p class="text-sm text-destructive" role="alert">{formError}</p>
           {/if}
 
           <Field.Field class="relative flex flex-col gap-1">
@@ -58,6 +69,7 @@
                 type={showNew ? "text" : "password"}
                 placeholder="••••••••"
                 autocomplete="new-password"
+                bind:value={newPassword}
                 required
               />
               <InputGroup.Addon align="inline-end">
@@ -77,6 +89,22 @@
               </InputGroup.Addon>
             </InputGroup.Root>
             <Field.Description>{$t("account.change_password.password_hint")}</Field.Description>
+            <div class="text-muted-foreground text-xs">
+              <ul class="grid grid-cols-2 gap-1 mt-1">
+                <li class:text-green-500={hasDigit}>
+                  {#if hasDigit}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_digit")}
+                </li>
+                <li class:text-green-500={hasLowercase}>
+                  {#if hasLowercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_lowercase")}
+                </li>
+                <li class:text-green-500={hasUppercase}>
+                  {#if hasUppercase}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_uppercase")}
+                </li>
+                <li class:text-green-500={hasMinLength}>
+                  {#if hasMinLength}<CheckIcon class="inline size-3" />{/if} {$t("manage.user_menu.password_req_min")}
+                </li>
+              </ul>
+            </div>
           </Field.Field>
 
           <Field.Field class="relative flex flex-col gap-1">
@@ -91,6 +119,7 @@
                 type={showConfirm ? "text" : "password"}
                 placeholder="••••••••"
                 autocomplete="new-password"
+                bind:value={confirmPassword}
                 required
               />
               <InputGroup.Addon align="inline-end">
@@ -113,7 +142,7 @@
         </Field.Group>
 
         <div class="mt-6">
-          <Button type="submit" class="w-full" disabled={loading}>
+          <Button type="submit" class="w-full" disabled={loading || !isPasswordValid}>
             {#if loading}
               {$t("account.change_password.btn_saving")}
             {:else}

@@ -28,13 +28,13 @@ export const actions: Actions = {
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
     if (!newPassword || !confirmPassword) {
-      return fail(400, { error: "Both password fields are required" });
+      return fail(400, { errorKey: "account.change_password.err_fields_required" });
     }
     if (!ValidatePassword(newPassword)) {
-      return fail(400, { error: "Password must be at least 8 characters, contain uppercase, lowercase, and a number" });
+      return fail(400, { errorKey: "account.change_password.err_password_invalid" });
     }
     if (newPassword !== confirmPassword) {
-      return fail(400, { error: "Passwords do not match" });
+      return fail(400, { errorKey: "account.change_password.err_passwords_no_match" });
     }
 
     const passwordHash = await HashPassword(newPassword);

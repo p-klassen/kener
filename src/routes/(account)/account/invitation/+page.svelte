@@ -16,7 +16,9 @@
   const { data } = $props();
 
   const valid: boolean = $derived(data.valid);
-  const error: string = $derived(data.error);
+  const error: string = $derived(
+    data.errorKey ? $t(data.errorKey as string) : (data.error || "")
+  );
   const token: string = $derived(data.token);
   const email: string = $derived(data.email || "");
   const name: string = $derived(data.name || "");
@@ -53,10 +55,10 @@
         body: JSON.stringify({ receivedToken: token, newPassword })
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || $t("account.invitation.err_failed"));
+        toast.error(responseData.error || $t("account.invitation.err_failed"));
         return;
       }
 

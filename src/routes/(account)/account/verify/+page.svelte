@@ -8,7 +8,9 @@
   import { t } from "$lib/stores/i18n";
 
   const { data } = $props();
-  const error: string = $derived(data.error || $t("account.verify.default_error"));
+  const error: string = $derived(
+    data.errorKey ? $t(data.errorKey as string) : $t("account.verify.default_error")
+  );
 </script>
 
 <svelte:head>

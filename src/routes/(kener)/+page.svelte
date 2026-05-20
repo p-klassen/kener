@@ -14,6 +14,7 @@
   import { requestMonitorBar } from "$lib/client/monitor-bar-client";
   import type { MonitorBarResponse } from "$lib/server/api-server/monitor-bar/get";
   import { SveltePurify } from "@humanspeak/svelte-purify";
+  import { t } from "$lib/stores/i18n";
 
   let { data } = $props();
   let pageSettings = $derived(data.pageDetails.page_settings);
@@ -148,7 +149,7 @@
     {#if data.pageDetails?.page_logo}
       <img
         src={clientResolver(resolve, data.pageDetails.page_logo)}
-        alt="Page Logo"
+        alt={$t("page.logo_alt")}
         class="aspect-auto w-12 rounded object-cover"
       />
     {/if}

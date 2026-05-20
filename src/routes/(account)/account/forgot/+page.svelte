@@ -4,7 +4,6 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import { goto } from "$app/navigation";
   import MailIcon from "@lucide/svelte/icons/mail";
   import LockIcon from "@lucide/svelte/icons/lock";
   import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
@@ -30,23 +29,23 @@
   let confirmPassword = $state("");
 
   async function handleRequestReset() {
-    if (!email) {
+    if (!email || !email.includes("@")) {
       toast.error($t("account.forgot.err_email_required"));
       return;
     }
 
     loading = true;
     try {
-      const response = await fetch(clientResolver(resolve, "/account/forgot/api/fogot-password"), {
+      const response = await fetch(clientResolver(resolve, "/account/forgot/api/forgot-password"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || $t("account.forgot.err_send_failed"));
+        toast.error(responseData.error || $t("account.forgot.err_send_failed"));
         return;
       }
 
@@ -83,10 +82,10 @@
         body: JSON.stringify({ receivedToken: token, newPassword })
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || $t("account.forgot.err_reset_failed"));
+        toast.error(responseData.error || $t("account.forgot.err_reset_failed"));
         return;
       }
 

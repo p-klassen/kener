@@ -223,7 +223,7 @@
               </Avatar.Fallback>
             </Avatar.Root>
             <div class="grid flex-1 text-start text-sm leading-tight">
-              <span class="truncate font-medium">{nameAbbr}</span>
+              <span class="truncate font-medium">{user.name}</span>
               <span class="text-muted-foreground truncate text-xs">
                 {user.email}
               </span>
@@ -365,6 +365,7 @@
           placeholder={$t("manage.user_menu.new_email_placeholder")}
           disabled={changingEmail}
         />
+        <Label for="email-current-password">{$t("manage.user_menu.current_password_placeholder")}</Label>
         <Input
           id="email-current-password"
           type="password"

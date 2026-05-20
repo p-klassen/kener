@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ url }) => {
   if (view !== "confirm_token" || !token) {
     return {
       valid: false,
-      error: "Invalid or missing verification link.",
+      errorKey: "account.verify.err_invalid_link",
     };
   }
 
@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ url }) => {
   if (!tokenData) {
     return {
       valid: false,
-      error: "Invalid or expired verification link.",
+      errorKey: "account.verify.err_invalid_expired",
     };
   }
 
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ url }) => {
   if (!email) {
     return {
       valid: false,
-      error: "Invalid verification link.",
+      errorKey: "account.verify.default_error",
     };
   }
 
@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ url }) => {
   if (!validTill || Date.now() > validTill) {
     return {
       valid: false,
-      error: "This verification link has expired. Please request a new one.",
+      errorKey: "account.verify.err_expired",
     };
   }
 
@@ -43,7 +43,7 @@ export const load: PageServerLoad = async ({ url }) => {
   if (!user) {
     return {
       valid: false,
-      error: "No user found for this verification link.",
+      errorKey: "account.verify.err_no_user",
     };
   }
 

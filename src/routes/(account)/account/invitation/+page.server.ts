@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   if (view !== "confirm_token" || !token) {
     return {
       valid: false,
-      error: "Invalid or missing invitation link.",
+      errorKey: "account.invitation.err_invalid_link",
       token: "",
     };
   }
@@ -24,7 +24,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   if (!tokenData) {
     return {
       valid: false,
-      error: "Invalid or expired invitation link.",
+      errorKey: "account.invitation.err_invalid_expired",
       token: "",
     };
   }
@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   if (!email) {
     return {
       valid: false,
-      error: "Invalid invitation link.",
+      errorKey: "account.invitation.err_invalid",
       token: "",
     };
   }
@@ -43,7 +43,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   if (!validTill || Date.now() > validTill) {
     return {
       valid: false,
-      error: "This invitation link has expired. Please ask your administrator to send a new one.",
+      errorKey: "account.invitation.err_expired",
       token: "",
     };
   }
@@ -53,7 +53,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   if (!user) {
     return {
       valid: false,
-      error: "No invitation found for this email address.",
+      errorKey: "account.invitation.err_no_user",
       token: "",
     };
   }
@@ -62,7 +62,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   if (passwordData && passwordData.password_hash !== "") {
     return {
       valid: false,
-      error: "This invitation has already been accepted. Please sign in instead.",
+      errorKey: "account.invitation.err_already_accepted",
       token: "",
     };
   }

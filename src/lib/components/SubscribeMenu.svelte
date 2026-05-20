@@ -111,7 +111,7 @@
       if (seq !== initSeq) return;
       if (!response.ok) {
         currentView = "error";
-        errorMessage = $t("Failed to link account for notifications");
+        errorMessage = $t("subscribe.error.link_account_failed");
         return;
       }
 
@@ -121,7 +121,7 @@
     } catch (_err) {
       if (seq !== initSeq) return;
       currentView = "error";
-      errorMessage = $t("Network error. Please try again.");
+      errorMessage = $t("subscribe.error.network");
     }
   }
 
@@ -181,7 +181,7 @@
 
   async function handleLogin() {
     if (!email.trim()) {
-      errorMessage = $t("Please enter a valid email address");
+      errorMessage = $t("subscribe.error.invalid_email");
       return;
     }
 
@@ -196,7 +196,7 @@
       });
 
       if (!response.ok) {
-        errorMessage = $t("Failed to send verification code");
+        errorMessage = $t("subscribe.error.send_code_failed");
         return;
       }
 
@@ -205,7 +205,7 @@
       currentView = "otp";
       otpValue = "";
     } catch (err) {
-      errorMessage = $t("Network error. Please try again.");
+      errorMessage = $t("subscribe.error.network");
     } finally {
       isSubmitting = false;
     }
@@ -213,7 +213,7 @@
 
   async function handleVerifyOTP() {
     if (otpValue.length !== 6) {
-      errorMessage = $t("Please enter the 6-digit verification code");
+      errorMessage = $t("subscribe.error.enter_code");
       return;
     }
 
@@ -228,7 +228,7 @@
       });
 
       if (!response.ok) {
-        errorMessage = $t("Verification failed");
+        errorMessage = $t("subscribe.error.verification_failed");
         return;
       }
 
@@ -237,7 +237,7 @@
       trackEvent("subscribe_otp_verified", { source: "subscribe_menu" });
       await checkExistingToken(initSeq);
     } catch (err) {
-      errorMessage = $t("Network error. Please try again.");
+      errorMessage = $t("subscribe.error.network");
     } finally {
       isSubmitting = false;
     }
@@ -278,7 +278,7 @@
       });
 
       if (!response.ok) {
-        errorMessage = $t("Failed to update preference");
+        errorMessage = $t("subscribe.error.update_pref_failed");
         if (type === "incidents") incidentsEnabled = !value;
         else maintenancesEnabled = !value;
         return;
@@ -286,7 +286,7 @@
 
       trackEvent("subscribe_pref_toggled", { source: "subscribe_menu", type, value });
     } catch (_err) {
-      errorMessage = $t("Network error. Please try again.");
+      errorMessage = $t("subscribe.error.network");
       if (type === "incidents") incidentsEnabled = !value;
       else maintenancesEnabled = !value;
     }
@@ -363,7 +363,7 @@
       const coveredTags = new Set(availablePages.filter((p) => pages.includes(p.slug)).flatMap((p) => p.monitors.map((m) => m.tag)));
       monitors = Object.entries(monSelections).filter(([k, v]) => v && !coveredTags.has(k)).map(([k]) => k);
       if (pages.length === 0 && monitors.length === 0) {
-        setError($t("Select at least one page or monitor"));
+        setError($t("subscribe.error.select_scope"));
         return;
       }
     }
@@ -378,12 +378,12 @@
         body: JSON.stringify({ action: "updatePreferences", token, [monitorKey]: monitors, [pageKey]: pages })
       });
       if (!response.ok) {
-        setError($t("Failed to save scope"));
+        setError($t("subscribe.error.save_scope_failed"));
       } else {
         trackEvent("subscribe_pref_toggled", { source: "subscribe_menu", type, scope });
       }
     } catch (_err) {
-      setError($t("Network error. Please try again."));
+      setError($t("subscribe.error.network"));
     } finally {
       if (type === "incidents") savingIncidentScope = false;
       else savingMaintenanceScope = false;
@@ -396,7 +396,7 @@
     variant="outline"
     size="icon-sm"
     class="bg-background/80 dark:bg-background/70 border-foreground/10 rounded-full border shadow-none backdrop-blur-md"
-    aria-label={$t("Subscribe")}
+    aria-label={$t("subscribe.btn_subscribe")}
     onclick={() => {
       open = true;
       trackEvent("subscribe_opened", { source: "theme_plus" });
@@ -409,14 +409,14 @@
     variant="outline"
     size="sm"
     class="rounded-btn bg-background/80 dark:bg-background/70 border-foreground/10 border text-xs backdrop-blur-md"
-    aria-label={$t("Subscribe")}
+    aria-label={$t("subscribe.btn_subscribe")}
     onclick={() => {
       open = true;
       trackEvent("subscribe_opened", { source: "theme_plus" });
     }}
   >
     <ICONS.Bell class="" />
-    {$t("Subscribe")}
+    {$t("subscribe.btn_subscribe")}
   </Button>
 {/if}
 
@@ -426,17 +426,17 @@
     <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <Bell class="h-5 w-5" />
-        {$t("Subscribe to Updates")}
+        {$t("subscribe.dialog_title")}
       </Dialog.Title>
       <Dialog.Description>
         {#if currentView === "login"}
-          {$t("Get notified about incidents and scheduled maintenance.")}
+          {$t("subscribe.desc_login")}
         {:else if currentView === "otp"}
-          {$t("Enter the verification code sent to your email.")}
+          {$t("subscribe.desc_otp")}
         {:else if currentView === "preferences"}
-          {$t("Manage your notification preferences.")}
+          {$t("subscribe.desc_prefs")}
         {:else if currentView === "loading"}
-          {$t("Loading your preferences...")}
+          {$t("subscribe.loading")}
         {/if}
       </Dialog.Description>
     </Dialog.Header>
@@ -450,7 +450,7 @@
         <!-- Login View -->
         <div class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
-            <Label for="email">{$t("Email address")}</Label>
+            <Label for="email">{$t("subscribe.email_label")}</Label>
             <div class="relative">
               <Mail class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
@@ -472,9 +472,9 @@
           <Button onclick={handleLogin} disabled={isSubmitting} class="w-full">
             {#if isSubmitting}
               <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              {$t("Sending...")}
+              {$t("subscribe.btn_sending")}
             {:else}
-              {$t("Continue")}
+              {$t("subscribe.btn_continue")}
             {/if}
           </Button>
         </div>
@@ -483,7 +483,7 @@
         <div class="flex flex-col gap-4">
           <div class="flex flex-col items-center gap-4">
             <p class="text-muted-foreground text-center text-sm">
-              {$t("We sent a 6-digit code to")} <strong class="text-foreground">{email}</strong>
+              {$t("subscribe.code_sent_to")} <strong class="text-foreground">{email}</strong>
             </p>
 
             <InputOTP.Root maxlength={6} bind:value={otpValue}>
@@ -504,20 +504,20 @@
           <div class="flex gap-2">
             <Button variant="outline" onclick={handleBackToEmail} disabled={isSubmitting} class="flex-1">
               <ArrowLeft class="mr-2 h-4 w-4" />
-              {$t("Back")}
+              {$t("subscribe.btn_back")}
             </Button>
             <Button onclick={handleVerifyOTP} disabled={isSubmitting || otpValue.length !== 6} class="flex-1">
               {#if isSubmitting}
                 <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                {$t("Verifying")}...
+                {$t("subscribe.btn_verifying")}
               {:else}
-                {$t("Verify")}
+                {$t("subscribe.btn_verify")}
               {/if}
             </Button>
           </div>
 
           <Button variant="link" onclick={handleLogin} disabled={isSubmitting} class="text-xs">
-            {$t("Didn't receive the code? Resend")}
+            {$t("subscribe.btn_resend")}
           </Button>
         </div>
       {:else if currentView === "preferences"}
@@ -544,8 +544,8 @@
                   <div class="flex items-center gap-3">
                     <AlertTriangle class="h-5 w-5 text-orange-500" />
                     <div>
-                      <Label class="font-medium">{$t("Incident Updates")}</Label>
-                      <p class="text-muted-foreground text-xs">{$t("Get notified about incidents updates")}</p>
+                      <Label class="font-medium">{$t("subscribe.incidents_label")}</Label>
+                      <p class="text-muted-foreground text-xs">{$t("subscribe.incidents_desc")}</p>
                     </div>
                   </div>
                   <Switch
@@ -624,8 +624,8 @@
                   <div class="flex items-center gap-3">
                     <Wrench class="h-5 w-5 text-blue-500" />
                     <div>
-                      <Label class="font-medium">{$t("Maintenance Updates")}</Label>
-                      <p class="text-muted-foreground text-xs">{$t("Get notified about scheduled maintenance")}</p>
+                      <Label class="font-medium">{$t("subscribe.maintenance_label")}</Label>
+                      <p class="text-muted-foreground text-xs">{$t("subscribe.maintenance_desc")}</p>
                     </div>
                   </div>
                   <Switch
@@ -705,7 +705,12 @@
         </div>
       {:else if currentView === "error"}
         <div class="flex flex-col items-center gap-4 py-8">
-          <p class="text-destructive text-sm">{errorMessage || $t("Something went wrong. Please try again.")}</p>
+          <p class="text-destructive text-sm">{errorMessage || $t("subscribe.error.generic")}</p>
+          {#if !isAccountLinked}
+            <Button variant="outline" size="sm" onclick={initDialog}>
+              {$t("subscribe.error.retry")}
+            </Button>
+          {/if}
         </div>
       {/if}
     </div>
