@@ -41,7 +41,7 @@ export const actions: Actions = {
     const ip = getClientIp(request);
     const rl = await checkRateLimit("login", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
     if (!rl.allowed) {
-      return fail(429, { error: "Too many login attempts. Please try again later.", values: { email: "" } });
+      return fail(429, { errorKey: "account.signin.err_rate_limited", values: { email: "" } });
     }
 
     const formData = await request.formData();
@@ -49,32 +49,32 @@ export const actions: Actions = {
     const password = String(formData.get("password") ?? "");
 
     if (!email || !password) {
-      return fail(400, { error: "Email and password are required", values: { email } });
+      return fail(400, { errorKey: "account.signin.err_credentials_required", values: { email } });
     }
 
     const userCount = await GetUsersCount();
     if (!userCount || Number(userCount.count) === 0) {
-      return fail(400, { error: constants.ERROR_NO_SETUP, values: { email } });
+      return fail(400, { errorKey: "account.signin.err_no_setup", values: { email } });
     }
 
     const userDB = await GetUserByEmail(email);
     if (!userDB) {
-      return fail(401, { error: "Invalid password or Email", values: { email } });
+      return fail(401, { errorKey: "account.signin.err_invalid_credentials", values: { email } });
     }
 
     const passwordStored = await GetUserPasswordHashById(userDB.id);
     if (!passwordStored) {
-      return fail(401, { error: "Invalid password or Email", values: { email } });
+      return fail(401, { errorKey: "account.signin.err_invalid_credentials", values: { email } });
     }
 
     const isMatch = await VerifyPassword(password, passwordStored.password_hash);
     if (!isMatch) {
-      return fail(401, { error: "Invalid password or Email", values: { email } });
+      return fail(401, { errorKey: "account.signin.err_invalid_credentials", values: { email } });
     }
 
     if (!userDB.is_active) {
       return fail(403, {
-        error: "Your account has been deactivated. Please contact an administrator.",
+        errorKey: "account.signin.err_account_deactivated",
         values: { email },
       });
     }
@@ -82,7 +82,7 @@ export const actions: Actions = {
     if (userDB.user_type !== "subscriber") {
       if (!userDB.role_ids || userDB.role_ids.length === 0) {
         return fail(403, {
-          error: "Your account has no active roles assigned. Please contact an administrator.",
+          errorKey: "account.signin.err_no_roles",
           values: { email },
         });
       }
@@ -111,7 +111,7 @@ export const actions: Actions = {
     const ip = getClientIp(request);
     const rl = await checkRateLimit("ldap-login", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
     if (!rl.allowed) {
-      return fail(429, { error: "Too many login attempts. Please try again later.", values: { ldap_username: "" } });
+      return fail(429, { errorKey: "account.signin.err_rate_limited", values: { ldap_username: "" } });
     }
 
     const formData = await request.formData();
@@ -119,7 +119,7 @@ export const actions: Actions = {
     const password = String(formData.get("ldap_password") ?? "");
 
     if (!username || !password) {
-      return fail(400, { error: "Username and password are required", values: { ldap_username: username } });
+      return fail(400, { errorKey: "account.signin.err_ldap_credentials_required", values: { ldap_username: username } });
     }
 
     let ldapRedirect: string;
@@ -147,19 +147,25 @@ export const actions: Actions = {
     throw redirect(302, ldapRedirect);
   },
   signup: async ({ request, cookies }) => {
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit("signup", ip, { windowMs: 15 * 60 * 1000, maxRequests: 5 });
+    if (!rl.allowed) {
+      return fail(429, { errorKey: "account.signin.err_rate_limited", values: { name: "", email: "" } });
+    }
+
     const formData = await request.formData();
     const name = String(formData.get("name") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
 
     if (!name || !email || !password) {
-      return fail(400, { error: "Email, password, and name are required", values: { name, email } });
+      return fail(400, { errorKey: "account.signin.err_signup_fields_required", values: { name, email } });
     }
 
     const userCount = await GetUsersCount();
     if (userCount && Number(userCount.count) !== 0) {
       return fail(400, {
-        error: "Set up already done. Please login with the email and password you have set up.",
+        errorKey: "account.signin.err_already_setup",
         values: { name, email },
       });
     }
@@ -169,7 +175,7 @@ export const actions: Actions = {
       const userDB = await GetUserByEmail(email);
 
       if (!userDB) {
-        return fail(500, { error: "Failed to create user", values: { name, email } });
+        return fail(500, { errorKey: "account.signin.err_create_failed", values: { name, email } });
       }
 
       const token = await GenerateToken(userDB);
@@ -182,8 +188,7 @@ export const actions: Actions = {
         sameSite: cookieConfig.sameSite,
       });
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : "An error occurred during signup";
-      return fail(400, { error: errorMessage, values: { name, email } });
+      return fail(400, { errorKey: "account.signin.err_create_failed", values: { name, email } });
     }
     throw redirect(302, serverResolve("/manage/app/site-configurations"));
   },

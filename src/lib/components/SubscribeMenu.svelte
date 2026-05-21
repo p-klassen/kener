@@ -475,7 +475,7 @@
               <Input
                 id="email"
                 type="email"
-                placeholder={$t("account.signin.email_placeholder")}
+                placeholder={$t("subscribe.email_placeholder")}
                 class="pl-10"
                 bind:value={email}
                 disabled={isSubmitting}

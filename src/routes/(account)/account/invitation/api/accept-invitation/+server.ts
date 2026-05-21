@@ -3,8 +3,15 @@ import type { RequestHandler } from "./$types";
 import db from "$lib/server/db/db.js";
 import { HashPassword, ValidatePassword, VerifyToken } from "$lib/server/controllers/commonController.js";
 import { GetUserPasswordHashById } from "$lib/server/controllers/userController.js";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 
 export const POST: RequestHandler = async ({ request }) => {
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit("accept-invitation", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
+  if (!rl.allowed) {
+    return json({ errorKey: "account.invitation.err_rate_limited" }, { status: 429 });
+  }
+
   const body = await request.json();
   const { receivedToken, newPassword } = body;
 

@@ -1168,6 +1168,18 @@
     "account.signin.name_placeholder": "Your name",
     "account.signin.email_placeholder": "you@example.com",
     "account.signin.username_placeholder": "username",
+    "account.signin.show_password": "Show password",
+    "account.signin.hide_password": "Hide password",
+    "account.signin.err_rate_limited": "Too many login attempts. Please try again later.",
+    "account.signin.err_credentials_required": "Email and password are required.",
+    "account.signin.err_no_setup": "No admin account exists yet. Please create one first.",
+    "account.signin.err_invalid_credentials": "Invalid email or password.",
+    "account.signin.err_account_deactivated": "Your account has been deactivated. Please contact an administrator.",
+    "account.signin.err_no_roles": "Your account has no active roles assigned. Please contact an administrator.",
+    "account.signin.err_ldap_credentials_required": "Username and password are required.",
+    "account.signin.err_signup_fields_required": "Name, email, and password are all required.",
+    "account.signin.err_already_setup": "Setup is already complete. Please sign in instead.",
+    "account.signin.err_create_failed": "Failed to create the admin account. Please try again.",
     "manage.site_config.toast_load_error": "Failed to load site data",
     "manage.site_config.toast_site_info_saved": "Site information saved successfully",
     "manage.site_config.toast_site_info_error": "Failed to save site information",
@@ -1278,6 +1290,7 @@
     "manage.user_menu.error_update_password": "Error while updating password",
     "manage.user_menu.error_change_email": "Error changing email",
     "manage.user_menu.error_save_locale": "Error saving language preference",
+    "manage.user_menu.locale_saved": "Language preference saved.",
     "manage.user_menu.password_requirements": "Password requirements:",
     "subscribe.btn_subscribe": "Subscribe",
     "subscribe.dialog_title": "Subscribe to Updates",
@@ -1286,6 +1299,7 @@
     "subscribe.desc_prefs": "Manage your notification preferences.",
     "subscribe.loading": "Loading your preferences...",
     "subscribe.email_label": "Email address",
+    "subscribe.email_placeholder": "you@example.com",
     "subscribe.btn_sending": "Sending...",
     "subscribe.btn_continue": "Continue",
     "subscribe.code_sent_to": "We sent a 6-digit code to",
@@ -1329,6 +1343,7 @@
     "manage.user_menu.current_password_label": "Current password",
     "subscribe.btn_logout": "Sign out of notifications",
     "account.forgot.title_invalid": "Invalid Reset Link",
-    "account.invitation.err_password_invalid": "Password must be at least 8 characters, contain uppercase, lowercase, and a number"
+    "account.invitation.err_password_invalid": "Password must be at least 8 characters, contain uppercase, lowercase, and a number",
+    "account.invitation.err_rate_limited": "Too many attempts. Please try again later."
   }
 }

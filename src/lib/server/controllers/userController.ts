@@ -269,24 +269,30 @@ export const ChangeOwnEmail = async (userId: number, newEmail: string, currentPa
 
   await db.updateUserEmail(userId, normalizedEmail);
 
-  // Trigger verification email for the new address
-  const user = await db.getUserById(userId);
-  if (user) {
-    const token = await GenerateToken({ email: normalizedEmail, validTill: Date.now() + 24 * 60 * 60 * 1000 });
-    const siteData = await GetAllSiteData();
-    const siteVars = siteDataToVariables(siteData);
-    const verificationLink = `${siteVars.site_url || ""}account/verify?view=confirm_token&token=${token}`;
-    const template = await GetGeneralEmailTemplateByIdAndLocale("verify_email", user.preferred_locale);
-    if (template) {
-      await sendEmail(
-        template.template_html_body || "",
-        template.template_subject || "Verify Your Email",
-        { ...siteVars, verification_link: verificationLink },
-        [normalizedEmail],
-        undefined,
-        template.template_text_body || "",
-      );
+  // Trigger verification email for the new address.
+  // Wrap in try-catch: the DB update already succeeded, so a failed email send
+  // must not roll back or surface as an error to the caller.
+  try {
+    const user = await db.getUserById(userId);
+    if (user) {
+      const token = await GenerateToken({ email: normalizedEmail, validTill: Date.now() + 24 * 60 * 60 * 1000 });
+      const siteData = await GetAllSiteData();
+      const siteVars = siteDataToVariables(siteData);
+      const verificationLink = `${siteVars.site_url || ""}account/verify?view=confirm_token&token=${token}`;
+      const template = await GetGeneralEmailTemplateByIdAndLocale("verify_email", user.preferred_locale);
+      if (template) {
+        await sendEmail(
+          template.template_html_body || "",
+          template.template_subject || "Verify Your Email",
+          { ...siteVars, verification_link: verificationLink },
+          [normalizedEmail],
+          undefined,
+          template.template_text_body || "",
+        );
+      }
     }
+  } catch {
+    // Email send failure is non-fatal — the email change is already committed.
   }
 };
 

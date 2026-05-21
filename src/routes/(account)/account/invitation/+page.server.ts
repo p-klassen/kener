@@ -30,7 +30,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   if (!email) {
     return {
       valid: false,
-      errorKey: "account.invitation.err_invalid",
+      errorKey: "account.invitation.err_invalid_link",
       token: "",
     };
   }

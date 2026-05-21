@@ -8,6 +8,7 @@
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
   import EyeOpenIcon from "@lucide/svelte/icons/eye";
   import CheckIcon from "@lucide/svelte/icons/check";
+  import Loader2Icon from "@lucide/svelte/icons/loader-2";
   import type { ActionData } from "./$types";
   import { t } from "$lib/stores/i18n";
 
@@ -144,6 +145,7 @@
         <div class="mt-6">
           <Button type="submit" class="w-full" disabled={loading || !isPasswordValid}>
             {#if loading}
+              <Loader2Icon class="mr-2 size-4 animate-spin" />
               {$t("account.change_password.btn_saving")}
             {:else}
               {$t("account.change_password.btn_set")}

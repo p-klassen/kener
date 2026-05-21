@@ -1330,6 +1330,21 @@
     "manage.user_menu.current_password_label": "Current password",
     "subscribe.btn_logout": "Sign out of notifications",
     "account.forgot.title_invalid": "Invalid Reset Link",
-    "account.invitation.err_password_invalid": "Password must be at least 8 characters, contain uppercase, lowercase, and a number"
+    "account.invitation.err_password_invalid": "Password must be at least 8 characters, contain uppercase, lowercase, and a number",
+    "account.signin.show_password": "Show password",
+    "account.signin.hide_password": "Hide password",
+    "account.signin.err_rate_limited": "Too many login attempts. Please try again later.",
+    "account.signin.err_credentials_required": "Email and password are required.",
+    "account.signin.err_no_setup": "No admin account exists yet. Please create one first.",
+    "account.signin.err_invalid_credentials": "Invalid email or password.",
+    "account.signin.err_account_deactivated": "Your account has been deactivated. Please contact an administrator.",
+    "account.signin.err_no_roles": "Your account has no active roles assigned. Please contact an administrator.",
+    "account.signin.err_ldap_credentials_required": "Username and password are required.",
+    "account.signin.err_signup_fields_required": "Name, email, and password are all required.",
+    "account.signin.err_already_setup": "Setup is already complete. Please sign in instead.",
+    "account.signin.err_create_failed": "Failed to create the admin account. Please try again.",
+    "manage.user_menu.locale_saved": "Language preference saved.",
+    "subscribe.email_placeholder": "you@example.com",
+    "account.invitation.err_rate_limited": "Too many attempts. Please try again later."
   }
 }

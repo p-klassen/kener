@@ -8,6 +8,7 @@
   import CheckIcon from "@lucide/svelte/icons/check";
   import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
   import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
+  import Loader2Icon from "@lucide/svelte/icons/loader-2";
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
   import EyeOpenIcon from "@lucide/svelte/icons/eye";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
@@ -209,6 +210,7 @@
           <div class="mt-6">
             <Button type="submit" class="w-full" disabled={loading || !isPasswordValid}>
               {#if loading}
+                <Loader2Icon class="mr-2 size-4 animate-spin" />
                 {$t("account.invitation.btn_activating")}
               {:else}
                 {$t("account.invitation.btn_activate")}

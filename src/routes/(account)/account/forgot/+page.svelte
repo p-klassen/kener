@@ -9,6 +9,7 @@
   import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
   import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
   import CheckIcon from "@lucide/svelte/icons/check";
+  import Loader2Icon from "@lucide/svelte/icons/loader-2";
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
   import EyeOpenIcon from "@lucide/svelte/icons/eye";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
@@ -21,7 +22,7 @@
 
   const view: string = $derived(data.view);
   const token: string = $derived(data.token);
-  const valid: boolean = $derived(data.valid ?? true);
+  const valid: boolean = $derived(data.valid ?? false);
   const serverError: string = $derived(data.errorKey ? $t(data.errorKey as string) : "");
 
   let loading = $state(false);
@@ -244,6 +245,7 @@
             <div class="mt-6">
               <Button type="submit" class="w-full" disabled={loading || !isPasswordValid}>
                 {#if loading}
+                  <Loader2Icon class="mr-2 size-4 animate-spin" />
                   {$t("account.forgot.btn_resetting")}
                 {:else}
                   {$t("account.forgot.btn_reset")}
@@ -308,6 +310,7 @@
             <div class="mt-6">
               <Button type="submit" class="w-full" disabled={loading}>
                 {#if loading}
+                  <Loader2Icon class="mr-2 size-4 animate-spin" />
                   {$t("account.forgot.btn_sending")}
                 {:else}
                   {$t("account.forgot.btn_send_reset")}

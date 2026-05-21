@@ -43,6 +43,7 @@
   let currentLocale = $state(page.data.userLocale ?? "en");
   let savingLocale = $state(false);
   let localeError = $state("");
+  let localeSuccess = $state(false);
   let availableLocales = $derived(page.data.availableLocales ?? []);
   let myName = $state(user.name);
   let myPassword = $state("");
@@ -186,6 +187,7 @@
   async function saveLocale(locale: string) {
     savingLocale = true;
     localeError = "";
+    localeSuccess = false;
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
@@ -198,6 +200,8 @@
       } else {
         currentLocale = locale;
         await i18n.setLocale(locale);
+        localeSuccess = true;
+        setTimeout(() => (localeSuccess = false), 2000);
       }
     } catch {
       localeError = $t("manage.user_menu.error_save_locale");
@@ -346,6 +350,9 @@
             {/each}
           </Select.Content>
         </Select.Root>
+        {#if localeSuccess}
+          <p class="text-sm text-green-600">{$t("manage.user_menu.locale_saved")}</p>
+        {/if}
         {#if localeError}
           <p class="text-destructive text-sm">{localeError}</p>
         {/if}

@@ -122,11 +122,11 @@
             action="?/ldap"
             onsubmit={() => { ldapLoading = true; }}
           >
-            {#if form?.error}
+            {#if form?.error || form?.errorKey}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
                 <Alert.Title>{$t("account.signin.login_failed_title")}</Alert.Title>
-                <Alert.Description>{form.error}</Alert.Description>
+                <Alert.Description>{form.errorKey ? $t(form.errorKey as string) : form.error}</Alert.Description>
               </Alert.Root>
             {/if}
 
@@ -139,6 +139,7 @@
                     id="ldap_username"
                     name="ldap_username"
                     type="text"
+                    placeholder={$t("account.signin.username_placeholder")}
                     required
                   />
                 </InputGroup.Root>
@@ -159,7 +160,8 @@
                   <InputGroup.Addon align="inline-end">
                     <InputGroup.Button
                       type="button"
-                      aria-label={showLdapPassword ? "Hide password" : "Show password"}
+                      aria-label={showLdapPassword ? $t("account.signin.hide_password") : $t("account.signin.show_password")}
+                      title={showLdapPassword ? $t("account.signin.hide_password") : $t("account.signin.show_password")}
                       size="icon-xs"
                       onclick={() => (showLdapPassword = !showLdapPassword)}
                     >
@@ -186,11 +188,11 @@
             action={authActionPath}
             onsubmit={() => { loading = true; }}
           >
-            {#if form?.error}
+            {#if form?.error || form?.errorKey}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
                 <Alert.Title>{!isAdminAccountCreated ? $t("account.signin.signup_failed_title") : $t("account.signin.login_failed_title")}</Alert.Title>
-                <Alert.Description>{form.error}</Alert.Description>
+                <Alert.Description>{form.errorKey ? $t(form.errorKey as string) : form.error}</Alert.Description>
               </Alert.Root>
             {/if}
 
@@ -204,6 +206,7 @@
                       id="name"
                       name="name"
                       type="text"
+                      placeholder={$t("account.signin.name_placeholder")}
                       value={nameValue}
                       required
                     />
@@ -232,7 +235,7 @@
                     variant="link"
                     size="sm"
                     class="text-muted-foreground absolute top-0 right-0 h-auto p-0 text-xs"
-                    href="/account/forgot"
+                    href={clientResolver(resolve, "/account/forgot")}
                   >
                     {$t("account.signin.forgot_password")}
                   </Button>
@@ -250,8 +253,8 @@
                   <InputGroup.Addon align="inline-end">
                     <InputGroup.Button
                       type="button"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      title={showPassword ? "Hide password" : "Show password"}
+                      aria-label={showPassword ? $t("account.signin.hide_password") : $t("account.signin.show_password")}
+                      title={showPassword ? $t("account.signin.hide_password") : $t("account.signin.show_password")}
                       size="icon-xs"
                       onclick={() => (showPassword = !showPassword)}
                     >
