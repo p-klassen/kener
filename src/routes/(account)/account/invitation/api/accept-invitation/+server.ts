@@ -46,7 +46,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   // Validate password strength
   if (!ValidatePassword(newPassword)) {
-    return json({ errorKey: "account.change_password.err_password_invalid" }, { status: 400 });
+    return json({ errorKey: "account.invitation.err_password_invalid" }, { status: 400 });
   }
 
   // Hash and set password

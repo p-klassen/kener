@@ -1247,9 +1247,6 @@
     "account.forgot.err_email_required": "Please enter your email address",
     "account.forgot.err_send_failed": "Failed to send reset email",
     "account.forgot.success_email_sent": "Password reset email sent!",
-    "account.forgot.err_fill_fields": "Please fill in all fields",
-    "account.forgot.err_passwords_no_match": "Passwords do not match",
-    "account.forgot.err_password_too_short": "Password must be at least 8 characters",
     "account.forgot.err_reset_failed": "Failed to reset password",
     "account.forgot.success_reset": "Password reset successfully!",
     "account.forgot.err_occurred": "An error occurred. Please try again.",
@@ -1270,8 +1267,6 @@
     "account.invitation.show_password": "Show password",
     "account.invitation.hide_password": "Hide password",
     "account.invitation.err_fill_fields": "Please fill in all fields",
-    "account.invitation.err_passwords_no_match": "Passwords do not match",
-    "account.invitation.err_password_too_short": "Password must be at least 8 characters",
     "account.invitation.err_failed": "Failed to set password",
     "account.invitation.success_activated": "Account activated successfully!",
     "account.invitation.err_occurred": "An error occurred. Please try again.",
@@ -1348,12 +1343,12 @@
     "account.invitation.err_already_accepted": "This invitation has already been accepted. Please sign in instead.",
     "page.logo_alt": "Page Logo",
     "account.forgot.err_rate_limited": "Too many requests. Please try again later.",
-    "account.forgot.err_template_not_found": "Email template not found. Please contact support.",
     "account.forgot.err_invalid_token": "Invalid or expired reset link. Please request a new one.",
-    "account.forgot.err_token_expired": "Reset link has expired. Please request a new password reset.",
     "account.forgot.err_password_invalid": "Password does not meet the requirements.",
     "page.meta.title_fallback": "Status Page",
     "manage.user_menu.current_password_label": "Current password",
-    "subscribe.btn_logout": "Sign out of notifications"
+    "subscribe.btn_logout": "Sign out of notifications",
+    "account.forgot.title_invalid": "Invalid Reset Link",
+    "account.invitation.err_password_invalid": "Password must be at least 8 characters, contain uppercase, lowercase, and a number"
   }
 }

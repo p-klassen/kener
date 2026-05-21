@@ -7,6 +7,7 @@
   import MailIcon from "@lucide/svelte/icons/mail";
   import LockIcon from "@lucide/svelte/icons/lock";
   import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
+  import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
   import CheckIcon from "@lucide/svelte/icons/check";
   import EyeClosedIcon from "@lucide/svelte/icons/eye-closed";
   import EyeOpenIcon from "@lucide/svelte/icons/eye";
@@ -20,6 +21,8 @@
 
   const view: string = $derived(data.view);
   const token: string = $derived(data.token);
+  const valid: boolean = $derived(data.valid ?? true);
+  const serverError: string = $derived(data.errorKey ? $t(data.errorKey as string) : "");
 
   let loading = $state(false);
   let showPassword = $state(false);
@@ -111,7 +114,26 @@
   <Card.Root class="kener-card w-full max-w-md">
     {#if view === "confirm_token"}
       <!-- Reset Password View -->
-      {#if passwordReset}
+      {#if !valid}
+        <Card.Header class="text-center">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <AlertCircleIcon class="h-8 w-8 text-red-600" />
+          </div>
+          <Card.Title>{$t("account.forgot.title_invalid")}</Card.Title>
+          <Card.Description>{serverError}</Card.Description>
+        </Card.Header>
+        <Card.Content>
+          <Button href={clientResolver(resolve, "/account/forgot")} class="w-full">
+            {$t("account.forgot.btn_send_reset")}
+          </Button>
+          <div class="mt-4 text-center">
+            <Button variant="link" href={clientResolver(resolve, "/account/signin")} class="text-sm">
+              <ArrowLeftIcon class="mr-1 h-3 w-3" />
+              {$t("account.forgot.btn_back_to_signin")}
+            </Button>
+          </div>
+        </Card.Content>
+      {:else if passwordReset}
         <Card.Header class="text-center">
           <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <CheckCircleIcon class="h-8 w-8 text-green-600" />

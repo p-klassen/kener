@@ -21,6 +21,9 @@ export const POST: RequestHandler = async ({ request }) => {
   if (!receivedToken) {
     return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
+  if (!newPassword) {
+    return json({ errorKey: "account.forgot.err_password_invalid" }, { status: 400 });
+  }
   // VerifyToken calls jwt.verify which enforces the exp claim (1 h set by ForgotPasswordJWT)
   const tokenData = await VerifyToken(receivedToken);
   if (!tokenData || !tokenData.email) {

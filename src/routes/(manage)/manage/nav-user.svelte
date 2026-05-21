@@ -1,8 +1,6 @@
 <script lang="ts">
-  import CreditCardIcon from "@lucide/svelte/icons/credit-card";
   import DotsVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import LogoutIcon from "@lucide/svelte/icons/log-out";
-  import NotificationIcon from "@lucide/svelte/icons/bell";
   import UserCircleIcon from "@lucide/svelte/icons/user-circle";
   import CheckIcon from "@lucide/svelte/icons/check";
   import LoaderIcon from "@lucide/svelte/icons/loader";

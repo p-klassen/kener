@@ -454,6 +454,8 @@
           {$t("subscribe.desc_prefs")}
         {:else if currentView === "loading"}
           {$t("subscribe.loading")}
+        {:else if currentView === "error"}
+          {$t("subscribe.error.generic")}
         {/if}
       </Dialog.Description>
     </Dialog.Header>
