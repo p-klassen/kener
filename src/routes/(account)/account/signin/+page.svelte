@@ -222,6 +222,7 @@
                     id="email"
                     name="email"
                     type="email"
+                    placeholder={$t("account.signin.email_placeholder")}
                     value={emailValue}
                     required
                   />
@@ -231,14 +232,16 @@
               <Field.Field class="relative flex flex-col gap-1">
                 <Field.Label for="password" class="relative">
                   {$t("account.signin.password_label")}
-                  <Button
-                    variant="link"
-                    size="sm"
-                    class="text-muted-foreground absolute top-0 right-0 h-auto p-0 text-xs"
-                    href={clientResolver(resolve, "/account/forgot")}
-                  >
-                    {$t("account.signin.forgot_password")}
-                  </Button>
+                  {#if isAdminAccountCreated}
+                    <Button
+                      variant="link"
+                      size="sm"
+                      class="text-muted-foreground absolute top-0 right-0 h-auto p-0 text-xs"
+                      href={clientResolver(resolve, "/account/forgot")}
+                    >
+                      {$t("account.signin.forgot_password")}
+                    </Button>
+                  {/if}
                 </Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon><LockIcon /></InputGroup.Addon>

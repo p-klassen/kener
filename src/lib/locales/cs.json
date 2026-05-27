@@ -1337,7 +1337,6 @@
     "account.verify.err_no_user": "No user found for this verification link.",
     "account.invitation.err_invalid_link": "Invalid or missing invitation link.",
     "account.invitation.err_invalid_expired": "Invalid or expired invitation link.",
-    "account.invitation.err_invalid": "Invalid invitation link.",
     "account.invitation.err_expired": "This invitation link has expired. Please ask your administrator to send a new one.",
     "account.invitation.err_no_user": "No invitation found for this email address.",
     "account.invitation.err_already_accepted": "This invitation has already been accepted. Please sign in instead.",
@@ -1364,6 +1363,8 @@
     "account.signin.err_create_failed": "Failed to create the admin account. Please try again.",
     "manage.user_menu.locale_saved": "Language preference saved.",
     "subscribe.email_placeholder": "you@example.com",
-    "account.invitation.err_rate_limited": "Too many attempts. Please try again later."
+    "account.invitation.err_rate_limited": "Too many attempts. Please try again later.",
+    "subscribe.resend_success": "Code resent.",
+    "manage.user_menu.error_invalid_email": "Please enter a valid email address."
   }
 }

@@ -2,6 +2,7 @@ import type { PageServerLoad } from "./$types";
 import { VerifyToken } from "$lib/server/controllers/commonController.js";
 import db from "$lib/server/db/db.js";
 import { GetUserPasswordHashById } from "$lib/server/controllers/userController.js";
+import serverResolve from "$lib/server/resolver.js";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const view = url.searchParams.get("view") || "";
@@ -65,7 +66,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   }
 
   // Clear any existing session only when the invitation link is valid and the user will set a password
-  cookies.delete("kener-user", { path: "/" });
+  cookies.delete("kener-user", { path: serverResolve("/") });
 
   return {
     valid: true,

@@ -1317,7 +1317,6 @@
     "account.verify.err_no_user": "Kein Benutzer für diesen Bestätigungslink gefunden.",
     "account.invitation.err_invalid_link": "Ungültiger oder fehlender Einladungslink.",
     "account.invitation.err_invalid_expired": "Ungültiger oder abgelaufener Einladungslink.",
-    "account.invitation.err_invalid": "Ungültiger Einladungslink.",
     "account.invitation.err_expired": "Dieser Einladungslink ist abgelaufen. Bitte bitten Sie Ihren Administrator, einen neuen zu senden.",
     "account.invitation.err_no_user": "Keine Einladung für diese E-Mail-Adresse gefunden.",
     "account.invitation.err_already_accepted": "Diese Einladung wurde bereits angenommen. Bitte melden Sie sich an.",
@@ -1344,6 +1343,8 @@
     "account.signin.err_create_failed": "Das Administratorkonto konnte nicht erstellt werden. Bitte erneut versuchen.",
     "manage.user_menu.locale_saved": "Spracheinstellung gespeichert.",
     "subscribe.email_placeholder": "sie@beispiel.de",
-    "account.invitation.err_rate_limited": "Zu viele Versuche. Bitte später erneut versuchen."
+    "account.invitation.err_rate_limited": "Zu viele Versuche. Bitte später erneut versuchen.",
+    "subscribe.resend_success": "Code erneut gesendet.",
+    "manage.user_menu.error_invalid_email": "Bitte geben Sie eine gültige E-Mail-Adresse ein."
   }
 }

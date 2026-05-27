@@ -6,7 +6,7 @@
   import { Switch } from "$lib/components/ui/switch/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import { resolve } from "$app/paths";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import clientResolver from "$lib/client/resolver.js";
 
   import Mail from "@lucide/svelte/icons/mail";
@@ -34,6 +34,7 @@
   let currentView = $state<View>("loading");
   let isSubmitting = $state(false);
   let errorMessage = $state("");
+  let resendSuccess = $state(false);
 
   // Whether the current session is linked to an app account (no logout shown)
   let isAccountLinked = $state(false);
@@ -92,7 +93,7 @@
     errorMessage = "";
 
     // Logged-in app users get auto-linked — no OTP flow needed
-    if ($page.data?.loggedInUser) {
+    if (page.data?.loggedInUser) {
       isAccountLinked = true;
       await loginWithAccount(seq);
       return;
@@ -205,6 +206,10 @@
 
       trackEvent("subscribe_login_sent", { source: "subscribe_menu" });
 
+      if (currentView === "otp") {
+        resendSuccess = true;
+        setTimeout(() => (resendSuccess = false), 3000);
+      }
       currentView = "otp";
       otpValue = "";
     } catch (err) {
@@ -535,9 +540,14 @@
             </Button>
           </div>
 
-          <Button variant="link" onclick={handleLogin} disabled={isSubmitting} class="text-xs">
-            {$t("subscribe.btn_resend")}
-          </Button>
+          <div class="flex flex-col items-center gap-1">
+            <Button variant="link" onclick={handleLogin} disabled={isSubmitting} class="text-xs">
+              {$t("subscribe.btn_resend")}
+            </Button>
+            {#if resendSuccess}
+              <p class="text-xs text-green-600">{$t("subscribe.resend_success")}</p>
+            {/if}
+          </div>
         </div>
       {:else if currentView === "preferences"}
         <!-- Preferences View -->

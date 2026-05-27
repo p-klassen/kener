@@ -18,10 +18,5 @@ export const load: PageServerLoad = async ({ url }) => {
     return { view, token: "", valid: false, errorKey: "account.forgot.err_invalid_token" };
   }
 
-  const validTill = tokenData.validTill;
-  if (!validTill || Date.now() > validTill) {
-    return { view, token: "", valid: false, errorKey: "account.forgot.err_invalid_token" };
-  }
-
   return { view, token, valid: true };
 };

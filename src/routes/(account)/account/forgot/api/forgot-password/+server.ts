@@ -12,7 +12,7 @@ export const POST: RequestHandler = async ({ request }) => {
   const ip = getClientIp(request);
   const rl = await checkRateLimit("forgot-password", ip, { windowMs: 15 * 60 * 1000, maxRequests: 5 });
   if (!rl.allowed) {
-    return json({ errorKey: "account.forgot.err_rate_limited" }, { status: 429 });
+    return json({ errorKey: "account.forgot.err_rate_limited" }, { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } });
   }
 
   const body = await request.json();

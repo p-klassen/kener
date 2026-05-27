@@ -141,6 +141,10 @@
   }
 
   async function changeEmail() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim())) {
+      emailError = $t("manage.user_menu.error_invalid_email");
+      return;
+    }
     changingEmail = true;
     emailError = "";
     emailSuccess = false;

@@ -73,18 +73,12 @@ export const actions: Actions = {
     }
 
     if (!userDB.is_active) {
-      return fail(403, {
-        errorKey: "account.signin.err_account_deactivated",
-        values: { email },
-      });
+      return fail(401, { errorKey: "account.signin.err_invalid_credentials", values: { email } });
     }
 
     if (userDB.user_type !== "subscriber") {
       if (!userDB.role_ids || userDB.role_ids.length === 0) {
-        return fail(403, {
-          errorKey: "account.signin.err_no_roles",
-          values: { email },
-        });
+        return fail(401, { errorKey: "account.signin.err_invalid_credentials", values: { email } });
       }
     }
 

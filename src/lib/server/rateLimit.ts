@@ -38,6 +38,12 @@ export async function checkRateLimit(
   } catch {
     // Redis unavailable — use in-memory fallback
     const now = Date.now();
+
+    // Prune expired entries lazily to prevent unbounded memory growth
+    for (const [k, v] of memoryStore) {
+      if (v.resetAt <= now) memoryStore.delete(k);
+    }
+
     const entry = memoryStore.get(key);
     if (!entry || entry.resetAt <= now) {
       memoryStore.set(key, { count: 1, resetAt });
