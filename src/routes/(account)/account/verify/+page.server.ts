@@ -46,5 +46,6 @@ export const load: PageServerLoad = async ({ url }) => {
     await db.updateIsVerified(user.id, 1);
   }
 
-  throw redirect(302, serverResolve("/manage/app/users"));
+  const dest = user.user_type === "subscriber" ? "/" : "/manage/app/users";
+  throw redirect(302, serverResolve(dest));
 };

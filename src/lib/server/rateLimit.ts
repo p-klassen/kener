@@ -1,7 +1,33 @@
 import { redisConnection } from "./redisConnector.js";
 
 // In-memory fallback when Redis is unavailable
+const MEMORY_STORE_MAX = 10_000;
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
+
+// One-time token blocklist for password-reset JTIs (fallback when Redis is unavailable)
+const usedTokens = new Map<string, number>(); // jti → expiry ms
+
+export async function markTokenUsed(jti: string, expiresAtMs: number): Promise<void> {
+  try {
+    const redis = redisConnection();
+    const ttl = Math.max(1, Math.ceil((expiresAtMs - Date.now()) / 1000));
+    await redis.set(`used_token:${jti}`, "1", "EX", ttl);
+  } catch {
+    usedTokens.set(jti, expiresAtMs);
+  }
+}
+
+export async function isTokenUsed(jti: string): Promise<boolean> {
+  try {
+    const redis = redisConnection();
+    return (await redis.get(`used_token:${jti}`)) !== null;
+  } catch {
+    const exp = usedTokens.get(jti);
+    if (!exp) return false;
+    if (Date.now() > exp) { usedTokens.delete(jti); return false; }
+    return true;
+  }
+}
 
 export interface RateLimitOptions {
   windowMs: number;
@@ -46,7 +72,9 @@ export async function checkRateLimit(
 
     const entry = memoryStore.get(key);
     if (!entry || entry.resetAt <= now) {
-      memoryStore.set(key, { count: 1, resetAt });
+      if (memoryStore.size < MEMORY_STORE_MAX) {
+        memoryStore.set(key, { count: 1, resetAt });
+      }
       return { allowed: true, remaining: maxRequests - 1, resetAt };
     }
     entry.count++;

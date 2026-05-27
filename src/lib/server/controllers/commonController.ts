@@ -120,6 +120,7 @@ export const ForgotPasswordJWT = async (data: object): Promise<string> => {
   try {
     const token = jwt.sign(data, process.env.KENER_SECRET_KEY || DUMMY_SECRET, {
       expiresIn: "1h",
+      jwtid: crypto.randomUUID(),
     } as jwt.SignOptions);
     return token;
   } catch (err) {

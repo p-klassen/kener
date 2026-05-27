@@ -43,7 +43,7 @@
   let isPasswordValid = $derived(hasDigit && hasLowercase && hasUppercase && hasMinLength && passwordsMatch);
 
   async function handleRequestReset() {
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!email.trim()) {
       toast.error($t("account.forgot.err_email_required"));
       return;
     }
@@ -297,7 +297,7 @@
           <form onsubmit={handleSubmit}>
             <Field.Group>
               <Field.Field class="relative flex flex-col gap-1">
-                <Field.Label for="email">{$t("account.signin.email_label")}</Field.Label>
+                <Field.Label for="email">{$t("account.forgot.email_label")}</Field.Label>
                 <InputGroup.Root>
                   <InputGroup.Addon>
                     <MailIcon aria-hidden="true" />

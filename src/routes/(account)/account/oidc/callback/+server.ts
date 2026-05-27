@@ -12,12 +12,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
   const errorDesc = url.searchParams.get("error_description");
 
   if (errorParam) {
-    const msg = errorDesc || errorParam;
-    throw redirect(302, serverResolve(`/account/signin?error=${encodeURIComponent(msg)}`));
+    console.error(`OIDC provider error: ${errorParam} – ${errorDesc ?? ""}`);
+    throw redirect(302, serverResolve("/account/signin?error=sso_failed"));
   }
 
   if (!code || !state) {
-    throw redirect(302, serverResolve("/account/signin?error=Missing+OIDC+parameters"));
+    throw redirect(302, serverResolve("/account/signin?error=sso_failed"));
   }
 
   let successUrl: string;
@@ -34,8 +34,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
     const oidcPermissions = oidcUser ? await GetUserPermissions(oidcUser.id) : new Set<string>();
     successUrl = serverResolve(oidcPermissions.size > 0 ? "/manage/app/site-configurations" : "/");
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "OIDC callback error";
-    throw redirect(302, serverResolve(`/account/signin?error=${encodeURIComponent(msg)}`));
+    console.error("OIDC callback error:", e);
+    throw redirect(302, serverResolve("/account/signin?error=sso_failed"));
   }
   throw redirect(302, successUrl);
 };

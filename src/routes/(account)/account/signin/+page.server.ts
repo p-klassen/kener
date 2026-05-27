@@ -96,7 +96,7 @@ export const actions: Actions = {
       throw redirect(302, serverResolve("/account/change-password"));
     }
     if (userDB.user_type === "subscriber") {
-      throw redirect(303, "/");
+      throw redirect(303, serverResolve("/"));
     }
     const loginPermissions = await GetUserPermissions(userDB.id);
     throw redirect(302, serverResolve(loginPermissions.size > 0 ? "/manage/app/site-configurations" : "/"));
@@ -105,7 +105,7 @@ export const actions: Actions = {
     const ip = getClientIp(request);
     const rl = await checkRateLimit("ldap-login", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
     if (!rl.allowed) {
-      return fail(429, { errorKey: "account.signin.err_rate_limited", values: { ldap_username: "" } });
+      return fail(429, { errorKey: "account.signin.err_rate_limited", values: { ldap_username: "" }, mode: "ldap" });
     }
 
     const formData = await request.formData();
@@ -113,7 +113,7 @@ export const actions: Actions = {
     const password = String(formData.get("ldap_password") ?? "");
 
     if (!username || !password) {
-      return fail(400, { errorKey: "account.signin.err_ldap_credentials_required", values: { ldap_username: username } });
+      return fail(400, { errorKey: "account.signin.err_ldap_credentials_required", values: { ldap_username: username }, mode: "ldap" });
     }
 
     let ldapRedirect: string;
@@ -129,14 +129,14 @@ export const actions: Actions = {
         sameSite: cookieConfig.sameSite,
       });
       if (userDB.user_type === "subscriber") {
-        ldapRedirect = "/";
+        ldapRedirect = serverResolve("/");
       } else {
         const ldapPermissions = await GetUserPermissions(userDB.id);
         ldapRedirect = serverResolve(ldapPermissions.size > 0 ? "/manage/app/site-configurations" : "/");
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "LDAP authentication failed";
-      return fail(401, { error: msg, values: { ldap_username: username } });
+      console.error("LDAP authentication error:", e);
+      return fail(401, { errorKey: "account.signin.err_invalid_credentials", values: { ldap_username: username }, mode: "ldap" });
     }
     throw redirect(302, ldapRedirect);
   },

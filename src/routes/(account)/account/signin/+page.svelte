@@ -37,6 +37,10 @@
 
   type AuthMode = "local" | "ldap";
   let authMode: AuthMode = $state("local");
+  // Restore the auth mode from the failed form submission so the LDAP error stays visible after reload
+  $effect(() => {
+    if ((form as { mode?: string } | null)?.mode === "ldap") authMode = "ldap";
+  });
 </script>
 
 <svelte:head>
@@ -77,7 +81,7 @@
           <Alert.Root variant="destructive" class="mb-4">
             <AlertCircleIcon />
             <Alert.Title>{$t("account.signin.sso_failed_title")}</Alert.Title>
-            <Alert.Description>{oidcError}</Alert.Description>
+            <Alert.Description>{$t("account.signin.sso_failed_desc")}</Alert.Description>
           </Alert.Root>
         {/if}
 
@@ -122,11 +126,11 @@
             action="?/ldap"
             onsubmit={() => { ldapLoading = true; }}
           >
-            {#if form?.error || form?.errorKey}
+            {#if form?.errorKey}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
                 <Alert.Title>{$t("account.signin.login_failed_title")}</Alert.Title>
-                <Alert.Description>{form.errorKey ? $t(form.errorKey as string) : form.error}</Alert.Description>
+                <Alert.Description>{$t(form.errorKey as string)}</Alert.Description>
               </Alert.Root>
             {/if}
 
@@ -188,11 +192,11 @@
             action={authActionPath}
             onsubmit={() => { loading = true; }}
           >
-            {#if form?.error || form?.errorKey}
+            {#if form?.errorKey}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
                 <Alert.Title>{!isAdminAccountCreated ? $t("account.signin.signup_failed_title") : $t("account.signin.login_failed_title")}</Alert.Title>
-                <Alert.Description>{form.errorKey ? $t(form.errorKey as string) : form.error}</Alert.Description>
+                <Alert.Description>{$t(form.errorKey as string)}</Alert.Description>
               </Alert.Root>
             {/if}
 

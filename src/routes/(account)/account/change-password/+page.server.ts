@@ -4,6 +4,7 @@ import { GetLoggedInSession } from "$lib/server/controllers/userController";
 import { HashPassword, ValidatePassword } from "$lib/server/controllers/commonController";
 import db from "$lib/server/db/db";
 import serverResolve from "$lib/server/resolver.js";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 
 export const load: PageServerLoad = async ({ cookies }) => {
   const loggedInUser = await GetLoggedInSession(cookies);
@@ -18,6 +19,12 @@ export const load: PageServerLoad = async ({ cookies }) => {
 
 export const actions: Actions = {
   change: async ({ request, cookies }) => {
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit("change-password", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
+    if (!rl.allowed) {
+      return fail(429, { errorKey: "account.change_password.err_rate_limited" });
+    }
+
     const loggedInUser = await GetLoggedInSession(cookies);
     if (!loggedInUser) {
       throw redirect(302, serverResolve("/account/signin"));

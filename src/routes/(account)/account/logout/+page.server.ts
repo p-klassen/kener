@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   const loggedInUser = await GetLoggedInSession(cookies);
   cookies.delete("kener-user", { path: serverResolve("/") });
   if (loggedInUser?.user_type === "subscriber") {
-    throw redirect(302, "/");
+    throw redirect(302, serverResolve("/"));
   }
   throw redirect(302, serverResolve("/account/signin"));
 };

@@ -180,9 +180,11 @@
     nameError = "";
     passwordError = "";
     emailError = "";
+    localeError = "";
     nameSuccess = false;
     passwordSuccess = false;
     emailSuccess = false;
+    localeSuccess = false;
     accountDialogOpen = true;
   }
 

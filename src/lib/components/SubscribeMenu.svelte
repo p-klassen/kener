@@ -82,6 +82,12 @@
   $effect(() => { if (maintenanceScope === "all") maintenanceScopeError = ""; });
 
   $effect(() => {
+    if (!resendSuccess) return;
+    const id = setTimeout(() => (resendSuccess = false), 3000);
+    return () => clearTimeout(id);
+  });
+
+  $effect(() => {
     if (open) {
       initDialog();
     }
@@ -208,7 +214,6 @@
 
       if (currentView === "otp") {
         resendSuccess = true;
-        setTimeout(() => (resendSuccess = false), 3000);
       }
       currentView = "otp";
       otpValue = "";
