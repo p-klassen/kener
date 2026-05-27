@@ -126,7 +126,7 @@
             action="?/ldap"
             onsubmit={() => { ldapLoading = true; }}
           >
-            {#if form?.errorKey}
+            {#if form?.errorKey && (form as { mode?: string })?.mode === "ldap"}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
                 <Alert.Title>{$t("account.signin.login_failed_title")}</Alert.Title>
@@ -192,7 +192,7 @@
             action={authActionPath}
             onsubmit={() => { loading = true; }}
           >
-            {#if form?.errorKey}
+            {#if form?.errorKey && (form as { mode?: string })?.mode !== "ldap"}
               <Alert.Root variant="destructive" class="mb-4">
                 <AlertCircleIcon />
                 <Alert.Title>{!isAdminAccountCreated ? $t("account.signin.signup_failed_title") : $t("account.signin.login_failed_title")}</Alert.Title>

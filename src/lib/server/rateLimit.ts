@@ -5,18 +5,29 @@ const MEMORY_STORE_MAX = 10_000;
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
 
 // One-time token blocklist for password-reset JTIs (fallback when Redis is unavailable)
+const USED_TOKENS_MAX = 1_000;
 const usedTokens = new Map<string, number>(); // jti → expiry ms
 
-export async function markTokenUsed(jti: string, expiresAtMs: number): Promise<void> {
+/** Atomically claim a one-time token. Returns true if acquired (first use), false if already used. */
+export async function acquireToken(jti: string, expiresAtMs: number): Promise<boolean> {
+  const ttl = Math.max(1, Math.ceil((expiresAtMs - Date.now()) / 1000));
   try {
     const redis = redisConnection();
-    const ttl = Math.max(1, Math.ceil((expiresAtMs - Date.now()) / 1000));
-    await redis.set(`used_token:${jti}`, "1", "EX", ttl);
+    // SET NX is atomic: returns "OK" on first write, null if key already exists
+    const result = await redis.set(`used_token:${jti}`, "1", "EX", ttl, "NX");
+    return result !== null;
   } catch {
-    usedTokens.set(jti, expiresAtMs);
+    // JS is single-threaded so the in-memory path has no real race
+    const exp = usedTokens.get(jti);
+    if (exp && Date.now() <= exp) return false; // already used
+    if (usedTokens.size < USED_TOKENS_MAX) {
+      usedTokens.set(jti, expiresAtMs);
+    }
+    return true;
   }
 }
 
+/** Non-atomic read — use for early UX checks only (e.g. page load). Use acquireToken for actual enforcement. */
 export async function isTokenUsed(jti: string): Promise<boolean> {
   try {
     const redis = redisConnection();
@@ -74,6 +85,8 @@ export async function checkRateLimit(
     if (!entry || entry.resetAt <= now) {
       if (memoryStore.size < MEMORY_STORE_MAX) {
         memoryStore.set(key, { count: 1, resetAt });
+      } else {
+        console.warn(`rateLimit: in-memory store full (${MEMORY_STORE_MAX} entries); bypassing rate limit for ${action}:${ip}`);
       }
       return { allowed: true, remaining: maxRequests - 1, resetAt };
     }

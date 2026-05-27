@@ -275,7 +275,7 @@ export const ChangeOwnEmail = async (userId: number, newEmail: string, currentPa
   try {
     const user = await db.getUserById(userId);
     if (user) {
-      const token = await GenerateToken({ email: normalizedEmail, validTill: Date.now() + 24 * 60 * 60 * 1000 });
+      const token = await GenerateToken({ email: normalizedEmail, validTill: Math.floor(Date.now() / 1000) + 24 * 60 * 60 });
       const siteData = await GetAllSiteData();
       const siteVars = siteDataToVariables(siteData);
       const verificationLink = `${siteVars.site_url || ""}account/verify?view=confirm_token&token=${token}`;
@@ -473,7 +473,7 @@ export const SendInvitationEmail = async (email: string, role_ids: string[], nam
 
   const token = await GenerateToken({
     email: normalizedEmail,
-    validTill: Date.now() + 7 * 24 * 60 * 60 * 1000, //7 days
+    validTill: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, //7 days
   });
 
   const siteData = await GetAllSiteData();
@@ -515,7 +515,7 @@ export const ResendInvitationEmail = async (email: string) => {
 
   const token = await GenerateToken({
     email: normalizedEmail,
-    validTill: Date.now() + 7 * 24 * 60 * 60 * 1000, //7 days
+    validTill: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, //7 days
   });
 
   const siteData = await GetAllSiteData();
@@ -558,7 +558,7 @@ export const SendVerificationEmail = async (toUserId: number, currentUserId: num
 
   const token = await GenerateToken({
     email: user.email,
-    validTill: Date.now() + 24 * 60 * 60 * 1000, //24 hours
+    validTill: Math.floor(Date.now() / 1000) + 24 * 60 * 60, //24 hours
   });
 
   const siteData = await GetAllSiteData();

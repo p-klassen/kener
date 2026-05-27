@@ -6,7 +6,7 @@ import {
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import db from "$lib/server/db/db.js";
-import { checkRateLimit, getClientIp, isTokenUsed, markTokenUsed } from "$lib/server/rateLimit.js";
+import { checkRateLimit, getClientIp, acquireToken } from "$lib/server/rateLimit.js";
 
 export const POST: RequestHandler = async ({ request }) => {
   const ip = getClientIp(request);
@@ -30,10 +30,13 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
   }
 
-  // Reject tokens that have already been used (one-time use)
+  // Atomically claim the token — rejects if already used (one-time use via SET NX)
   const jti = tokenData.jti;
-  if (jti && await isTokenUsed(jti)) {
-    return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
+  if (jti) {
+    const acquired = await acquireToken(jti, (tokenData.exp ?? 0) * 1000);
+    if (!acquired) {
+      return json({ errorKey: "account.forgot.err_invalid_token" }, { status: 400 });
+    }
   }
 
   const email = tokenData.email;
@@ -48,11 +51,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const password_hash = await HashPassword(newPassword);
   await db.updateUserPassword({ id: userDB.id, password_hash });
   await db.updateIsVerified(userDB.id, 1);
-
-  // Invalidate the token so it cannot be reused within its lifetime
-  if (jti && tokenData.exp) {
-    await markTokenUsed(jti, tokenData.exp * 1000);
-  }
 
   return json({ success: true });
 };

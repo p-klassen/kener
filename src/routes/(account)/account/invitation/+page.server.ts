@@ -1,5 +1,6 @@
 import type { PageServerLoad } from "./$types";
 import { VerifyToken } from "$lib/server/controllers/commonController.js";
+import { GetLoggedInSession } from "$lib/server/controllers/controller.js";
 import db from "$lib/server/db/db.js";
 import { GetUserPasswordHashById } from "$lib/server/controllers/userController.js";
 import serverResolve from "$lib/server/resolver.js";
@@ -38,7 +39,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
   // Check if token has expired (validTill)
   const validTill = tokenData.validTill;
-  if (!validTill || Date.now() > validTill) {
+  if (!validTill || Math.floor(Date.now() / 1000) > validTill) {
     return {
       valid: false,
       errorKey: "account.invitation.err_expired",
@@ -65,8 +66,12 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     };
   }
 
-  // Clear any existing session only when the invitation link is valid and the user will set a password
-  cookies.delete("kener-user", { path: serverResolve("/") });
+  // Only clear the session if no other user is logged in, or if the logged-in user IS the invited
+  // user. This prevents silently logging out an admin who visits the link to verify it works.
+  const currentSession = await GetLoggedInSession(cookies);
+  if (!currentSession || currentSession.email === user.email) {
+    cookies.delete("kener-user", { path: serverResolve("/") });
+  }
 
   return {
     valid: true,

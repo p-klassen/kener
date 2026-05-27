@@ -12,7 +12,8 @@ export const load: PageServerLoad = async ({ cookies }) => {
     throw redirect(302, serverResolve("/account/signin"));
   }
   if (!loggedInUser.must_change_password) {
-    throw redirect(302, serverResolve("/manage/app/site-configurations"));
+    const dest = loggedInUser.user_type === "subscriber" ? "/" : "/manage/app/site-configurations";
+    throw redirect(302, serverResolve(dest));
   }
   return {};
 };
@@ -30,7 +31,8 @@ export const actions: Actions = {
       throw redirect(302, serverResolve("/account/signin"));
     }
     if (!loggedInUser.must_change_password) {
-      throw redirect(302, serverResolve("/manage/app/site-configurations"));
+      const destEarly = loggedInUser.user_type === "subscriber" ? "/" : "/manage/app/site-configurations";
+      throw redirect(302, serverResolve(destEarly));
     }
 
     const formData = await request.formData();
@@ -51,6 +53,7 @@ export const actions: Actions = {
     await db.updateUserPassword({ id: loggedInUser.id, password_hash: passwordHash });
     await db.updateMustChangePassword(loggedInUser.id, 0);
 
-    throw redirect(302, serverResolve("/manage/app/site-configurations"));
+    const dest = loggedInUser.user_type === "subscriber" ? "/" : "/manage/app/site-configurations";
+    throw redirect(302, serverResolve(dest));
   },
 };

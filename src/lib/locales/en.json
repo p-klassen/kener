@@ -1257,7 +1257,7 @@
     "account.invitation.title_activated": "Account Activated",
     "account.invitation.activated_desc": "Your account has been set up successfully. You can now sign in with your new password.",
     "account.invitation.welcome_greeting": "Welcome,",
-    "account.invitation.welcome_desc_before": "You've been invited to join as",
+    "account.invitation.welcome_desc_before": "You've been invited to join",
     "account.invitation.welcome_desc_after": "Create a password to activate your account and get started.",
     "account.invitation.password_label": "Password",
     "account.invitation.confirm_password_label": "Confirm Password",

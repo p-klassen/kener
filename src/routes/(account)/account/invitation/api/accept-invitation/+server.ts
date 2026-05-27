@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   // Check token expiry
   const validTill = tokenData.validTill;
-  if (!validTill || Date.now() > validTill) {
+  if (!validTill || Math.floor(Date.now() / 1000) > validTill) {
     return json({ errorKey: "account.invitation.err_expired" }, { status: 400 });
   }
 

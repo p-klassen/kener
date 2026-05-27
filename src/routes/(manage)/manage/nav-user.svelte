@@ -60,6 +60,12 @@
   let nameSuccess = $state(false);
   let passwordSuccess = $state(false);
 
+  // Auto-clear success flags after a short delay (with cleanup on destroy)
+  $effect(() => { if (!nameSuccess) return; const id = setTimeout(() => (nameSuccess = false), 2000); return () => clearTimeout(id); });
+  $effect(() => { if (!passwordSuccess) return; const id = setTimeout(() => (passwordSuccess = false), 2000); return () => clearTimeout(id); });
+  $effect(() => { if (!emailSuccess) return; const id = setTimeout(() => (emailSuccess = false), 3000); return () => clearTimeout(id); });
+  $effect(() => { if (!localeSuccess) return; const id = setTimeout(() => (localeSuccess = false), 2000); return () => clearTimeout(id); });
+
   // Password validation
   let hasDigit = $derived(/\d/.test(myPassword));
   let hasLowercase = $derived(/[a-z]/.test(myPassword));
@@ -102,7 +108,6 @@
       } else {
         user.name = myName;
         nameSuccess = true;
-        setTimeout(() => (nameSuccess = false), 2000);
       }
     } catch {
       nameError = $t("manage.user_menu.error_save_name");
@@ -131,7 +136,6 @@
         myPassword = "";
         plainPassword = "";
         passwordSuccess = true;
-        setTimeout(() => (passwordSuccess = false), 2000);
       }
     } catch {
       passwordError = $t("manage.user_menu.error_update_password");
@@ -162,7 +166,6 @@
         newEmail = "";
         emailCurrentPassword = "";
         emailSuccess = true;
-        setTimeout(() => (emailSuccess = false), 3000);
       }
     } catch {
       emailError = $t("manage.user_menu.error_change_email");
@@ -207,7 +210,6 @@
         currentLocale = locale;
         await i18n.setLocale(locale);
         localeSuccess = true;
-        setTimeout(() => (localeSuccess = false), 2000);
       }
     } catch {
       localeError = $t("manage.user_menu.error_save_locale");

@@ -13,3 +13,14 @@ export interface TokenPayload extends JwtPayload {
   name: string;
   role: string;
 }
+
+/**
+ * Payload for one-time tokens that only carry an email address
+ * (forgot-password, invitation, email-verify). These tokens do NOT
+ * contain id/name/role — use this type instead of TokenPayload to
+ * avoid unsafe casts.
+ */
+export interface EmailTokenPayload extends JwtPayload {
+  email: string;
+  validTill?: number;
+}

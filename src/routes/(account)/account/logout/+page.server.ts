@@ -21,7 +21,7 @@ export const actions: Actions = {
 
     // Redirect subscribers back to status page, others to signin
     if (loggedInUser?.user_type === "subscriber") {
-      throw redirect(302, "/");
+      throw redirect(302, serverResolve("/"));
     }
 
     throw redirect(302, serverResolve("/account/signin"));

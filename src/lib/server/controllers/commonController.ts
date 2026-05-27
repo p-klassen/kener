@@ -28,7 +28,7 @@ export const VerifyPassword = async (plainTextPassword: string, hashedPassword: 
     throw err;
   }
 };
-import type { TokenPayload } from "$lib/server/types/auth.js";
+import type { TokenPayload, EmailTokenPayload } from "$lib/server/types/auth.js";
 import type { SMTPConfiguration } from "../notification/types";
 
 export interface ResendConfiguration {
@@ -36,13 +36,13 @@ export interface ResendConfiguration {
   resend_sender_email: string;
 }
 
-export const VerifyToken = async (token: string): Promise<TokenPayload | undefined> => {
+export const VerifyToken = async (token: string): Promise<TokenPayload | EmailTokenPayload | undefined> => {
   try {
     const decoded = jwt.verify(token, process.env.KENER_SECRET_KEY || DUMMY_SECRET);
     if (typeof decoded === "string") {
       return undefined;
     }
-    return decoded as TokenPayload;
+    return decoded as TokenPayload | EmailTokenPayload;
   } catch (err) {
     return undefined;
   }
