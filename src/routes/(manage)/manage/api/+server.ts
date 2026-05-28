@@ -238,6 +238,9 @@ export async function POST({ request, cookies }) {
       if (userDB.auth_provider !== "local") {
         throw new Error("Password cannot be changed for accounts authenticated via OIDC or LDAP");
       }
+      if (!data.currentPassword) {
+        throw new Error("Current password is required");
+      }
       data.userID = userDB.id;
       resp = await UpdatePassword(data);
     } else if (action == "changeOwnEmail") {

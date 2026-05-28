@@ -59,12 +59,17 @@ export default async function send(
     }
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
   try {
     const response = await fetch(webhookURL, {
       method: "POST",
       headers: headersObj,
       body: renderedBody,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -75,6 +80,11 @@ export default async function send(
     const responseData = await response.text();
     return { success: true, status: response.status, data: responseData };
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error(`Webhook request timed out after 10 s: ${webhookURL}`);
+      return { error: "Webhook request timed out" };
+    }
     console.error("Error sending webhook", error);
     return { error: "Error sending webhook", details: error };
   }

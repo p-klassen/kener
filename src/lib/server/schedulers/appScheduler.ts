@@ -26,59 +26,68 @@ const addWorker = () => {
   if (worker) return worker;
 
   worker = q.createWorker(getQueue(), async (job: Job) => {
-    const activeMonitors = (await GetMonitorsParsed({ status: "ACTIVE" })).map((monitor) => ({
-      ...monitor,
-      hash: monitor.tag + "::" + HashString(JSON.stringify(monitor)),
-    }));
+    try {
+      const activeMonitors = (await GetMonitorsParsed({ status: "ACTIVE" })).map((monitor) => ({
+        ...monitor,
+        hash: monitor.tag + "::" + HashString(JSON.stringify(monitor)),
+      }));
 
-    const minNumOfWorkers = Math.max(activeMonitors.length, 1);
-    //get all schedulers
-    const schedulers = await getSchedulers(minNumOfWorkers);
+      const minNumOfWorkers = Math.max(activeMonitors.length, 1);
+      //get all schedulers
+      const schedulers = await getSchedulers(minNumOfWorkers);
 
-    const activeMap = new Map<string, MonitorRecordTyped>();
-    for (let i = 0; i < activeMonitors.length; i++) {
-      const monitor = activeMonitors[i];
-      activeMap.set(monitor.hash, monitor);
-    }
-
-    //remove schedulers that are not in active monitors
-    for (let i = 0; i < schedulers.length; i++) {
-      const existingJob = schedulers[i];
-
-      const matchingMonitor = activeMap.get(existingJob.name);
-      if (!matchingMonitor) {
-        //remove scheduler
-        console.log("REMOVING INACTIVE SCHEDULER: " + existingJob.name.split("::")[0]);
-        await removeJobFromSchedulerQueue(existingJob.name, minNumOfWorkers);
+      const activeMap = new Map<string, MonitorRecordTyped>();
+      for (let i = 0; i < activeMonitors.length; i++) {
+        const monitor = activeMonitors[i];
+        activeMap.set(monitor.hash, monitor);
       }
-    }
 
-    //active job map
-    const activeJobMap = new Map<string, any>();
-    for (let i = 0; i < schedulers.length; i++) {
-      const job = schedulers[i];
-      activeJobMap.set(job.name, job);
-    }
+      //remove schedulers that are not in active monitors
+      for (let i = 0; i < schedulers.length; i++) {
+        const existingJob = schedulers[i];
 
-    //create schedulers for active monitors that don't have one
-    for (let i = 0; i < activeMonitors.length; i++) {
-      const monitor = activeMonitors[i];
-      const existingJob = activeJobMap.get(monitor.hash);
-      if (!existingJob && monitor.cron) {
-        await addJobToSchedulerQueue(minNumOfWorkers, monitor, monitor.hash);
-        console.log("ADDING NEW SCHEDULER: " + monitor.tag);
+        const matchingMonitor = activeMap.get(existingJob.name);
+        if (!matchingMonitor) {
+          //remove scheduler
+          console.log("REMOVING INACTIVE SCHEDULER: " + existingJob.name.split("::")[0]);
+          await removeJobFromSchedulerQueue(existingJob.name, minNumOfWorkers);
+        }
       }
+
+      //active job map
+      const activeJobMap = new Map<string, any>();
+      for (let i = 0; i < schedulers.length; i++) {
+        const job = schedulers[i];
+        activeJobMap.set(job.name, job);
+      }
+
+      //create schedulers for active monitors that don't have one
+      for (let i = 0; i < activeMonitors.length; i++) {
+        const monitor = activeMonitors[i];
+        const existingJob = activeJobMap.get(monitor.hash);
+        if (!existingJob && monitor.cron) {
+          await addJobToSchedulerQueue(minNumOfWorkers, monitor, monitor.hash);
+          console.log("ADDING NEW SCHEDULER: " + monitor.tag);
+        }
+      }
+
+      //we have to update the maintenances events also
+      await UpdateMaintenanceEventStatuses();
+
+      return activeMonitors.length;
+    } catch (err) {
+      console.error("appScheduler: error during scheduling cycle:", err);
+      return 0;
     }
-
-    //we have to update the maintenances events also
-    await UpdateMaintenanceEventStatuses();
-
-    return activeMonitors.length;
   });
 
   // worker.on("completed", (job: Job, returnvalue: any) => {
   //   console.log(`Queue: `, returnvalue);
   // });
+
+  worker.on("failed", (job: Job | undefined, err: Error) => {
+    console.error("appScheduler: job failed:", err.message);
+  });
 
   return worker;
 };

@@ -92,7 +92,7 @@ async function createNewIncident(
     event_type: "incidents",
     monitor_tags: [monitorTag],
   };
-  subscriberQueue.push(updateVariables);
+  await subscriberQueue.push(updateVariables);
   return incidentCreated;
 }
 
@@ -129,7 +129,7 @@ async function closeIncident(
     event_type: "incidents",
     monitor_tags: [monitorTag],
   };
-  subscriberQueue.push(updateMessage);
+  await subscriberQueue.push(updateMessage);
   await AddIncidentComment(incident_id, comment, GC.RESOLVED, updatedAt);
 }
 
@@ -313,6 +313,11 @@ const addWorker = () => {
   worker.on("completed", (job: Job, returnvalue: any) => {
     // const { monitor_tag, ts, status } = job.data as JobData;
     // console.log(`🚨 Alerting: ${monitor_tag} @ ${new Date(ts * 1000).toISOString()}`);
+  });
+
+  worker.on("failed", (job: Job | undefined, err: Error) => {
+    const tag = (job?.data as JobData | undefined)?.monitor_tag ?? "unknown";
+    console.error(`alertingQueue: job failed (monitor: ${tag}):`, err.message);
   });
 
   return worker;

@@ -4,7 +4,12 @@ import crypto from "crypto";
 import db from "../db/db.js";
 
 const saltRounds = 12;
-const DUMMY_SECRET = "DUMMY_SECRET";
+
+function getJwtSecret(): string {
+  const secret = process.env.KENER_SECRET_KEY;
+  if (!secret) throw new Error("KENER_SECRET_KEY environment variable is required but not set");
+  return secret;
+}
 
 export const ValidatePassword = (password: string): boolean => {
   return /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/.test(password);
@@ -38,7 +43,7 @@ export interface ResendConfiguration {
 
 export const VerifyToken = async (token: string): Promise<TokenPayload | EmailTokenPayload | undefined> => {
   try {
-    const decoded = jwt.verify(token, process.env.KENER_SECRET_KEY || DUMMY_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     if (typeof decoded === "string") {
       return undefined;
     }
@@ -106,7 +111,7 @@ export const GetResendConfig = async (): Promise<ResendConfiguration | null> => 
 
 export const GenerateTokenWithExpiry = async (data: object, expiry: string): Promise<string> => {
   try {
-    const token = jwt.sign(data, process.env.KENER_SECRET_KEY || DUMMY_SECRET, {
+    const token = jwt.sign(data, getJwtSecret(), {
       expiresIn: expiry,
     } as jwt.SignOptions);
     return token;
@@ -118,7 +123,7 @@ export const GenerateTokenWithExpiry = async (data: object, expiry: string): Pro
 
 export const GenerateTokenWithJTI = async (data: object, expiry: string): Promise<string> => {
   try {
-    const token = jwt.sign(data, process.env.KENER_SECRET_KEY || DUMMY_SECRET, {
+    const token = jwt.sign(data, getJwtSecret(), {
       expiresIn: expiry,
       jwtid: crypto.randomUUID(),
     } as jwt.SignOptions);
@@ -131,7 +136,7 @@ export const GenerateTokenWithJTI = async (data: object, expiry: string): Promis
 
 export const ForgotPasswordJWT = async (data: object): Promise<string> => {
   try {
-    const token = jwt.sign(data, process.env.KENER_SECRET_KEY || DUMMY_SECRET, {
+    const token = jwt.sign(data, getJwtSecret(), {
       expiresIn: "1h",
       jwtid: crypto.randomUUID(),
     } as jwt.SignOptions);
@@ -143,7 +148,7 @@ export const ForgotPasswordJWT = async (data: object): Promise<string> => {
 };
 export const GenerateToken = async (data: object): Promise<string> => {
   try {
-    const token = jwt.sign(data, process.env.KENER_SECRET_KEY || DUMMY_SECRET, {
+    const token = jwt.sign(data, getJwtSecret(), {
       expiresIn: "1y",
     } as jwt.SignOptions);
     return token;
@@ -186,7 +191,7 @@ export const MaskString = (str: string): string => {
 
 export const CreateHash = (apiKey: string): string => {
   return crypto
-    .createHmac("sha256", process.env.KENER_SECRET_KEY || DUMMY_SECRET)
+    .createHmac("sha256", getJwtSecret())
     .update(apiKey)
     .digest("hex");
 };

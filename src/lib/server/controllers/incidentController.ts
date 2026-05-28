@@ -234,11 +234,24 @@ export const CreateNewIncidentWithCommentAndMonitor = async (
   monitorTag: string,
   monitorStatus: string,
 ): Promise<{ incident_id: number }> => {
-  let incidentCreation = await CreateIncident(data);
-  await AddIncidentComment(incidentCreation.incident_id, update, GC.INVESTIGATING, data.start_date_time);
-  await AddIncidentMonitor(incidentCreation.incident_id, monitorTag, monitorStatus);
-
-  return incidentCreation;
+  let incidentCreation: { incident_id: number } | null = null;
+  try {
+    incidentCreation = await CreateIncident(data);
+    await AddIncidentComment(incidentCreation.incident_id, update, GC.INVESTIGATING, data.start_date_time);
+    await AddIncidentMonitor(incidentCreation.incident_id, monitorTag, monitorStatus);
+    return incidentCreation;
+  } catch (err) {
+    // Compensate: remove the incident if the comment/monitor association failed,
+    // so orphaned incidents cannot suppress future alerts
+    if (incidentCreation?.incident_id) {
+      try {
+        await db.deleteIncident(incidentCreation.incident_id);
+      } catch (cleanupErr) {
+        console.error(`Failed to clean up partial incident #${incidentCreation.incident_id}:`, cleanupErr);
+      }
+    }
+    throw err;
+  }
 };
 
 export const IncidentCreateAlertMarkdown = (

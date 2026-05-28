@@ -111,6 +111,7 @@ const addWorker = () => {
 
   worker = q.createWorker(getQueue(), async (job: Job): Promise<MonitoringResultTS> => {
     const { monitor, ts } = job.data as JobData;
+    try {
     const serviceClient = new Service(monitor as MonitorWithType);
 
     const exeResult = await serviceClient.execute(ts);
@@ -187,15 +188,23 @@ const addWorker = () => {
     }
 
     for (const timestamp in mergedData) {
-      monitorResponseQueue.push(monitor.tag, parseInt(timestamp), mergedData[timestamp]);
+      await monitorResponseQueue.push(monitor.tag, parseInt(timestamp), mergedData[timestamp]);
     }
 
     return mergedData;
+    } catch (err) {
+      console.error(`monitorExecuteQueue: error processing job for monitor "${(job.data as JobData).monitor?.tag}":`, err);
+      return {};
+    }
   });
 
   worker.on("completed", (job: Job, returnvalue: any) => {
     // const { monitor, ts } = job.data as JobData;
     // console.log(`📀 Execute: ${monitor.tag} @ ${new Date(ts * 1000).toISOString()}`);
+  });
+
+  worker.on("failed", (job: Job | undefined, err: Error) => {
+    console.error(`monitorExecuteQueue: job failed${job ? ` (monitor: ${(job.data as JobData).monitor?.tag})` : ""}:`, err.message);
   });
 
   return worker;

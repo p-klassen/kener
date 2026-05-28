@@ -31,36 +31,45 @@ const addWorker = () => {
 
   worker = q.createWorker(getQueue(), async (job: Job): Promise<MonitoringData | null> => {
     const { monitorTag, ts, status, latency, type, error_message } = job.data as JobData;
+    try {
+      const dbRes = await InsertMonitoringData({
+        monitor_tag: monitorTag,
+        timestamp: ts,
+        status: status,
+        latency: latency,
+        type: type,
+        error_message: error_message,
+      });
 
-    const dbRes = await InsertMonitoringData({
-      monitor_tag: monitorTag,
-      timestamp: ts,
-      status: status,
-      latency: latency,
-      type: type,
-      error_message: error_message,
-    });
+      if (!dbRes) {
+        console.error("Failed to insert monitoring data for monitorTag:", monitorTag, "timestamp:", ts);
+        throw new Error("Failed to insert monitoring data");
+      }
 
-    if (!dbRes) {
-      console.error("Failed to insert monitoring data for monitorTag:", monitorTag, "timestamp:", ts);
-      throw new Error("Failed to insert monitoring data");
+      await SetLastMonitoringValue(monitorTag, {
+        monitor_tag: monitorTag,
+        timestamp: ts,
+        status: status,
+        latency: latency,
+        type: type,
+      });
+      await alertingQueue.push(monitorTag, ts, status);
+
+      return dbRes;
+    } catch (err) {
+      console.error(`monitorResponseQueue: error processing job for monitor "${monitorTag}":`, err);
+      return null;
     }
-
-    await SetLastMonitoringValue(monitorTag, {
-      monitor_tag: monitorTag,
-      timestamp: ts,
-      status: status,
-      latency: latency,
-      type: type,
-    });
-    alertingQueue.push(monitorTag, ts, status);
-
-    return dbRes;
   });
 
   worker.on("completed", (job: Job, returnvalue: any) => {
     // const { monitorTag, ts, status, latency, type } = job.data as JobData;
     // console.log(`💾 Store: ${monitorTag} @ ${new Date(ts * 1000).toISOString()}`);
+  });
+
+  worker.on("failed", (job: Job | undefined, err: Error) => {
+    const tag = (job?.data as JobData | undefined)?.monitorTag ?? "unknown";
+    console.error(`monitorResponseQueue: job failed (monitor: ${tag}):`, err.message);
   });
 
   return worker;
