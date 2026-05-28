@@ -289,7 +289,7 @@
   // Resend invitation email
   async function resendInvitationEmail(email: string) {
     try {
-      await fetch(clientResolver(resolve, "/manage/api"), {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -297,7 +297,12 @@
           data: { email }
         })
       });
-      toast.success("Invitation email resent");
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        toast.error(result.error || "Failed to resend invitation email");
+      } else {
+        toast.success("Invitation email resent");
+      }
     } catch (error) {
       toast.error("Failed to resend invitation email");
     }
@@ -358,7 +363,7 @@
   }
 
   // Manual update user data
-  async function manualUpdateData(updateType: string) {
+  async function manualUpdateData(updateType: string): Promise<{ error?: string } | undefined> {
     if (!toEditUser) return;
 
     manualUpdateError = "";
@@ -377,6 +382,7 @@
 
       if (result.error) {
         manualUpdateError = result.error;
+        return result;
       } else {
         users = users.map((user) => (user.id === toEditUser!.id ? result : user));
         manualSuccess = `User ${updateType} updated successfully`;
@@ -387,9 +393,11 @@
 
           actions: toEditUser.actions
         };
+        return result;
       }
     } catch (error) {
       manualUpdateError = "Error while updating user";
+      return { error: "Error while updating user" };
     }
   }
 
@@ -970,7 +978,11 @@
                   onclick={() => {
                     toEditUser!.actions.deactivatingUser = true;
                     toEditUser!.is_active = 0;
-                    manualUpdateData("is_active").then(() => {
+                    manualUpdateData("is_active").then((result) => {
+                      if (result?.error) {
+                        toEditUser!.is_active = 1;
+                        toast.error(result.error);
+                      }
                       toEditUser!.actions.deactivatingUser = false;
                     });
                   }}
@@ -992,7 +1004,11 @@
                   onclick={() => {
                     toEditUser!.actions.activatingUser = true;
                     toEditUser!.is_active = 1;
-                    manualUpdateData("is_active").then(() => {
+                    manualUpdateData("is_active").then((result) => {
+                      if (result?.error) {
+                        toEditUser!.is_active = 0;
+                        toast.error(result.error);
+                      }
                       toEditUser!.actions.activatingUser = false;
                     });
                   }}

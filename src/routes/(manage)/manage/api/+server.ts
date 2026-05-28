@@ -1109,6 +1109,28 @@ export async function POST({ request, cookies }) {
       const { issuer_url } = data as { issuer_url: string };
       if (!issuer_url) throw new Error("issuer_url is required");
       try {
+        let parsedUrl: URL;
+        try {
+          parsedUrl = new URL(issuer_url);
+        } catch {
+          throw new Error("issuer_url is not a valid URL");
+        }
+        if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+          throw new Error("issuer_url must use http or https");
+        }
+        const hostname = parsedUrl.hostname.toLowerCase();
+        if (
+          hostname === "localhost" ||
+          hostname === "::1" ||
+          hostname === "0.0.0.0" ||
+          /^127\./.test(hostname) ||
+          /^169\.254\./.test(hostname) ||
+          /^10\./.test(hostname) ||
+          /^192\.168\./.test(hostname) ||
+          /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)
+        ) {
+          throw new Error("issuer_url must not point to a local or private address");
+        }
         const discoveryUrl = issuer_url.replace(/\/$/, "") + "/.well-known/openid-configuration";
         const r = await fetch(discoveryUrl, { signal: AbortSignal.timeout(5000) });
         if (!r.ok) throw new Error(`Discovery endpoint returned ${r.status}`);

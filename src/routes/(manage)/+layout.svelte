@@ -103,7 +103,7 @@
 			--maintenance: ${data.siteStatusColors.MAINTENANCE};
 			--accent: ${data.siteStatusColors.ACCENT || "#f4f4f5"};
 			--accent-foreground: ${data.siteStatusColors.ACCENT_FOREGROUND || data.siteStatusColors.ACCENT || "#e96e2d"};
-			${data.font?.family ? `--font-family:'${data.font.family}', sans-serif;` : ""}
+			${data.font?.family ? `--font-family:'${data.font.family.replace(/[^a-zA-Z0-9 \-_]/g, "")}', sans-serif;` : ""}
 		}
 		:is(.dark) .kener-manage {
 			--up: ${data.siteStatusColorsDark.UP};

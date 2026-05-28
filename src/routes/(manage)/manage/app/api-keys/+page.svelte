@@ -56,7 +56,7 @@
         apiKeys = result;
       }
     } catch (e) {
-      toast.error("Failed to load API keys");
+      toast.error($t("manage.api_keys.load_error"));
     } finally {
       loading = false;
     }
@@ -64,7 +64,7 @@
 
   async function createNewAPIKey() {
     if (!newAPIKeyName.trim()) {
-      toast.error("Please enter a name for the API key");
+      toast.error($t("manage.api_keys.create_error_name"));
       return;
     }
 
@@ -83,13 +83,13 @@
         toast.error(result.error);
       } else {
         newKeyResp = result;
-        toast.success("API key created successfully");
+        toast.success($t("manage.api_keys.created_toast"));
         loadAPIKeys();
         showCreateDialog = false;
         newAPIKeyName = "";
       }
     } catch (e) {
-      toast.error("Failed to create API key");
+      toast.error($t("manage.api_keys.create_error"));
     } finally {
       creating = false;
     }
@@ -112,10 +112,10 @@
       } else {
         apiKey.status = newStatus;
         apiKeys = [...apiKeys];
-        toast.success(`API key ${newStatus === "ACTIVE" ? "activated" : "deactivated"}`);
+        toast.success($t(newStatus === "ACTIVE" ? "manage.api_keys.status_active" : "manage.api_keys.status_inactive"));
       }
     } catch (e) {
-      toast.error("Failed to update API key status");
+      toast.error($t("manage.api_keys.load_error"));
     }
   }
 
@@ -141,11 +141,11 @@
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("API key deleted successfully");
+        toast.success($t("manage.api_keys.delete_toast"));
         await loadAPIKeys();
       }
     } catch (e) {
-      toast.error("Failed to delete API key");
+      toast.error($t("manage.api_keys.delete_error"));
     } finally {
       deleting = false;
       deleteDialogOpen = false;
@@ -157,7 +157,7 @@
     if (newKeyResp.apiKey) {
       navigator.clipboard.writeText(newKeyResp.apiKey);
       copied = true;
-      toast.success("API key copied to clipboard");
+      toast.success($t("manage.api_keys.copied_toast"));
       setTimeout(() => {
         copied = false;
       }, 2000);
@@ -188,7 +188,7 @@
   <div class="flex items-center justify-end">
     <Button onclick={() => (showCreateDialog = true)}>
       <Plus class="h-4 w-4" />
-      Create New API Key
+      {$t("manage.api_keys.create_button")}
     </Button>
   </div>
 
@@ -198,7 +198,7 @@
       <Card.Content class="">
         <div class="flex items-start gap-3">
           <div class="flex-1">
-            <p class="font-medium text-green-800 dark:text-green-200">🎉 API Key Created Successfully</p>
+            <p class="font-medium text-green-800 dark:text-green-200">{$t("manage.api_keys.created_alert_title")}</p>
             <div class="relative mt-2">
               <code class="bg-background block rounded-md border px-4 py-2 pr-12 font-mono text-sm">
                 {newKeyResp.apiKey}
@@ -217,11 +217,10 @@
               </Button>
             </div>
             <p class="text-muted-foreground mt-2 text-xs">
-              Your new API key has been created. It will <strong class="uppercase underline">not be shown again</strong
-              >, so make sure to save it.
+              {$t("manage.api_keys.created_alert_desc")}
             </p>
           </div>
-          <Button size="sm" variant="ghost" onclick={dismissNewKey}>Dismiss</Button>
+          <Button size="sm" variant="ghost" onclick={dismissNewKey}>{$t("manage.api_keys.dismiss")}</Button>
         </div>
       </Card.Content>
     </Card.Root>
@@ -237,18 +236,18 @@
       {:else if apiKeys.length === 0}
         <div class="text-muted-foreground py-12 text-center">
           <KeyIcon class="mx-auto mb-4 h-12 w-12 opacity-50" />
-          <p>No API keys found</p>
-          <p class="text-sm">Create your first API key to get started</p>
+          <p>{$t("manage.api_keys.no_keys")}</p>
+          <p class="text-sm">{$t("manage.api_keys.no_keys_helper")}</p>
         </div>
       {:else}
         <Table.Root class="p-4">
           <Table.Header>
             <Table.Row>
-              <Table.Head class="pl-4">Name</Table.Head>
-              <Table.Head>Key</Table.Head>
-              <Table.Head>Created At</Table.Head>
-              <Table.Head class="pr-4 text-right">Status</Table.Head>
-              <Table.Head class="pr-4 text-right">Actions</Table.Head>
+              <Table.Head class="pl-4">{$t("manage.api_keys.col_name")}</Table.Head>
+              <Table.Head>{$t("manage.api_keys.col_key")}</Table.Head>
+              <Table.Head>{$t("manage.api_keys.col_created_at")}</Table.Head>
+              <Table.Head class="pr-4 text-right">{$t("manage.api_keys.col_status")}</Table.Head>
+              <Table.Head class="pr-4 text-right">{$t("manage.api_keys.col_actions")}</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -266,7 +265,7 @@
                 <Table.Cell class="pr-4 text-right">
                   <div class="flex items-center justify-end gap-2">
                     <span class="text-muted-foreground text-xs">
-                      {apiKey.status === "ACTIVE" ? "Active" : "Inactive"}
+                      {apiKey.status === "ACTIVE" ? $t("manage.api_keys.status_active") : $t("manage.api_keys.status_inactive")}
                     </span>
                     <Switch checked={apiKey.status === "ACTIVE"} onCheckedChange={() => updateStatus(apiKey)} />
                   </div>
@@ -279,7 +278,7 @@
                     onclick={() => openDeleteDialog(apiKey)}
                   >
                     <Trash2 class="h-4 w-4" />
-                    Delete
+                    {$t("manage.api_keys.delete_dialog_title")}
                   </Button>
                 </Table.Cell>
               </Table.Row>
@@ -293,10 +292,9 @@
 <Dialog.Root bind:open={showCreateDialog}>
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
-      <Dialog.Title>Create a new API Key</Dialog.Title>
+      <Dialog.Title>{$t("manage.api_keys.create_dialog_title")}</Dialog.Title>
       <Dialog.Description>
-        API keys are used to authenticate your requests to the API. They are unique to your account and should be kept
-        secret.
+        {$t("manage.api_keys.create_dialog_desc")}
       </Dialog.Description>
     </Dialog.Header>
     <form
@@ -307,17 +305,17 @@
     >
       <div class="grid gap-4 py-4">
         <div class="grid gap-2">
-          <Label for="newAPIKeyName">Name</Label>
-          <Input id="newAPIKeyName" bind:value={newAPIKeyName} placeholder="eg. My API Key" required />
+          <Label for="newAPIKeyName">{$t("manage.api_keys.name_label")}</Label>
+          <Input id="newAPIKeyName" bind:value={newAPIKeyName} placeholder={$t("manage.api_keys.name_placeholder")} required />
         </div>
       </div>
       <Dialog.Footer>
-        <Button type="button" variant="outline" onclick={() => (showCreateDialog = false)}>Cancel</Button>
+        <Button type="button" variant="outline" onclick={() => (showCreateDialog = false)}>{$t("manage.common.cancel")}</Button>
         <Button type="submit" disabled={creating}>
           {#if creating}
             <Loader class="h-4 w-4 animate-spin" />
           {/if}
-          Create
+          {$t("manage.common.create")}
         </Button>
       </Dialog.Footer>
     </form>
@@ -327,18 +325,18 @@
 <AlertDialog.Root bind:open={deleteDialogOpen}>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Delete API Key</AlertDialog.Title>
+      <AlertDialog.Title>{$t("manage.api_keys.delete_dialog_title")}</AlertDialog.Title>
       <AlertDialog.Description>
-        Are you sure you want to delete API key "{keyToDelete?.name}"? This action cannot be undone.
+        {$t("manage.api_keys.delete_dialog_desc")}
       </AlertDialog.Description>
     </AlertDialog.Header>
     <AlertDialog.Footer>
-      <AlertDialog.Cancel disabled={deleting}>Cancel</AlertDialog.Cancel>
+      <AlertDialog.Cancel disabled={deleting}>{$t("manage.common.cancel")}</AlertDialog.Cancel>
       <AlertDialog.Action onclick={deleteApiKey} disabled={deleting}>
         {#if deleting}
           <Spinner class="h-4 w-4" />
         {/if}
-        Delete
+        {$t("manage.common.delete")}
       </AlertDialog.Action>
     </AlertDialog.Footer>
   </AlertDialog.Content>
