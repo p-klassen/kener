@@ -7,7 +7,7 @@ const saltRounds = 10;
 const DUMMY_SECRET = "DUMMY_SECRET";
 
 export const ValidatePassword = (password: string): boolean => {
-  return /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(password);
+  return /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/.test(password);
 };
 
 export const HashPassword = async (plainTextPassword: string): Promise<string> => {
@@ -112,6 +112,19 @@ export const GenerateTokenWithExpiry = async (data: object, expiry: string): Pro
     return token;
   } catch (err) {
     console.error("Error generating token with expiry:", err);
+    throw err;
+  }
+};
+
+export const GenerateTokenWithJTI = async (data: object, expiry: string): Promise<string> => {
+  try {
+    const token = jwt.sign(data, process.env.KENER_SECRET_KEY || DUMMY_SECRET, {
+      expiresIn: expiry,
+      jwtid: crypto.randomUUID(),
+    } as jwt.SignOptions);
+    return token;
+  } catch (err) {
+    console.error("Error generating token with JTI:", err);
     throw err;
   }
 };

@@ -172,14 +172,16 @@
             {loginDetails.label}
           </Button>
         {/if}
-        <Button
-          size="sm"
-          href={clientResolver(resolve, "/account/logout")}
-          variant="outline"
-          class="bg-background/80 dark:bg-background/70 border-foreground/10 rounded-full border text-xs shadow-none backdrop-blur-md"
-        >
-          {loggedInUser.name} – {$t("manage.user_menu.log_out")}
-        </Button>
+        <form method="POST" action={clientResolver(resolve, "/account/logout")}>
+          <Button
+            size="sm"
+            type="submit"
+            variant="outline"
+            class="bg-background/80 dark:bg-background/70 border-foreground/10 rounded-full border text-xs shadow-none backdrop-blur-md"
+          >
+            {loggedInUser.name} – {$t("manage.user_menu.log_out")}
+          </Button>
+        </form>
       </div>
     {/if}
   </div>

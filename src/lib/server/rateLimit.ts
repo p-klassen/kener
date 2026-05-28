@@ -3,6 +3,8 @@ import { redisConnection } from "./redisConnector.js";
 // In-memory fallback when Redis is unavailable
 const MEMORY_STORE_MAX = 10_000;
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
+let lastBypassWarnAt = 0;
+const BYPASS_WARN_INTERVAL_MS = 60_000; // warn at most once per minute
 
 // One-time token blocklist for password-reset JTIs (fallback when Redis is unavailable)
 const USED_TOKENS_MAX = 1_000;
@@ -86,7 +88,11 @@ export async function checkRateLimit(
       if (memoryStore.size < MEMORY_STORE_MAX) {
         memoryStore.set(key, { count: 1, resetAt });
       } else {
-        console.warn(`rateLimit: in-memory store full (${MEMORY_STORE_MAX} entries); bypassing rate limit for ${action}:${ip}`);
+        const now2 = Date.now();
+        if (now2 - lastBypassWarnAt > BYPASS_WARN_INTERVAL_MS) {
+          console.warn(`rateLimit: in-memory store full (${MEMORY_STORE_MAX} entries); bypassing rate limit`);
+          lastBypassWarnAt = now2;
+        }
       }
       return { allowed: true, remaining: maxRequests - 1, resetAt };
     }

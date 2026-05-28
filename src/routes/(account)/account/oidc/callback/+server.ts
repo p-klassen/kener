@@ -31,8 +31,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
       sameSite: cookieConfig.sameSite,
     });
     const oidcUser = await GetLoggedInSession(cookies);
-    const oidcPermissions = oidcUser ? await GetUserPermissions(oidcUser.id) : new Set<string>();
-    successUrl = serverResolve(oidcPermissions.size > 0 ? "/manage/app/site-configurations" : "/");
+    if (oidcUser?.must_change_password) {
+      successUrl = serverResolve("/account/change-password");
+    } else {
+      const oidcPermissions = oidcUser ? await GetUserPermissions(oidcUser.id) : new Set<string>();
+      successUrl = serverResolve(oidcPermissions.size > 0 ? "/manage/app/site-configurations" : "/");
+    }
   } catch (e: unknown) {
     console.error("OIDC callback error:", e);
     throw redirect(302, serverResolve("/account/signin?error=sso_failed"));

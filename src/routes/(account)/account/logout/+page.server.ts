@@ -1,14 +1,11 @@
 import { redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import serverResolve from "$lib/server/resolver.js";
-import { GetLoggedInSession } from "$lib/server/controllers/controller.js";
+import { GetLoggedInSession } from "$lib/server/controllers/controller.js"; // used by POST action
 
-export const load: PageServerLoad = async ({ cookies }) => {
-  const loggedInUser = await GetLoggedInSession(cookies);
-  cookies.delete("kener-user", { path: serverResolve("/") });
-  if (loggedInUser?.user_type === "subscriber") {
-    throw redirect(302, serverResolve("/"));
-  }
+export const load: PageServerLoad = async () => {
+  // GET requests must not log out — only the POST action clears the cookie.
+  // A plain redirect prevents logout-hijacking via crafted links.
   throw redirect(302, serverResolve("/account/signin"));
 };
 

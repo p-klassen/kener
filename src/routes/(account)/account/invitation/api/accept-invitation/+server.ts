@@ -3,7 +3,7 @@ import type { RequestHandler } from "./$types";
 import db from "$lib/server/db/db.js";
 import { HashPassword, ValidatePassword, VerifyToken } from "$lib/server/controllers/commonController.js";
 import { GetUserPasswordHashById } from "$lib/server/controllers/userController.js";
-import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
+import { checkRateLimit, getClientIp, acquireToken } from "$lib/server/rateLimit.js";
 
 export const POST: RequestHandler = async ({ request }) => {
   const ip = getClientIp(request);
@@ -38,6 +38,14 @@ export const POST: RequestHandler = async ({ request }) => {
   const validTill = tokenData.validTill;
   if (!validTill || Math.floor(Date.now() / 1000) > validTill) {
     return json({ errorKey: "account.invitation.err_expired" }, { status: 400 });
+  }
+
+  // Atomically claim the JTI to prevent duplicate-submission race conditions
+  if (tokenData.jti) {
+    const acquired = await acquireToken(tokenData.jti, (tokenData.exp ?? 0) * 1000);
+    if (!acquired) {
+      return json({ errorKey: "account.invitation.err_already_accepted" }, { status: 400 });
+    }
   }
 
   // Check user exists with empty password

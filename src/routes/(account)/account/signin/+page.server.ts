@@ -128,7 +128,9 @@ export const actions: Actions = {
         secure: cookieConfig.secure,
         sameSite: cookieConfig.sameSite,
       });
-      if (userDB.user_type === "subscriber") {
+      if (userDB.must_change_password) {
+        ldapRedirect = serverResolve("/account/change-password");
+      } else if (userDB.user_type === "subscriber") {
         ldapRedirect = serverResolve("/");
       } else {
         const ldapPermissions = await GetUserPermissions(userDB.id);

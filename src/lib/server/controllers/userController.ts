@@ -1,6 +1,6 @@
 import db from "../db/db.js";
 import type { PaginationInput } from "$lib/types/common";
-import { GenerateToken, HashPassword, ValidatePassword, VerifyPassword, VerifyToken } from "./commonController.js";
+import { GenerateToken, GenerateTokenWithJTI, HashPassword, ValidatePassword, VerifyPassword, VerifyToken } from "./commonController.js";
 import type { Cookies } from "@sveltejs/kit";
 import type { UserRecordPublic, UserRecordDashboard, RoleRecord } from "../types/db.js";
 import { GetAllSiteData } from "./controller.js";
@@ -318,7 +318,7 @@ export const AdminResetPassword = async (
 
   const siteData = await GetAllSiteData();
   const siteVars = siteDataToVariables(siteData);
-  const loginLink = `${siteVars.site_url || ""}account/login`;
+  const loginLink = `${siteVars.site_url || ""}account/signin`;
 
   const template = await GetGeneralEmailTemplateByIdAndLocale("admin_password_reset", targetUser.preferred_locale);
   if (template) {
@@ -471,10 +471,10 @@ export const SendInvitationEmail = async (email: string, role_ids: string[], nam
     throw error;
   }
 
-  const token = await GenerateToken({
+  const token = await GenerateTokenWithJTI({
     email: normalizedEmail,
     validTill: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, //7 days
-  });
+  }, "7d");
 
   const siteData = await GetAllSiteData();
   const siteVars = siteDataToVariables(siteData);
@@ -513,10 +513,10 @@ export const ResendInvitationEmail = async (email: string) => {
     throw new Error("User has already set their password");
   }
 
-  const token = await GenerateToken({
+  const token = await GenerateTokenWithJTI({
     email: normalizedEmail,
     validTill: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, //7 days
-  });
+  }, "7d");
 
   const siteData = await GetAllSiteData();
   const siteVars = siteDataToVariables(siteData);
