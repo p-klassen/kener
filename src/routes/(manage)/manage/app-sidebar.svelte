@@ -8,8 +8,9 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   type NavItem = { title: string; url: string; icon: Component };
+  type AdminBadge = { text: string; bgColor: string; textColor: string; enabled: boolean };
 
-  let { navItems, ...restProps }: { navItems: NavItem[] } & ComponentProps<typeof Sidebar.Root> = $props();
+  let { navItems, adminBadge, ...restProps }: { navItems: NavItem[]; adminBadge?: AdminBadge } & ComponentProps<typeof Sidebar.Root> = $props();
   const appVersion = version();
 </script>
 
@@ -27,7 +28,9 @@
               <img src={clientResolver(resolve, "/logo96.png")} class="size-5!" alt="Kener Logo" />
               <span class="text-base font-semibold"> Kener </span>
               <span class="text-muted-foreground pt-0.5 text-xs font-medium"> v{appVersion} </span>
-              <span class="rounded px-1.5 py-0.5 text-xs font-medium" style="background-color:#96B846;color:#fff;">WOBCOM</span>
+              {#if adminBadge?.enabled && adminBadge?.text}
+                <span class="rounded px-1.5 py-0.5 text-xs font-medium" style="background-color:{adminBadge.bgColor};color:{adminBadge.textColor};">{adminBadge.text}</span>
+              {/if}
             </a>
           {/snippet}
         </Sidebar.MenuButton>

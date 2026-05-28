@@ -66,6 +66,14 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   let savingAnnouncement = $state(false);
   let savingPageOrdering = $state(false);
   let loadingPages = $state(false);
+  let savingAdminBadge = $state(false);
+
+  interface AdminBadgeConfig {
+    enabled: boolean;
+    text: string;
+    bgColor: string;
+    textColor: string;
+  }
 
   // Data
   let footerHTML = $state("");
@@ -101,6 +109,13 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
     cancellable: true,
     ctaURL: "",
     ctaText: ""
+  });
+
+  let adminBadge = $state<AdminBadgeConfig>({
+    enabled: true,
+    text: "WOBCOM",
+    bgColor: "#96B846",
+    textColor: "#ffffff"
   });
 
   // Page ordering
@@ -202,6 +217,14 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
         if (result.pageOrderingSettings) {
           pageOrderingEnabled = result.pageOrderingSettings.enabled ?? false;
           orderedPageIds = result.pageOrderingSettings.order ?? [];
+        }
+        if (result.adminBadge) {
+          adminBadge = {
+            enabled: result.adminBadge.enabled ?? true,
+            text: result.adminBadge.text ?? "WOBCOM",
+            bgColor: result.adminBadge.bgColor ?? "#96B846",
+            textColor: result.adminBadge.textColor ?? "#ffffff"
+          };
         }
       }
       // Set default footer HTML
@@ -645,6 +668,30 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
       toast.error("Failed to save announcement settings");
     } finally {
       savingAnnouncement = false;
+    }
+  }
+
+  async function saveAdminBadge() {
+    savingAdminBadge = true;
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "storeSiteData",
+          data: { adminBadge: JSON.stringify(adminBadge) }
+        })
+      });
+      const result = await response.json();
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success($t("manage.customizations.admin_badge_save_success"));
+      }
+    } catch (e) {
+      toast.error($t("manage.customizations.admin_badge_save_error"));
+    } finally {
+      savingAdminBadge = false;
     }
   }
 
@@ -1142,6 +1189,86 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
       <Card.Footer class="flex justify-end border-t pt-6">
         <Button onclick={saveAnnouncement} disabled={savingAnnouncement}>
           {#if savingAnnouncement}
+            <Loader class="h-4 w-4 animate-spin" />
+          {:else}
+            <SaveIcon class="h-4 w-4" />
+          {/if}
+          {$t("manage.common.save")}
+        </Button>
+      </Card.Footer>
+    </Card.Root>
+
+    <!-- Admin Badge Section -->
+    <Card.Root>
+      <Card.Header class="border-b">
+        <Card.Title>{$t("manage.customizations.admin_badge_title")}</Card.Title>
+        <Card.Description>{$t("manage.customizations.admin_badge_desc")}</Card.Description>
+      </Card.Header>
+      <Card.Content class="space-y-4 pt-6">
+        <div class="flex items-start space-x-3 rounded-lg border p-4">
+          <Checkbox
+            id="admin-badge-enabled"
+            checked={adminBadge.enabled}
+            onCheckedChange={(checked) => (adminBadge.enabled = checked === true)}
+          />
+          <div class="space-y-1">
+            <Label for="admin-badge-enabled" class="cursor-pointer">{$t("manage.customizations.admin_badge_enabled_label")}</Label>
+          </div>
+        </div>
+
+        {#if adminBadge.enabled}
+          <div class="grid gap-4 md:grid-cols-3">
+            <div class="space-y-2">
+              <Label for="admin-badge-text">{$t("manage.customizations.admin_badge_text_label")}</Label>
+              <Input
+                id="admin-badge-text"
+                bind:value={adminBadge.text}
+                placeholder={$t("manage.customizations.admin_badge_text_placeholder")}
+              />
+            </div>
+            <div class="space-y-2">
+              <Label>{$t("manage.customizations.admin_badge_bg_color_label")}</Label>
+              <ColorPicker
+                bind:hex={adminBadge.bgColor}
+                position="responsive"
+                isAlpha={false}
+                isDark={mode.current === "dark"}
+                --input-size="16px"
+                isTextInput={true}
+                label=""
+              />
+            </div>
+            <div class="space-y-2">
+              <Label>{$t("manage.customizations.admin_badge_text_color_label")}</Label>
+              <ColorPicker
+                bind:hex={adminBadge.textColor}
+                position="responsive"
+                isAlpha={false}
+                isDark={mode.current === "dark"}
+                --input-size="16px"
+                isTextInput={true}
+                label=""
+              />
+            </div>
+          </div>
+
+          {#if adminBadge.text}
+            <div class="space-y-2">
+              <Label>{$t("manage.customizations.admin_badge_preview")}</Label>
+              <div class="flex items-center gap-2">
+                <span class="text-muted-foreground text-xs font-medium">v4.2.1</span>
+                <span
+                  class="rounded px-1.5 py-0.5 text-xs font-medium"
+                  style="background-color:{adminBadge.bgColor};color:{adminBadge.textColor};"
+                >{adminBadge.text}</span>
+              </div>
+            </div>
+          {/if}
+        {/if}
+      </Card.Content>
+      <Card.Footer class="flex justify-end border-t pt-6">
+        <Button onclick={saveAdminBadge} disabled={savingAdminBadge}>
+          {#if savingAdminBadge}
             <Loader class="h-4 w-4 animate-spin" />
           {:else}
             <SaveIcon class="h-4 w-4" />

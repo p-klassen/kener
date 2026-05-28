@@ -58,6 +58,7 @@ export const load: LayoutServerLoad = async ({ cookies, route }) => {
   const siteStatusColors = siteData.colors;
   const siteStatusColorsDark = siteData.colorsDark || siteStatusColors;
   const font = siteData.font || { cssSrc: "", family: "" };
+  const adminBadge = siteData.adminBadge || { text: "WOBCOM", bgColor: "#96B846", textColor: "#ffffff", enabled: true };
 
   const i18nConfig = siteData.i18n || seedSiteData.i18n;
   const availableLocales = availableLocalesList;
@@ -74,6 +75,7 @@ export const load: LayoutServerLoad = async ({ cookies, route }) => {
     siteStatusColors,
     siteStatusColorsDark,
     font,
+    adminBadge,
     canSendEmail: await IsEmailSetup(),
     seedSiteData,
     availableLocales,

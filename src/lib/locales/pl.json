@@ -1364,6 +1364,16 @@
     "account.signin.sso_failed_desc": "Logowanie przez SSO nie powiodło się. Spróbuj ponownie lub użyj adresu e-mail i hasła.",
     "account.forgot.email_label": "E-mail",
     "account.change_password.err_rate_limited": "Zbyt wiele prób. Proszę spróbować ponownie później.",
-    "manage.monitors.toast_clone_error": "Failed to clone monitor"
+    "manage.monitors.toast_clone_error": "Failed to clone monitor",
+    "manage.customizations.admin_badge_title": "Admin Badge",
+    "manage.customizations.admin_badge_desc": "Configure the badge displayed next to the version number in the admin sidebar.",
+    "manage.customizations.admin_badge_enabled_label": "Show badge",
+    "manage.customizations.admin_badge_text_label": "Badge Text",
+    "manage.customizations.admin_badge_text_placeholder": "WOBCOM",
+    "manage.customizations.admin_badge_bg_color_label": "Background Color",
+    "manage.customizations.admin_badge_text_color_label": "Text Color",
+    "manage.customizations.admin_badge_preview": "Preview",
+    "manage.customizations.admin_badge_save_success": "Admin badge saved",
+    "manage.customizations.admin_badge_save_error": "Failed to save admin badge"
   }
 }

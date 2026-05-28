@@ -317,4 +317,9 @@ export const siteDataKeys: SiteDataKey[] = [
     isValid: IsValidJSONString,
     data_type: "object",
   },
+  {
+    key: "adminBadge",
+    isValid: IsValidJSONString,
+    data_type: "object",
+  },
 ];

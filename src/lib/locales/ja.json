@@ -1364,6 +1364,16 @@
     "account.signin.sso_failed_desc": "SSO でのサインインに失敗しました。再試行するか、メールとパスワードを使用してください。",
     "account.forgot.email_label": "メールアドレス",
     "account.change_password.err_rate_limited": "試行回数が多すぎます。しばらくしてからもう一度お試しください。",
-    "manage.monitors.toast_clone_error": "Failed to clone monitor"
+    "manage.monitors.toast_clone_error": "Failed to clone monitor",
+    "manage.customizations.admin_badge_title": "Admin Badge",
+    "manage.customizations.admin_badge_desc": "Configure the badge displayed next to the version number in the admin sidebar.",
+    "manage.customizations.admin_badge_enabled_label": "Show badge",
+    "manage.customizations.admin_badge_text_label": "Badge Text",
+    "manage.customizations.admin_badge_text_placeholder": "WOBCOM",
+    "manage.customizations.admin_badge_bg_color_label": "Background Color",
+    "manage.customizations.admin_badge_text_color_label": "Text Color",
+    "manage.customizations.admin_badge_preview": "Preview",
+    "manage.customizations.admin_badge_save_success": "Admin badge saved",
+    "manage.customizations.admin_badge_save_error": "Failed to save admin badge"
   }
 }

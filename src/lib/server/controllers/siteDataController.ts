@@ -71,6 +71,7 @@ export interface SiteDataTransformed {
   sitemap?: SitemapXMLConfig;
   globalMaintenanceNotificationSettings?: GlobalMaintenanceNotificationSettings;
   pageDefaults?: SitePageDefaults;
+  adminBadge?: { text: string; bgColor: string; textColor: string; enabled: boolean };
 }
 
 export function InsertKeyValue(key: string, value: string): Promise<number[]> {

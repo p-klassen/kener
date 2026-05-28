@@ -117,7 +117,7 @@
 </svelte:head>
 <main class="kener-manage">
   <Sidebar.Provider style="--sidebar-width: calc(var(--spacing) * 72); --header-height: calc(var(--spacing) * 12);">
-    <AppSidebar variant="inset" {navItems} />
+    <AppSidebar variant="inset" {navItems} adminBadge={data.adminBadge} />
     <Sidebar.Inset>
       <SiteHeader title={pageTitle} />
       <div class="p-4">
