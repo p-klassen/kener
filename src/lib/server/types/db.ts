@@ -277,6 +277,7 @@ export interface UserRecordPublic {
   auth_provider: string;
   external_id: string | null;
   user_type: "user" | "subscriber";
+  password_changed_at: number;
   created_at: Date;
   updated_at: Date;
 }

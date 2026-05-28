@@ -409,6 +409,11 @@ export const GetLoggedInSession = async (cookies: Cookies): Promise<UserRecordPu
   if (!userDB.is_active) {
     return null;
   }
+  // Reject tokens issued before the user's most recent password change
+  const tokenIat = tokenUser.iat ?? 0;
+  if (userDB.password_changed_at && tokenIat < userDB.password_changed_at) {
+    return null;
+  }
   return userDB;
 };
 

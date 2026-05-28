@@ -32,6 +32,7 @@ export class UsersRepository extends BaseRepository {
     "external_id",
     "preferred_locale",
     "user_type",
+    "password_changed_at",
     "created_at",
     "updated_at",
   ] as const;
@@ -123,6 +124,7 @@ export class UsersRepository extends BaseRepository {
   async updateUserPassword(data: { id: number; password_hash: string }): Promise<number> {
     return await this.knex("users").where({ id: data.id }).update({
       password_hash: data.password_hash,
+      password_changed_at: Math.floor(Date.now() / 1000),
       updated_at: this.knex.fn.now(),
     });
   }
@@ -224,6 +226,7 @@ export class UsersRepository extends BaseRepository {
   async updateUserPasswordById(data: { id: number; password_hash: string }): Promise<number> {
     return await this.knex("users").where({ id: data.id }).update({
       password_hash: data.password_hash,
+      password_changed_at: Math.floor(Date.now() / 1000),
       updated_at: this.knex.fn.now(),
     });
   }

@@ -83,6 +83,7 @@ async function verifyIdToken(
   idToken: string,
   jwksUri: string,
   clientId: string,
+  issuerUrl: string,
   expectedNonce: string | undefined,
 ): Promise<Record<string, unknown>> {
   const parts = idToken.split(".");
@@ -98,6 +99,7 @@ async function verifyIdToken(
   const decoded = jwt.verify(idToken, publicKey, {
     algorithms: ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "PS256", "PS384", "PS512"],
     audience: clientId,
+    issuer: issuerUrl,
   }) as Record<string, unknown>;
 
   if (expectedNonce && decoded.nonce !== expectedNonce) {
@@ -199,9 +201,9 @@ export async function HandleOidcCallback(
 
   const tokens = (await tokenResp.json()) as { access_token: string; id_token?: string };
 
-  // Verify id_token signature and nonce if present
+  // Verify id_token signature, audience, issuer, and nonce if present
   if (tokens.id_token && meta.jwks_uri) {
-    await verifyIdToken(tokens.id_token, meta.jwks_uri, config.client_id, nonce ?? undefined);
+    await verifyIdToken(tokens.id_token, meta.jwks_uri, config.client_id, config.issuer_url, nonce ?? undefined);
   }
 
   // Fetch user info

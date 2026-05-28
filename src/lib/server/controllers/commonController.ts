@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import db from "../db/db.js";
 
-const saltRounds = 10;
+const saltRounds = 12;
 const DUMMY_SECRET = "DUMMY_SECRET";
 
 export const ValidatePassword = (password: string): boolean => {

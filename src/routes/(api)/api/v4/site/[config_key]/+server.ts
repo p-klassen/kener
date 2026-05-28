@@ -1,6 +1,8 @@
 import { json, type RequestHandler } from "@sveltejs/kit";
 import db from "$lib/server/db/db";
 import { siteDataKeys } from "$lib/server/controllers/siteDataKeys";
+
+const SENSITIVE_SITE_DATA_KEYS = new Set(["smtp", "resend"]);
 import type {
   GetSiteDataKeyResponse,
   UpdateSiteDataKeyResponse,
@@ -23,7 +25,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
   // Validate that this is a known config key
   const keyConfig = siteDataKeys.find((k) => k.key === configKey);
-  if (!keyConfig) {
+  if (!keyConfig || SENSITIVE_SITE_DATA_KEYS.has(configKey)) {
     const errorResponse: NotFoundResponse = {
       error: {
         code: "NOT_FOUND",
@@ -67,9 +69,9 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
     return json(errorResponse, { status: 400 });
   }
 
-  // Validate that this is a known config key
+  // Validate that this is a known config key; block sensitive keys (use dedicated endpoints)
   const keyConfig = siteDataKeys.find((k) => k.key === configKey);
-  if (!keyConfig) {
+  if (!keyConfig || SENSITIVE_SITE_DATA_KEYS.has(configKey)) {
     const errorResponse: NotFoundResponse = {
       error: {
         code: "NOT_FOUND",

@@ -106,9 +106,19 @@ export async function checkRateLimit(
 }
 
 export function getClientIp(request: Request): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
+  const xff = request.headers.get("x-forwarded-for");
+  // TRUSTED_PROXY_COUNT: number of trusted reverse-proxy hops in front of the app.
+  // Set to the number of proxies (e.g. 1 for a single nginx/load-balancer) so the
+  // correct client IP is selected from XFF instead of the spoofable leftmost entry.
+  const proxyCount = process.env.TRUSTED_PROXY_COUNT ? parseInt(process.env.TRUSTED_PROXY_COUNT, 10) : null;
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim());
+    if (proxyCount !== null && proxyCount > 0) {
+      // Pick the Nth entry from the right — the first address the trusted proxy saw
+      const idx = parts.length - proxyCount;
+      return parts[Math.max(0, idx)];
+    }
+    return parts[0]; // legacy default: trust leftmost
+  }
+  return request.headers.get("x-real-ip") || "unknown";
 }

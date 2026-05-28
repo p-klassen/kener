@@ -171,8 +171,15 @@ import {
   GetLdapConfigPublic,
 } from "$lib/server/controllers/authConfigController.js";
 import { TestLdapConnection } from "$lib/server/controllers/ldapController.js";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 
 export async function POST({ request, cookies }) {
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit("manage-api", ip, { windowMs: 60 * 1000, maxRequests: 300 });
+  if (!rl.allowed) {
+    return json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const payload = await request.json();
   let action = payload.action;
   let data = payload.data || {};

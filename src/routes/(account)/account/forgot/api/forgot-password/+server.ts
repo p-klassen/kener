@@ -40,7 +40,8 @@ export const POST: RequestHandler = async ({ request }) => {
   const template = await GetGeneralEmailTemplateByIdAndLocale("forgot_password", userDB.preferred_locale);
   if (!template) {
     console.error(`forgot-password: email template 'forgot_password' not found for locale '${userDB.preferred_locale}'`);
-    return json({ errorKey: "account.forgot.err_send_failed" }, { status: 500 });
+    // Return success to prevent leaking whether the email address is registered
+    return json({ success: true });
   }
 
   const emailVars = {
