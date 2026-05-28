@@ -48,6 +48,7 @@
   let myName = $state(user.name);
   let myPassword = $state("");
   let plainPassword = $state("");
+  let currentPasswordForChange = $state("");
   let newEmail = $state("");
   let emailCurrentPassword = $state("");
   let changingEmail = $state(false);
@@ -126,7 +127,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "updatePassword",
-          data: { newPassword: myPassword, newPlainPassword: plainPassword }
+          data: { newPassword: myPassword, newPlainPassword: plainPassword, currentPassword: currentPasswordForChange }
         })
       });
       const resp = await response.json();
@@ -135,6 +136,7 @@
       } else {
         myPassword = "";
         plainPassword = "";
+        currentPasswordForChange = "";
         passwordSuccess = true;
       }
     } catch {
@@ -178,6 +180,7 @@
     myName = user.name;
     myPassword = "";
     plainPassword = "";
+    currentPasswordForChange = "";
     newEmail = "";
     emailCurrentPassword = "";
     nameError = "";
@@ -418,6 +421,14 @@
           updatePassword();
         }}
       >
+        <Label for="current-password-change">{$t("manage.user_menu.current_password_label")}</Label>
+        <Input
+          id="current-password-change"
+          type="password"
+          bind:value={currentPasswordForChange}
+          placeholder={$t("manage.user_menu.current_password_placeholder")}
+          disabled={resettingPass}
+        />
         <Label for="new-password">{$t("manage.user_menu.change_password")}</Label>
         <Input
           id="new-password"
@@ -456,7 +467,7 @@
           </ul>
         </div>
 
-        <Button type="submit" disabled={resettingPass || !isPasswordValid}>
+        <Button type="submit" disabled={resettingPass || !isPasswordValid || !currentPasswordForChange}>
           {#if resettingPass}
             <LoaderIcon class="size-4 animate-spin" />
             {$t("manage.user_menu.updating")}

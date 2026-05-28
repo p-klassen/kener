@@ -26,6 +26,7 @@ interface PasswordUpdateInput {
   userID: number;
   newPassword: string;
   newPlainPassword: string;
+  currentPassword?: string;
 }
 
 interface NewUserInput {
@@ -225,7 +226,20 @@ export const CreateFirstUser = async (data: {
 };
 
 export const UpdatePassword = async (data: PasswordUpdateInput): Promise<number> => {
-  let { userID, newPassword, newPlainPassword } = data;
+  let { userID, newPassword, newPlainPassword, currentPassword } = data;
+
+  // Verify current password for self-service changes (admin resets omit this)
+  if (currentPassword !== undefined) {
+    const storedData = await db.getUserPasswordHashById(userID);
+    if (!storedData?.password_hash) {
+      throw new Error("Could not verify current password");
+    }
+    const isMatch = await VerifyPassword(currentPassword, storedData.password_hash);
+    if (!isMatch) {
+      throw new Error("Current password is incorrect");
+    }
+  }
+
   if (!ValidatePassword(newPassword)) {
     throw new Error(
       "Password must contain at least 8 characters, one uppercase letter, one lowercase letter and one number",
