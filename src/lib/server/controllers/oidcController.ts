@@ -27,6 +27,20 @@ function isLocalOrMetadataHost(host: string): boolean {
 }
 
 async function discoverProvider(config: OidcConfig): Promise<OidcProviderMetadata> {
+  // issuer_url is always required — it is used as the expected issuer in JWT verification
+  if (!config.issuer_url) {
+    throw new Error("OIDC issuer URL is required");
+  }
+  try {
+    const parsed = new URL(config.issuer_url);
+    if (isLocalOrMetadataHost(parsed.hostname)) {
+      throw new Error("OIDC issuer URL must not point to local or link-local addresses");
+    }
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes("OIDC issuer")) throw e;
+    throw new Error("OIDC issuer URL is not a valid URL");
+  }
+
   // Use manually configured endpoints if all provided
   if (config.authorization_endpoint && config.token_endpoint && config.userinfo_endpoint) {
     return {
