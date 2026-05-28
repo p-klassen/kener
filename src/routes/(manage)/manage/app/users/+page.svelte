@@ -691,7 +691,7 @@
       <span class="text-muted-foreground text-sm">{$t("manage.users.showing")} {startItem}-{endItem} {$t("manage.common.of")} {total}</span>
       {#if totalPages > 1}
         <div class="flex items-center gap-2">
-          <Button variant="outline" size="icon" disabled={page === 1} onclick={() => goToPage(page - 1)}>
+          <Button variant="outline" size="icon" disabled={page === 1} onclick={() => goToPage(page - 1)} aria-label={$t("manage.common.prev_page")}>
             <ChevronLeftIcon class="size-4" />
           </Button>
           <div class="flex items-center gap-1">
@@ -705,7 +705,7 @@
               {/if}
             {/each}
           </div>
-          <Button variant="outline" size="icon" disabled={page === totalPages} onclick={() => goToPage(page + 1)}>
+          <Button variant="outline" size="icon" disabled={page === totalPages} onclick={() => goToPage(page + 1)} aria-label={$t("manage.common.next_page")}>
             <ChevronRightIcon class="size-4" />
           </Button>
         </div>

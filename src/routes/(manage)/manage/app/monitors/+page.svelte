@@ -220,13 +220,13 @@
       <Table.Root>
         <Table.Header>
           <Table.Row>
-            <Table.Head class="w-[300px]">{$t("manage.monitors.col_name")}</Table.Head>
-            <Table.Head class="w-[180px]">{$t("manage.monitors.col_tag")}</Table.Head>
-            <Table.Head class="w-[130px]">{$t("manage.monitors.col_type")}</Table.Head>
-            <Table.Head class="w-[120px]">{$t("manage.monitors.col_status")}</Table.Head>
-            <Table.Head class="w-[120px]">{$t("manage.monitors.col_hidden")}</Table.Head>
-            <Table.Head class="w-[180px]">{$t("manage.monitors.col_cron")}</Table.Head>
-            <Table.Head class="w-[120px] text-right"></Table.Head>
+            <Table.Head class="min-w-[180px]">{$t("manage.monitors.col_name")}</Table.Head>
+            <Table.Head class="min-w-[120px]">{$t("manage.monitors.col_tag")}</Table.Head>
+            <Table.Head class="min-w-[100px]">{$t("manage.monitors.col_type")}</Table.Head>
+            <Table.Head class="min-w-[90px]">{$t("manage.monitors.col_status")}</Table.Head>
+            <Table.Head class="min-w-[90px]">{$t("manage.monitors.col_hidden")}</Table.Head>
+            <Table.Head class="min-w-[140px]">{$t("manage.monitors.col_cron")}</Table.Head>
+            <Table.Head class="w-[100px] text-right"></Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body>
