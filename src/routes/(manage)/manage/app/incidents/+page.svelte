@@ -19,6 +19,7 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { t } from "$lib/stores/i18n";
+  import { toast } from "svelte-sonner";
   // State
   let loading = $state(true);
   let incidents = $state<any[]>([]);
@@ -70,6 +71,7 @@
       }
     } catch (error) {
       console.error("Error fetching incidents:", error);
+      toast.error($t("manage.incidents.toast_load_error"));
     } finally {
       loading = false;
     }

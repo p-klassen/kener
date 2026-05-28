@@ -189,7 +189,7 @@
       }
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast.error("Failed to load users");
+      toast.error($t("manage.users.toast_load_error"));
     } finally {
       loading = false;
     }
@@ -250,7 +250,7 @@
         users = [...users, result];
         showAddUserDialog = false;
         resetNewUser();
-        toast.success("User invited successfully");
+        toast.success($t("manage.users.toast_invited_success"));
       }
     } catch (error) {
       creatingUserError = "Error while creating user";
@@ -299,12 +299,12 @@
       });
       const result = await response.json();
       if (!response.ok || result.error) {
-        toast.error(result.error || "Failed to resend invitation email");
+        toast.error(result.error || $t("manage.users.toast_resend_error"));
       } else {
-        toast.success("Invitation email resent");
+        toast.success($t("manage.users.toast_resend_success"));
       }
     } catch (error) {
-      toast.error("Failed to resend invitation email");
+      toast.error($t("manage.users.toast_resend_error"));
     }
   }
 
@@ -324,9 +324,9 @@
       if (!res.ok || result.error) {
         throw new Error(result.error || "Failed to send verification email");
       }
-      toast.success("Verification email sent");
+      toast.success($t("manage.users.toast_verify_success"));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to send verification email";
+      const message = error instanceof Error ? error.message : $t("manage.users.toast_verify_success");
       toast.error(message);
     } finally {
       sendingSelfVerification = false;
@@ -340,10 +340,10 @@
       await apiCall("deleteUser", { id: deleteTarget.id });
       users = users.filter((u) => u.id !== deleteTarget!.id);
       total = total - 1;
-      toast.success(`User ${deleteTarget.name} deleted`);
+      toast.success($t("manage.users.toast_delete_success", { name: deleteTarget.name }));
       deleteTarget = null;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to delete user");
+      toast.error(e instanceof Error ? e.message : $t("manage.users.toast_delete_error"));
     } finally {
       deleting = false;
     }
@@ -354,9 +354,9 @@
     try {
       const updated = await apiCall("manualUpdate", { ...user, updateType: "is_active", is_active: user.is_active ? 0 : 1 });
       users = users.map((u) => (u.id === user.id ? updated : u));
-      toast.success(updated.is_active ? "User activated" : "User deactivated");
+      toast.success(updated.is_active ? $t("manage.users.toast_activated") : $t("manage.users.toast_deactivated"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update user status");
+      toast.error(e instanceof Error ? e.message : $t("manage.users.toast_status_error"));
     } finally {
       togglingActiveId = null;
     }
@@ -466,7 +466,7 @@
         roles = result;
       }
     } catch {
-      toast.error("Failed to load roles");
+      toast.error($t("manage.users.toast_roles_error"));
     }
   }
 

@@ -278,7 +278,7 @@
     const newName = cloneName.trim();
 
     if (!newTag || !newName) {
-      toast.error("Tag and name are required");
+      toast.error($t("manage.monitors.toast_clone_required"));
       return;
     }
 
@@ -303,11 +303,11 @@
         return;
       }
 
-      toast.success("Monitor cloned successfully");
+      toast.success($t("manage.monitors.toast_clone_success"));
       cloneDialogOpen = false;
       goto(clientResolver(resolve, `/manage/app/monitors/${newTag}`));
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to clone monitor";
+      const message = e instanceof Error ? e.message : $t("manage.monitors.toast_clone_error");
       toast.error(message);
     } finally {
       cloning = false;

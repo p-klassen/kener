@@ -1346,6 +1346,22 @@
     "subscribe.btn_logout": "Sign out of notifications",
     "account.forgot.title_invalid": "Invalid Reset Link",
     "account.invitation.err_password_invalid": "Password must be at least 8 characters, contain uppercase, lowercase, and a number",
-    "account.invitation.err_rate_limited": "Too many attempts. Please try again later."
+    "account.invitation.err_rate_limited": "Too many attempts. Please try again later.",
+    "manage.incidents.toast_load_error": "Failed to load incidents",
+    "manage.maintenances.toast_load_error": "Failed to load maintenances",
+    "manage.users.toast_load_error": "Failed to load users",
+    "manage.users.toast_invited_success": "User invited successfully",
+    "manage.users.toast_resend_error": "Failed to resend invitation email",
+    "manage.users.toast_resend_success": "Invitation email resent",
+    "manage.users.toast_verify_success": "Verification email sent",
+    "manage.users.toast_delete_success": "User %name deleted",
+    "manage.users.toast_delete_error": "Failed to delete user",
+    "manage.users.toast_activated": "User activated",
+    "manage.users.toast_deactivated": "User deactivated",
+    "manage.users.toast_status_error": "Failed to update user status",
+    "manage.users.toast_roles_error": "Failed to load roles",
+    "manage.monitors.toast_clone_required": "Tag and name are required",
+    "manage.monitors.toast_clone_success": "Monitor cloned successfully",
+    "manage.monitors.toast_clone_error": "Failed to clone monitor"
   }
 }

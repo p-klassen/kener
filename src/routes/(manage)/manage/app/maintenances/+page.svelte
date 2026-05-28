@@ -21,6 +21,7 @@
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { t } from "$lib/stores/i18n";
+  import { toast } from "svelte-sonner";
 
   // Types
   interface MaintenanceEvent {
@@ -77,6 +78,7 @@
       }
     } catch (error) {
       console.error("Error fetching maintenances:", error);
+      toast.error($t("manage.maintenances.toast_load_error"));
     } finally {
       loading = false;
     }
