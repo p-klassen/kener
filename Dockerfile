@@ -182,6 +182,9 @@ COPY --chown=node:node --from=builder /app/build ./build
 # Docs runtime files (index-docs script + markdown sources; empty when WITH_DOCS=false)
 COPY --chown=node:node --from=builder /docs-runtime/ ./
 
+# Maintenance scripts
+COPY --chown=node:node --from=builder /app/scripts/reset-password.ts ./scripts/reset-password.ts
+
 # Entrypoint script (runs index-docs on startup when docs are bundled)
 COPY --chown=node:node docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh
