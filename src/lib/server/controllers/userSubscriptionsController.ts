@@ -394,35 +394,19 @@ export async function AdminUpdateSubscriptionScope(
 
 /**
  * Returns pages and monitors accessible to a specific subscriber.
- * Used to populate the admin scope picker with permission-filtered content.
- * For linked subscribers: public + role-accessible content.
- * For anonymous (no linked_user_id): public content only.
+ * Always restricted to public monitors only — subscriptions are a public-facing
+ * feature and must never expose private/role-restricted content.
  */
 export async function GetAccessibleScopesForSubscriber(methodId: number): Promise<{
   pages: Array<{ slug: string; name: string }>;
   monitors: Array<{ tag: string; name: string; page_slug: string }>;
 }> {
-  // Resolve the subscriber's linked app user (if any)
   const method = await db.getSubscriberMethodById(methodId);
   if (!method) return { pages: [], monitors: [] };
-  const subscriberUser = await db.getSubscriberUserById(method.subscriber_user_id);
-  const linkedUserId = subscriberUser?.linked_user_id ?? null;
 
-  // Build allowed monitors set
+  // Only public, active, visible monitors — role-based access is intentionally excluded
   const publicMonitors = await GetMonitorsParsed({ status: "ACTIVE", is_hidden: "NO", is_public: 1 });
   const allowedMonitors = new Map<string, string>(publicMonitors.map((m) => [m.tag, m.name]));
-
-  if (linkedUserId) {
-    const accessible = await db.getAccessibleResources(linkedUserId);
-    if (accessible.monitorTags.size > 0) {
-      const roleMonitors = await GetMonitorsParsed({
-        status: "ACTIVE",
-        is_hidden: "NO",
-        tags: [...accessible.monitorTags],
-      });
-      for (const m of roleMonitors) allowedMonitors.set(m.tag, m.name);
-    }
-  }
 
   // Build pages list — include only pages that have at least one allowed monitor
   const allPages = await GetAllPages();
@@ -448,14 +432,22 @@ export async function GetAccessibleScopesForSubscriber(methodId: number): Promis
 }
 
 /**
- * Get active email addresses for a given event type, filtered by monitor tags
- * Used for sending notification emails to subscribers
+ * Get active email addresses for a given event type, filtered by monitor tags.
+ * Only notifies about public, active, visible monitors — private monitors are
+ * silently excluded so subscribers never receive alerts about restricted content.
  */
 export async function GetActiveEmailsForEvent(
   eventType: SubscriptionEventType,
   monitorTags: string[],
 ): Promise<string[]> {
-  const subscribers = await db.getSubscribersForEvent(eventType, monitorTags);
+  const publicMonitors = await GetMonitorsParsed({ status: "ACTIVE", is_hidden: "NO", is_public: 1 });
+  const publicTagSet = new Set(publicMonitors.map((m) => m.tag));
+  const visibleTags = monitorTags.filter((t) => publicTagSet.has(t));
+
+  // None of the affected monitors are publicly visible — no notifications to send
+  if (visibleTags.length === 0) return [];
+
+  const subscribers = await db.getSubscribersForEvent(eventType, visibleTags);
   const emails = subscribers.filter((s) => s.method.method_type === "email").map((s) => s.method.method_value);
   return [...new Set(emails)];
 }
@@ -732,23 +724,9 @@ export async function UpdateSubscriberPreferences(
 
   const { user, method } = verifyResult;
 
-  // Build set of allowed monitor tags: always includes public monitors;
-  // if the token carries a linked_user_id, also include role-accessible monitors.
+  // Only public monitors are allowed as subscription scopes
   const publicMonitors = await GetMonitorsParsed({ status: "ACTIVE", is_hidden: "NO", is_public: 1 });
   const allowedTags = new Set(publicMonitors.map((m) => m.tag));
-  if (verifyResult.linked_user_id) {
-    const accessible = await db.getAccessibleResources(verifyResult.linked_user_id);
-    if (accessible.monitorTags.size > 0) {
-      const roleMonitors = await GetMonitorsParsed({
-        status: "ACTIVE",
-        is_hidden: "NO",
-        tags: [...accessible.monitorTags],
-      });
-      for (const m of roleMonitors) {
-        allowedTags.add(m.tag);
-      }
-    }
-  }
   const filterTags = (tags: string[]) => tags.filter((t) => allowedTags.has(t));
 
   // Build allowed page slugs only when page-scope fields are actually present
