@@ -986,7 +986,6 @@
           <!-- Site Name -->
           <div class="space-y-2">
             <Label for="siteName">{$t("manage.site_config.site_name_label")}</Label>
-            <Input id="siteName" type="text" bind:value={siteData.siteName} placeholder={$t("manage.site_config.site_name_placeholder")} />
             <p class="text-muted-foreground text-xs">The name displayed in the header and browser tab</p>
           </div>
 
@@ -1266,7 +1265,6 @@
               <div class="grid flex-1 gap-2 sm:grid-cols-3">
                 <div class="space-y-1">
                   <Label for="nav-name-{index}">{$t("manage.site_config.nav_name_label")}</Label>
-                  <Input id="nav-name-{index}" type="text" bind:value={item.name} placeholder={$t("manage.site_config.nav_name_placeholder")} />
                 </div>
                 <div class="space-y-1">
                   <Label for="nav-url-{index}">{$t("manage.site_config.nav_url_label")}</Label>

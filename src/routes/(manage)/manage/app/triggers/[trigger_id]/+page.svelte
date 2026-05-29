@@ -349,7 +349,6 @@
           <Label for="trigger-name">
             {$t("manage.trigger_detail.name_label")} <span class="text-destructive">*</span>
           </Label>
-          <Input id="trigger-name" bind:value={trigger.name} placeholder={$t("manage.trigger_detail.name_placeholder")} />
         </div>
 
         <!-- Description -->

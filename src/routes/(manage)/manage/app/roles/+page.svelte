@@ -647,7 +647,6 @@
       </div>
       <div class="grid gap-2">
         <Label for="role-name">{$t("manage.roles.create_name_label")}</Label>
-        <Input id="role-name" placeholder={$t("manage.roles.create_name_placeholder")} bind:value={newRole.name} />
       </div>
       <div class="grid gap-2">
         <Label>{$t("manage.roles.create_permissions_label")}</Label>

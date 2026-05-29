@@ -143,7 +143,6 @@
                     id="ldap_username"
                     name="ldap_username"
                     type="text"
-                    placeholder={$t("account.signin.username_placeholder")}
                     required
                   />
                 </InputGroup.Root>
@@ -210,7 +209,6 @@
                       id="name"
                       name="name"
                       type="text"
-                      placeholder={$t("account.signin.name_placeholder")}
                       value={nameValue}
                       required
                     />
@@ -226,7 +224,6 @@
                     id="email"
                     name="email"
                     type="email"
-                    placeholder={$t("account.signin.email_placeholder")}
                     value={emailValue}
                     required
                   />

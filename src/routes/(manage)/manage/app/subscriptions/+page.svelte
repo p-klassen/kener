@@ -652,7 +652,6 @@
         <Input
           id="new-email"
           type="email"
-          placeholder={$t("manage.subscriptions.email_placeholder")}
           bind:value={newEmail}
           disabled={addingSubscriber}
         />

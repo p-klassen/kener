@@ -310,7 +310,6 @@
     <div class="space-y-4">
       <div class="space-y-1.5">
         <Label>{$t("manage.groups.name_label")}</Label>
-        <Input bind:value={newName} placeholder={$t("manage.groups.name_placeholder")} />
       </div>
       <div class="space-y-1.5">
         <Label>{$t("manage.groups.desc_label")}</Label>
@@ -368,7 +367,6 @@
               <Input
                 id="edit-name"
                 bind:value={editName}
-                placeholder={$t("manage.groups.name_placeholder")}
                 disabled={saving}
               />
             </div>

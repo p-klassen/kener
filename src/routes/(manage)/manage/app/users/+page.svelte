@@ -755,11 +755,9 @@
       <div class="space-y-4 py-4">
         <div class="space-y-2">
           <Label for="name">{$t("manage.users.name_label")}</Label>
-          <Input id="name" type="text" placeholder={$t("manage.users.name_placeholder")} bind:value={newUser.name} required />
         </div>
         <div class="space-y-2">
           <Label for="email">{$t("manage.users.email_label")}</Label>
-          <Input id="email" type="email" placeholder={$t("manage.users.email_placeholder")} bind:value={newUser.email} required />
         </div>
 
         <!-- Account Type -->

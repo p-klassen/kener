@@ -323,7 +323,6 @@
       >
         <Label for="account-name">{$t("manage.user_menu.name_label")}</Label>
         <div class="flex gap-2">
-          <Input id="account-name" bind:value={myName} placeholder={$t("manage.user_menu.name_placeholder")} disabled={savingName} class="flex-1" />
           <Button type="submit" disabled={savingName || !myName.trim()}>
             {#if savingName}
               <LoaderIcon class="size-4 animate-spin" />
@@ -380,7 +379,6 @@
           id="new-email"
           type="email"
           bind:value={newEmail}
-          placeholder={$t("manage.user_menu.new_email_placeholder")}
           disabled={changingEmail}
         />
         <Label for="email-current-password">{$t("manage.user_menu.current_password_label")}</Label>
