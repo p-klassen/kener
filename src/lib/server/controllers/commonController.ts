@@ -29,8 +29,9 @@ export const VerifyPassword = async (plainTextPassword: string, hashedPassword: 
     const isMatch = await bcrypt.compare(plainTextPassword, hashedPassword);
     return isMatch;
   } catch (err) {
+    // bcrypt throws on malformed hashes — treat as failed verification, not a server error
     console.error("Error verifying password:", err);
-    throw err;
+    return false;
   }
 };
 import type { TokenPayload, EmailTokenPayload } from "$lib/server/types/auth.js";
