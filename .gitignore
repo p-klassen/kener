@@ -36,3 +36,9 @@ temp.js
 knip-output.txt
 check-output.txt
 translation-report.json
+
+# Internal development artifacts
+docs/superpowers/
+
+.superpowers/
+kener.db

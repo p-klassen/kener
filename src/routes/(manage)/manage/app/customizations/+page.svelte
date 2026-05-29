@@ -112,9 +112,9 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   });
 
   let adminBadge = $state<AdminBadgeConfig>({
-    enabled: true,
-    text: "WOBCOM",
-    bgColor: "#96B846",
+    enabled: false,
+    text: "",
+    bgColor: "#6366f1",
     textColor: "#ffffff"
   });
 
@@ -220,9 +220,9 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
         }
         if (result.adminBadge) {
           adminBadge = {
-            enabled: result.adminBadge.enabled ?? true,
-            text: result.adminBadge.text ?? "WOBCOM",
-            bgColor: result.adminBadge.bgColor ?? "#96B846",
+            enabled: result.adminBadge.enabled ?? false,
+            text: result.adminBadge.text ?? "",
+            bgColor: result.adminBadge.bgColor ?? "#6366f1",
             textColor: result.adminBadge.textColor ?? "#ffffff"
           };
         }

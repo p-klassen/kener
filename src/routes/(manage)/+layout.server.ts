@@ -58,7 +58,7 @@ export const load: LayoutServerLoad = async ({ cookies, route }) => {
   const siteStatusColors = siteData.colors;
   const siteStatusColorsDark = siteData.colorsDark || siteStatusColors;
   const font = siteData.font || { cssSrc: "", family: "" };
-  const adminBadge = siteData.adminBadge || { text: "WOBCOM", bgColor: "#96B846", textColor: "#ffffff", enabled: true };
+  const adminBadge = siteData.adminBadge || { text: "", bgColor: "#6366f1", textColor: "#ffffff", enabled: false };
 
   const i18nConfig = siteData.i18n || seedSiteData.i18n;
   const availableLocales = availableLocalesList;
