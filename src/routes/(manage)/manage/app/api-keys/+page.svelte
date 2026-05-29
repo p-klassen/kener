@@ -306,6 +306,11 @@
       <div class="grid gap-4 py-4">
         <div class="grid gap-2">
           <Label for="newAPIKeyName">{$t("manage.api_keys.name_label")}</Label>
+          <Input
+            id="newAPIKeyName"
+            bind:value={newAPIKeyName}
+            required
+          />
         </div>
       </div>
       <Dialog.Footer>

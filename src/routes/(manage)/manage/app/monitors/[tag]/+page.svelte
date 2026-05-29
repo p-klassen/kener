@@ -485,6 +485,7 @@
       </div>
       <div class="space-y-2">
         <Label for="clone-name">{$t("manage.monitor_detail.clone_name_label")}</Label>
+        <Input id="clone-name" bind:value={cloneName} required />
       </div>
     </div>
 

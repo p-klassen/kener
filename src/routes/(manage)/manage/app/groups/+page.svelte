@@ -310,6 +310,7 @@
     <div class="space-y-4">
       <div class="space-y-1.5">
         <Label>{$t("manage.groups.name_label")}</Label>
+        <Input bind:value={newName} required />
       </div>
       <div class="space-y-1.5">
         <Label>{$t("manage.groups.desc_label")}</Label>
