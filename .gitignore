@@ -39,6 +39,13 @@ translation-report.json
 
 # Internal development artifacts
 docs/superpowers/
+docs/NEXT_SESSION.md
+docs/strategy/
+docs/architecture/
+docs/runbooks/
 
 .superpowers/
 kener.db
+
+# Local docker-compose with actual configuration (may contain secrets)
+docker-compose.yml

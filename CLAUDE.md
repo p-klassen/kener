@@ -2,9 +2,45 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What is Kener?
+Read this before doing anything in this repository. It encodes the rules the operator works under and the workflow conventions established in earlier sessions.
 
-Kener is an open-source status page application built with **SvelteKit 2.x (Svelte 5)** and **Node.js/Express**. It is a **TypeScript-first** codebase providing real-time monitoring, uptime tracking, incident management, and customizable dashboards.
+## What this projekct is - What is Kener?
+
+Kener is an open-source status page application built with **SvelteKit 2.x (Svelte 5)** and **Node.js/Express**. It is a **TypeScript-first** codebase providing real-time monitoring, uptime tracking, incident management, and customizable dashboards with an integrated user management with granular permission settings. This project in particular is a fork of "Kener" (https://kener.ing/) but with major improvements and additional features.
+
+## Safety rules - non-negotiable
+
+1. **No secrets in code or commits.** `.env` and `.docker-compose.yml` are gitignored and stay that way. `.env.example` is the canonical template for `.env`, `docker-compose.example.yml` is the canonical template for `docker-compose.yml`.
+2. **Always ensure update is possible**  When updating the database design make always sure that old deployments can automatically an properly migrate to the latest version.
+3. **Never use example data in production** Whenever an old installation is updated make sure, that you don't inject example data into the production database. For instance you are not allowed to change passwords, secrets etc. in production if it's not mandatory.
+
+## Style
+
+- **Communication:** German, concise, technical. No marketing tone, no filler.
+- **Code, commits, comments, doc bodies:** English.
+- **Comments in code:** only when the *why* is non-obvious. No what-comments. No multi-paragraph docstrings.
+- **Brief is good, silent is not.** Short progress updates between tool calls; one-line end-of-turn summary.
+
+## Key locations
+
+| Path                                                | Purpose                                                                                |
+|-----------------------------------------------------|----------------------------------------------------------------------------------------|
+| `docs/NEXT_SESSION.md`                              | **Read first** — where we left off, how to unblock the live run, next steps            |
+| `README.md`                                         | Project pitch, long-form rules, layout                                                 |
+| `docs/strategy/01-product-roadmap.md`               | Product decisions, open questions, backlog, phasing                                    |
+| `docs/architecture/01-overview.md`                  | Components and end-to-end flow                                                         |
+| `docs/runbooks/04-m1-verification.md`               | M1 11-point verification, what's gated, how to unblock                                 |
+| `.env.example`                                      | Example .env with all available and usable env vars (no secrets)                       |
+| `.env`                                              | All env vars with secrets, this one is gitignored!                                     |
+| `docker-compose.example.yml`                        | Example docker-compose.yml with all available and usable vars and options (no secrets) |
+| `docker-compose.yml`                                | All available and usable vars and options, this one is gitignored!                     |
+
+## Build instructions for Docker image
+
+1. **Always build multiarch** The docker image must always be multiarch
+2. **Propper tagging** The latest image must always have the `kener-wobcom:latest` tag, additionally there will be a second tag `kener-wobcom:<version-number>`, the version number is the same as the version number of the project itself.
+3. **Always have latest image locally** After a new image build you must always pull the latest image to the local Docker daemon.
+4. **Always push latest image to remote registry** After a new image build you must always push the latest image with both tags (mentioned in 2.) to `harbor.service.wobcom.de/wobcom/kener-wobcom:latest` and `harbor.service.wobcom.de/wobcom/kener-wobcom:<version-number>`
 
 ## Development Commands
 
