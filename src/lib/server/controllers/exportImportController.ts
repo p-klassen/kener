@@ -1,5 +1,11 @@
 import db from "../db/db.js";
-import type { SiteData } from "../types/db.js";
+import type {
+  SiteData,
+  SubscriberUserStatus,
+  SubscriptionMethodType,
+  SubscriptionEventType,
+  SubscriptionStatus,
+} from "../types/db.js";
 import { GetOidcConfig, GetLdapConfig, SaveOidcConfig, SaveLdapConfig } from "./authConfigController.js";
 import type { OidcConfig, LdapConfig } from "./authConfigController.js";
 
@@ -69,6 +75,26 @@ interface ExportedUser {
   is_owner: string;
 }
 
+interface ExportedSubscriberSubscription {
+  event_type: string;
+  status: string;
+  monitor_scopes: string[];
+  page_scopes: string[];
+}
+
+interface ExportedSubscriberMethod {
+  method_type: string;
+  method_value: string;
+  status: string;
+  subscriptions: ExportedSubscriberSubscription[];
+}
+
+interface ExportedSubscriber {
+  email: string;
+  status: string;
+  methods: ExportedSubscriberMethod[];
+}
+
 interface ExportedGroup {
   name: string;
   description: string | null;
@@ -103,6 +129,7 @@ export interface ExportPayload {
     users: ExportedUser[];
     groups: ExportedGroup[];
     roles: ExportedRole[];
+    subscribers: ExportedSubscriber[];
   };
 }
 
@@ -190,10 +217,11 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
   }
 
   if (scope === "users_groups_roles" || scope === "everything") {
-    const [users, groups, roles] = await Promise.all([
+    const [users, groups, roles, allSubscriberUsers] = await Promise.all([
       db.getAllUsers(),
       db.getAllGroups(),
       db.getAllRoles(),
+      db.getSubscriberUsersPaginated(1, 100000),
     ]);
 
     const exportedGroups: ExportedGroup[] = await Promise.all(
@@ -224,6 +252,39 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
       }),
     );
 
+    const exportedSubscribers: ExportedSubscriber[] = await Promise.all(
+      allSubscriberUsers.map(async (su) => {
+        const methods = await db.getSubscriberMethodsByUserId(su.id);
+        const exportedMethods: ExportedSubscriberMethod[] = await Promise.all(
+          methods.map(async (m) => {
+            const subs = await db.getUserSubscriptionsV2({ subscriber_method_id: m.id });
+            const subscriptions: ExportedSubscriberSubscription[] = await Promise.all(
+              subs.map(async (s) => {
+                const scopes = await db.getSubscriptionScopes(s.id);
+                return {
+                  event_type: s.event_type,
+                  status: s.status,
+                  monitor_scopes: scopes.monitors,
+                  page_scopes: scopes.pages,
+                };
+              }),
+            );
+            return {
+              method_type: m.method_type,
+              method_value: m.method_value,
+              status: m.status,
+              subscriptions,
+            };
+          }),
+        );
+        return {
+          email: su.email,
+          status: su.status,
+          methods: exportedMethods,
+        };
+      }),
+    );
+
     payload.users_groups_roles = {
       users: users.map((u) => ({
         email: u.email,
@@ -234,6 +295,7 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
       })),
       groups: exportedGroups,
       roles: exportedRoles,
+      subscribers: exportedSubscribers,
     };
   }
 
@@ -428,6 +490,56 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
       }
     }
     imported.groups = groupsImported;
+
+    // Import subscribers — create new ones; skip if email already exists
+    let subscribersImported = 0;
+    for (const sub of payload.users_groups_roles.subscribers ?? []) {
+      let subscriberUser = await db.getSubscriberUserByEmail(sub.email);
+      if (!subscriberUser) {
+        subscriberUser = await db.createSubscriberUser({
+          email: sub.email,
+          status: (sub.status as SubscriberUserStatus) || "ACTIVE",
+        });
+        subscribersImported++;
+      }
+
+      for (const method of sub.methods ?? []) {
+        const existingMethod = await db.getSubscriberMethodByUserAndType(
+          subscriberUser.id,
+          method.method_type as SubscriptionMethodType,
+          method.method_value,
+        );
+        let methodRecord = existingMethod;
+        if (!methodRecord) {
+          methodRecord = await db.createSubscriberMethod({
+            subscriber_user_id: subscriberUser.id,
+            method_type: method.method_type as SubscriptionMethodType,
+            method_value: method.method_value,
+            status: (method.status as SubscriptionStatus) || "ACTIVE",
+          });
+        }
+
+        for (const s of method.subscriptions ?? []) {
+          const exists = await db.subscriptionV2Exists(
+            subscriberUser.id,
+            methodRecord.id,
+            s.event_type as SubscriptionEventType,
+          );
+          if (!exists) {
+            const created = await db.createUserSubscriptionV2({
+              subscriber_user_id: subscriberUser.id,
+              subscriber_method_id: methodRecord.id,
+              event_type: s.event_type as SubscriptionEventType,
+              status: (s.status as SubscriptionStatus) || "ACTIVE",
+            });
+            if (s.monitor_scopes.length > 0 || s.page_scopes.length > 0) {
+              await db.upsertSubscriptionScopes(created.id, s.monitor_scopes, s.page_scopes);
+            }
+          }
+        }
+      }
+    }
+    imported.subscribers = subscribersImported;
   }
 
   return { imported };

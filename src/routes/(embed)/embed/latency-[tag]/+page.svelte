@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { setMode } from "mode-watcher";
   import { resolve } from "$app/paths";
   import LatencyTrendChart from "$lib/components/LatencyTrendChart.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
@@ -67,7 +66,8 @@
 
   onMount(() => {
     if (data.theme) {
-      setMode(data.theme === "dark" ? "dark" : "light");
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(data.theme === "dark" ? "dark" : "light");
     }
     fetchData();
   });

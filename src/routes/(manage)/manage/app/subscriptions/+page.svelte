@@ -416,10 +416,7 @@
           <Alert.Title>{$t("manage.subscriptions.email_not_setup_title")}</Alert.Title>
           <Alert.Description>
             <p>
-              Please visit the email set up documentation <a
-                class="underline"
-                href={clientResolver(resolve, "https://kener.ing/docs/v4/setup/email-setup")}>here</a
-              >.
+              Email is not configured. Please set up SMTP or Resend credentials in the email settings.
             </p>
           </Alert.Description>
         </Alert.Root>

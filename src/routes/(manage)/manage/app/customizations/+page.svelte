@@ -17,6 +17,7 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import { mode } from "mode-watcher";
   import constants from "$lib/global-constants";
   import { t } from "$lib/stores/i18n";
+  import version from "$lib/version";
 
   import CodeMirror from "svelte-codemirror-editor";
   import { html } from "@codemirror/lang-html";
@@ -1256,7 +1257,7 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
             <div class="space-y-2">
               <Label>{$t("manage.customizations.admin_badge_preview")}</Label>
               <div class="flex items-center gap-2">
-                <span class="text-muted-foreground text-xs font-medium">v4.2.1</span>
+                <span class="text-muted-foreground text-xs font-medium">v{version()}</span>
                 <span
                   class="rounded px-1.5 py-0.5 text-xs font-medium"
                   style="background-color:{adminBadge.bgColor};color:{adminBadge.textColor};"

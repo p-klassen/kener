@@ -3,7 +3,6 @@
   import MaintenanceItem from "$lib/components/MaintenanceItem.svelte";
   import { t } from "$lib/stores/i18n";
   import type { PageData } from "./$types";
-  import { setMode } from "mode-watcher";
   import { onMount } from "svelte";
 
   interface Props {
@@ -18,7 +17,8 @@
   const hasEvents = $derived(incidents.length > 0 || maintenanceEvents.length > 0);
   onMount(() => {
     if (data.theme) {
-      setMode(data.theme === "dark" ? "dark" : "light");
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(data.theme === "dark" ? "dark" : "light");
     }
   });
 </script>

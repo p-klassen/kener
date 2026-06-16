@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { setMode } from "mode-watcher";
   import { resolve } from "$app/paths";
   import StatusBarCalendar from "$lib/components/StatusBarCalendar.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
@@ -54,7 +53,8 @@
 
   onMount(() => {
     if (data.theme) {
-      setMode(data.theme === "dark" ? "dark" : "light");
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(data.theme === "dark" ? "dark" : "light");
     }
     fetchData();
   });

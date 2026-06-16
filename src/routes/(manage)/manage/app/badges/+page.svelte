@@ -189,23 +189,10 @@
     }
   }
 
-  async function fetchActivatedLocales() {
-    try {
-      const response = await fetch(clientResolver(resolve, "/manage/api"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "getAllSiteData" })
-      });
-      const result = await response.json();
-      if (!result.error && result.i18n?.locales) {
-        const selectedCodes = new Set(
-          result.i18n.locales.filter((l: { selected: boolean }) => l.selected).map((l: { code: string }) => l.code)
-        );
-        activatedLocales = availableLocalesList.filter((l) => selectedCodes.has(l.code));
-      }
-    } catch {
-      // ignore
-    }
+  function fetchActivatedLocales() {
+    // Badges can use any available locale regardless of which locales
+    // the admin has activated for the status page language switcher.
+    activatedLocales = [...availableLocalesList];
   }
 
   onMount(async () => {

@@ -2,14 +2,12 @@
   import "../layout.css";
   import "../kener.css";
   import "../embed.css";
-  import { ModeWatcher } from "mode-watcher";
   import { resolve } from "$app/paths";
   import { Toaster } from "$lib/components/ui/sonner/index.js";
 
   let { children, data } = $props();
 </script>
 
-<ModeWatcher />
 <Toaster />
 
 <svelte:head>
