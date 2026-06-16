@@ -594,14 +594,14 @@ export async function VerifySubscriberOTP(
     return { success: false, error: "User not found" };
   }
 
+  // Check expiry first — null means no expiry was set, treat as already expired
+  if (!user.verification_expires_at || new Date(user.verification_expires_at) < new Date()) {
+    return { success: false, error: "Verification code expired" };
+  }
+
   // Check verification code
   if (user.verification_code !== code) {
     return { success: false, error: "Invalid verification code" };
-  }
-
-  // Check expiry
-  if (user.verification_expires_at && new Date(user.verification_expires_at) < new Date()) {
-    return { success: false, error: "Verification code expired" };
   }
 
   // Activate user

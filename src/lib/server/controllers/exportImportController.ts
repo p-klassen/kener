@@ -451,14 +451,18 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
     // Syncing permissions for existing roles via any API key would allow privilege
     // escalation (a stolen key could grant itself admin rights). Existing roles are
     // intentionally left unchanged; use the manage UI for role permission edits.
+    // External IDs are never adopted — a name-based lookup prevents ID collisions
+    // that could cause privilege escalation against existing roles in the target DB.
     let rolesImported = 0;
+    const allExistingRoles = await db.getAllRoles();
     for (const r of roles ?? []) {
       if (r.readonly) continue;
-      const existing = await db.getRoleById(r.id);
-      if (!existing) {
-        await db.insertRole({ id: r.id, role_name: r.role_name });
+      const existingByName = allExistingRoles.find((er) => er.role_name === r.role_name);
+      if (!existingByName) {
+        const newId = crypto.randomUUID();
+        await db.insertRole({ id: newId, role_name: r.role_name });
         for (const pid of r.permissions ?? []) {
-          await db.addRolePermission(r.id, pid);
+          await db.addRolePermission(newId, pid);
         }
         rolesImported++;
       }

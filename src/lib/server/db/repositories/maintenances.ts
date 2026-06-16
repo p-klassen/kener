@@ -523,7 +523,7 @@ export class MaintenancesRepository extends BaseRepository {
 
     if (tags && tags.length > 0) {
       query.where(function () {
-        this.whereIn("maintenance_monitors.monitor_tag", tags);
+        this.whereIn("maintenance_monitors.monitor_tag", tags).orWhere("maintenances.is_global", "YES");
       });
     } else {
       query.where("maintenances.is_global", "YES");

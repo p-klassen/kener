@@ -119,9 +119,6 @@ export async function AuthenticateWithLdap(
         auth_provider: "ldap",
         external_id: userDn,
       });
-      for (const roleId of defaultRoleIds) {
-        await db.addUserToRole(roleId, userId);
-      }
       user = await db.getUserById(userId);
     }
 

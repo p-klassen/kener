@@ -305,6 +305,7 @@ const addWorker = () => {
       }
     } catch (error) {
       console.error("Error processing alerting job:", error);
+      throw error; // BullMQ retry aktivieren
     }
 
     // return { monitor_tag, monitor_settings_json, ts, status };

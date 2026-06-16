@@ -236,7 +236,7 @@ export class MonitoringRepository extends BaseRepository {
       )
       .whereIn("monitor_tag", monitor_tags_arr);
 
-    if (!!minTimestamp) {
+    if (minTimestamp !== null && minTimestamp !== undefined) {
       query = query.whereBetween("timestamp", [minTimestamp, timestamp]);
     } else {
       query = query.where("timestamp", "=", timestamp);

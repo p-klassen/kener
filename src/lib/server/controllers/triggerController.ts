@@ -9,9 +9,16 @@ interface TriggerInput extends TriggerRecordInsert {
 
 export const CreateUpdateTrigger = async (alert: TriggerInput): Promise<number | number[]> => {
   let alertData = { ...alert };
-  let alertMetaJSON = JSON.parse(alertData.trigger_meta);
+  let alertMetaJSON: Record<string, unknown>;
+  try {
+    alertMetaJSON = JSON.parse(alertData.trigger_meta);
+  } catch {
+    throw new Error("Invalid trigger_meta: not valid JSON");
+  }
   if (alertData.trigger_type === "email") {
-    let emailsArray: string[] = alertMetaJSON.to.split(",").map((email: string) => email.trim());
+    const to = alertMetaJSON.to;
+    if (typeof to !== "string") throw new Error("trigger_meta.to must be a string");
+    const emailsArray = to.split(",").map((email: string) => email.trim());
     for (let i = 0; i < emailsArray.length; i++) {
       if (!ValidateEmail(emailsArray[i])) {
         throw new Error(`Invalid email: ${emailsArray[i]}`);

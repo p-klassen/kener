@@ -553,7 +553,7 @@ export const ResendInvitationEmail = async (email: string) => {
       template.template_html_body || "",
       template.template_subject || "Your Invitation to Join",
       emailVars,
-      [email],
+      [normalizedEmail],
       undefined,
       template.template_text_body || "",
     );

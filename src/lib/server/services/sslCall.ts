@@ -16,6 +16,7 @@ const getSSLExpiry = (domain: string, port: number = 443): Promise<SSLExpiryResu
     const socket = tls.connect(port, domain, { servername: domain }, () => {
       const { valid_to } = socket.getPeerCertificate();
       if (!valid_to) {
+        socket.destroy();
         reject(new Error("No certificate found."));
         return;
       }
@@ -30,7 +31,10 @@ const getSSLExpiry = (domain: string, port: number = 443): Promise<SSLExpiryResu
       socket.end();
     });
 
-    socket.on("error", (err) => reject(err));
+    socket.on("error", (err) => {
+      socket.destroy();
+      reject(err);
+    });
   });
 };
 

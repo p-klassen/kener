@@ -185,7 +185,7 @@ export const GenerateMaintenanceEvents = async (
     // Get occurrences based on count
     let occurrences: Date[] = [];
 
-    if (rrule.includes("COUNT=1")) {
+    if (/(?:^|;)COUNT=1(?:;|$)/.test(rrule)) {
       // One-time maintenance: only create event if start_date_time is recent or in the future
       if (dtstart >= now || dtstart >= addDays(now, -1)) {
         occurrences = [dtstart];
@@ -585,7 +585,7 @@ export const GetMaintenanceEventsForMonitor = async (
 // ============ Helper to check if RRULE is one-time ============
 export const isOneTimeRrule = (rrule: string): boolean => {
   // One-time RRULEs typically have COUNT=1
-  return rrule.includes("COUNT=1");
+  return /(?:^|;)COUNT=1(?:;|$)/.test(rrule);
 };
 
 // ============ Helper to format duration ============

@@ -41,12 +41,13 @@ class SqlCall {
       knexInstance = Knex(config);
 
       // Set up a timeout for the query execution
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Query timeout")), timeout);
+      let timeoutHandle: ReturnType<typeof setTimeout>;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error("Query timeout")), timeout);
       });
 
-      // Execute query
-      const queryPromise = knexInstance.raw(query);
+      // Execute query; clear the timeout handle when it resolves or rejects
+      const queryPromise = knexInstance.raw(query).finally(() => clearTimeout(timeoutHandle!));
 
       // Race the promises to handle timeouts
       await Promise.race([queryPromise, timeoutPromise]);

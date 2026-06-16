@@ -51,15 +51,9 @@ export const GetIncidentsOpenHome = async (
   start: number,
   end: number,
 ): Promise<unknown[]> => {
-  homeIncidentCount = parseInt(String(homeIncidentCount));
-
-  if (homeIncidentCount < 0) {
-    homeIncidentCount = 0;
-  }
-
-  if (homeIncidentCount === 0) {
-    return [];
-  }
+  const count = parseInt(String(homeIncidentCount), 10);
+  if (isNaN(count) || count <= 0) return [];
+  homeIncidentCount = count;
   let incidents = (await db.getRecentUpdatedIncidents(homeIncidentCount, start, end)) as (IncidentRecord & {
     monitors?: unknown[];
     comments?: unknown[];

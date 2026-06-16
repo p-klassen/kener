@@ -500,7 +500,7 @@ export class IncidentsRepository extends BaseRepository {
 
     if (tags && tags.length > 0) {
       query.where(function () {
-        this.whereIn("incident_monitors.monitor_tag", tags);
+        this.whereIn("incident_monitors.monitor_tag", tags).orWhere("incidents.is_global", "YES");
       });
     } else {
       query.where("incidents.is_global", "YES");

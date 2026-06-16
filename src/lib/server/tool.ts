@@ -35,13 +35,7 @@ const GetMinuteStartTimestampUTC = function (timestamp: number): number {
   //use js date instead of moment
   const now = new Date(timestamp * 1000);
   const minuteStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    now.getHours(),
-    now.getMinutes(),
-    0,
-    0,
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), 0, 0),
   );
   const minuteStartTimestamp = minuteStart.getTime();
   return Math.floor(minuteStartTimestamp / 1000);
@@ -51,13 +45,7 @@ const GetMinuteStartNowTimestampUTC = function () {
   //use js date instead of moment
   const now = new Date();
   const minuteStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    now.getHours(),
-    now.getMinutes(),
-    0,
-    0,
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), 0, 0),
   );
   const minuteStartTimestamp = minuteStart.getTime();
   return Math.floor(minuteStartTimestamp / 1000);
@@ -207,7 +195,8 @@ function IsValidRecordType(recordType: string): boolean {
   return AllRecordTypes.hasOwnProperty(recordType);
 }
 function ReplaceAllOccurrences(originalString: string, searchString: string, replacement: string): string {
-  const regex = new RegExp(`\\${searchString}`, "g");
+  const escaped = searchString.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escaped, "g");
   const replacedString = originalString.replace(regex, replacement);
   return replacedString;
 }

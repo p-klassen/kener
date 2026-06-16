@@ -215,10 +215,10 @@ export async function HandleOidcCallback(
 
   const tokens = (await tokenResp.json()) as { access_token: string; id_token?: string };
 
-  // Verify id_token signature, audience, issuer, and nonce if present
-  if (tokens.id_token && meta.jwks_uri) {
-    await verifyIdToken(tokens.id_token, meta.jwks_uri, config.client_id, config.issuer_url, nonce ?? undefined);
-  }
+  // Verify id_token signature, audience, issuer, and nonce — mandatory per OIDC code flow spec
+  if (!tokens.id_token) throw new Error("OIDC token response missing id_token");
+  if (!meta.jwks_uri) throw new Error("OIDC provider has no jwks_uri for verification");
+  await verifyIdToken(tokens.id_token, meta.jwks_uri, config.client_id, config.issuer_url, nonce ?? undefined);
 
   // Fetch user info
   const userInfoResp = await fetch(meta.userinfo_endpoint, {
@@ -271,12 +271,6 @@ export async function HandleOidcCallback(
       auth_provider: "oidc",
       external_id: subject,
     });
-    // Assign default roles
-    if (defaultRoleIds.length > 0) {
-      for (const roleId of defaultRoleIds) {
-        await db.addUserToRole(roleId, userId);
-      }
-    }
     user = await db.getUserById(userId);
   }
 

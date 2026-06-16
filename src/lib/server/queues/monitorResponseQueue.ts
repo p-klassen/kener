@@ -58,7 +58,7 @@ const addWorker = () => {
       return dbRes;
     } catch (err) {
       console.error(`monitorResponseQueue: error processing job for monitor "${monitorTag}":`, err);
-      return null;
+      throw err; // BullMQ retry aktivieren
     }
   });
 

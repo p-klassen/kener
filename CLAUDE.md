@@ -18,7 +18,7 @@ Kener is an open-source status page application built with **SvelteKit 2.x (Svel
 
 - **Communication:** German, concise, technical. No marketing tone, no filler.
 - **Code, commits, comments, doc bodies:** English.
-- **Comments in code:** only when the *why* is non-obvious. No what-comments. No multi-paragraph docstrings.
+- **Comments in code:** only when the *why* is non-obvious. No what-comments. No multi-paragraph docstrings. All comments must be english, if they are not in english currently, translate them into english.
 - **Brief is good, silent is not.** Short progress updates between tool calls; one-line end-of-turn summary.
 
 ## Key locations
