@@ -110,7 +110,7 @@
 
   // Page badge URL
   const pageBadgeUrl = $derived.by(() => {
-    if (!pageBadgeConfig.pagePath && pageBadgeConfig.pagePath !== "") return "";
+    if (pageBadgeConfig.pagePath === undefined || pageBadgeConfig.pagePath === null) return "";
     if (badgeTarget !== "page") return "";
     const pathSegment = pageBadgeConfig.pagePath === "" ? "_root_" : pageBadgeConfig.pagePath;
     const baseUrl =

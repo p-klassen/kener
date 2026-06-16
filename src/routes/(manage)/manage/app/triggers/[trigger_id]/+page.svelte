@@ -24,7 +24,7 @@
   import CheckIcon from "@lucide/svelte/icons/check";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { mode } from "mode-watcher";
   import { IsValidURL } from "$lib/clientTools";
   import CodeMirror from "svelte-codemirror-editor";
@@ -41,6 +41,7 @@
   let loading = $state(true);
   let saving = $state(false);
   let testing = $state<"idle" | "loading" | "success" | "error">("idle");
+  let testingTimer: ReturnType<typeof setTimeout>;
   let invalidFormMessage = $state("");
   let deleteDialogOpen = $state(false);
   let deleteConfirmName = $state("");
@@ -233,7 +234,7 @@
       testing = "error";
       toast.error($t("manage.trigger_detail.test_error"));
     } finally {
-      setTimeout(() => {
+      testingTimer = setTimeout(() => {
         testing = "idle";
       }, 3000);
     }
@@ -265,19 +266,23 @@
         toast.error(result.error);
       } else {
         toast.success("Trigger deleted successfully");
+        deleteDialogOpen = false;
+        deleteConfirmName = "";
         goto(clientResolver(resolve, "/manage/app/triggers"));
       }
     } catch (error) {
       toast.error("Failed to delete trigger");
     } finally {
       isDeleting = false;
-      deleteDialogOpen = false;
-      deleteConfirmName = "";
     }
   }
 
   onMount(() => {
     fetchTrigger();
+  });
+
+  onDestroy(() => {
+    clearTimeout(testingTimer);
   });
 </script>
 
@@ -349,6 +354,7 @@
           <Label for="trigger-name">
             {$t("manage.trigger_detail.name_label")} <span class="text-destructive">*</span>
           </Label>
+          <Input id="trigger-name" bind:value={trigger.name} placeholder={$t("manage.trigger_detail.name_label")} />
         </div>
 
         <!-- Description -->

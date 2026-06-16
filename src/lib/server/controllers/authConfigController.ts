@@ -140,8 +140,8 @@ export async function GetLdapConfig(): Promise<LdapConfig> {
 export async function SaveLdapConfig(config: Partial<LdapConfig>): Promise<LdapConfig> {
   const current = await GetLdapConfig();
   const updated = { ...current, ...config };
-  // Don't persist an empty bind_password if not provided (keep existing)
-  if (!config.bind_password && current.bind_password) {
+  // Keep existing bind_password only when not explicitly set in the patch (undefined = not sent)
+  if (config.bind_password === undefined && current.bind_password) {
     updated.bind_password = current.bind_password;
   }
   await db.insertOrUpdateSiteData(LDAP_KEY, JSON.stringify(updated), "json");

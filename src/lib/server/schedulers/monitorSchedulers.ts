@@ -80,6 +80,7 @@ export const removeJobFromSchedulerQueue = async (id: string, minNumOfWorkers: n
 export const shutdown = async () => {
   if (worker) {
     await worker.close();
+    worker = null;
   }
 };
 

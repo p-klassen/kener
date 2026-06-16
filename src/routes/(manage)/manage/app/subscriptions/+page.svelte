@@ -105,6 +105,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "getSubscriptionsConfig" })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       config = await res.json();
     } catch (error) {
       toast.error("Failed to load configuration");
@@ -117,7 +118,7 @@
   async function saveConfig() {
     savingConfig = true;
     try {
-      await fetch(clientResolver(resolve, "/manage/api"), {
+      const res = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -125,6 +126,7 @@
           data: config
         })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       toast.success("Configuration saved");
     } catch (error) {
       toast.error("Failed to save configuration");

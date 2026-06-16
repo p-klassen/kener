@@ -335,15 +335,19 @@ export class SubscriptionSystemRepository extends BaseRepository {
       "su.email as user_email",
       "su.status as user_status",
       "su.created_at as user_created_at",
+      "su.updated_at as user_updated_at",
       "sm.id as method_id",
       "sm.method_type",
       "sm.method_value",
       "sm.status as method_status",
       "sm.meta as method_meta",
+      "sm.created_at as method_created_at",
+      "sm.updated_at as method_updated_at",
       "us.id as sub_id",
       "us.event_type",
       "us.status as sub_status",
       "us.created_at as sub_created_at",
+      "us.updated_at as sub_updated_at",
     );
 
     return rows.map((row) => ({
@@ -355,7 +359,7 @@ export class SubscriptionSystemRepository extends BaseRepository {
         verification_expires_at: null,
         linked_user_id: null,
         created_at: row.user_created_at,
-        updated_at: row.user_created_at,
+        updated_at: row.user_updated_at,
       },
       method: {
         id: row.method_id,
@@ -364,8 +368,8 @@ export class SubscriptionSystemRepository extends BaseRepository {
         method_value: row.method_value,
         status: row.method_status,
         meta: row.method_meta,
-        created_at: row.sub_created_at,
-        updated_at: row.sub_created_at,
+        created_at: row.method_created_at,
+        updated_at: row.method_updated_at,
       },
       subscription: {
         id: row.sub_id,
@@ -376,7 +380,7 @@ export class SubscriptionSystemRepository extends BaseRepository {
         entity_id: row.entity_id,
         status: row.sub_status,
         created_at: row.sub_created_at,
-        updated_at: row.sub_created_at,
+        updated_at: row.sub_updated_at,
       },
     }));
   }
@@ -401,23 +405,39 @@ export class SubscriptionSystemRepository extends BaseRepository {
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const result = [];
-    for (const user of users) {
-      const methods = await this.getSubscriberMethodsByUserId(user.id);
-      const subCount = await this.knex("user_subscriptions_v2")
-        .where("subscriber_user_id", user.id)
-        .andWhere("status", "ACTIVE")
-        .count("id as count")
-        .first();
+    if (users.length === 0) return [];
 
-      result.push({
-        user,
-        methods,
-        subscription_count: Number(subCount?.count || 0),
-      });
+    const userIds = users.map((u: SubscriberUserRecord) => u.id);
+
+    const methods = await this.knex("subscriber_methods")
+      .whereIn("subscriber_user_id", userIds)
+      .orderBy("created_at", "asc");
+
+    const subCounts = await this.knex("user_subscriptions_v2")
+      .whereIn("subscriber_user_id", userIds)
+      .andWhere("status", "ACTIVE")
+      .select("subscriber_user_id")
+      .count("id as count")
+      .groupBy("subscriber_user_id");
+
+    const methodMap = new Map<number, SubscriberMethodRecord[]>();
+    for (const m of methods) {
+      const list = methodMap.get(m.subscriber_user_id) ?? [];
+      list.push(m);
+      methodMap.set(m.subscriber_user_id, list);
     }
+    const countMap = new Map<number, number>(
+      (subCounts as { subscriber_user_id: number; count: string | number }[]).map((r) => [
+        r.subscriber_user_id,
+        Number(r.count),
+      ]),
+    );
 
-    return result;
+    return users.map((user: SubscriberUserRecord) => ({
+      user,
+      methods: methodMap.get(user.id) ?? [],
+      subscription_count: countMap.get(user.id) ?? 0,
+    }));
   }
 
   // ============ Admin Methods for Listing by Method Type ============

@@ -386,8 +386,8 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
     imported.pages = pagesImported;
 
     let triggersImported = 0;
+    const allTriggers = await db.getTriggers({});
     for (const t of triggers ?? []) {
-      const allTriggers = await db.getTriggers({});
       const existing = allTriggers.find((tr) => tr.name === t.name);
       if (existing) {
         await db.updateTrigger({ ...existing, ...t });
@@ -471,8 +471,9 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
 
     // Import groups — create new or sync roles for existing
     let groupsImported = 0;
+    const allGroups = await db.getAllGroups();
+    const allRoles = await db.getAllRoles();
     for (const g of groups ?? []) {
-      const allGroups = await db.getAllGroups();
       const existing = allGroups.find((ex) => ex.name === g.name);
       let groupId: number;
       if (existing) {
@@ -487,7 +488,6 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
         groupId = created.id;
         groupsImported++;
       }
-      const allRoles = await db.getAllRoles();
       for (const roleName of g.role_names ?? []) {
         const role = allRoles.find((r) => r.role_name === roleName);
         if (role) await db.addGroupRole(groupId, role.id);

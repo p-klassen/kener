@@ -81,8 +81,8 @@ class TcpCall {
 
     //reduce to get the status
     return {
-      status: evalResp?.status || GC.DOWN,
-      latency: evalResp?.latency || 0,
+      status: evalResp.status ?? GC.DOWN,
+      latency: evalResp.latency ?? 0,
       type: GC.REALTIME,
       error_message: errorMessages.length > 0 ? errorMessages.join("; ") : undefined,
     };

@@ -86,19 +86,23 @@ const processAllMaintenances = async (): Promise<{ total: number; eventsCreated:
   let totalEventsCreated = 0;
 
   try {
-    // Get all active maintenances
-    const maintenances = await db.getMaintenancesPaginated(1, 1000, { status: "ACTIVE" });
+    // Get all active maintenances, paginated to avoid hard 1000-record limit
+    let page = 1;
+    const pageSize = 100;
+    let batch: MaintenanceRecord[];
+    do {
+      batch = await db.getMaintenancesPaginated(page++, pageSize, { status: "ACTIVE" });
+      for (const maintenance of batch) {
+        // Skip one-time maintenances
+        if (maintenance.rrule.includes("COUNT=1")) {
+          continue;
+        }
 
-    for (const maintenance of maintenances) {
-      // Skip one-time maintenances
-      if (maintenance.rrule.includes("COUNT=1")) {
-        continue;
+        const eventsCreated = await generateEventsForMaintenance(maintenance);
+        totalEventsCreated += eventsCreated;
+        totalProcessed++;
       }
-
-      const eventsCreated = await generateEventsForMaintenance(maintenance);
-      totalEventsCreated += eventsCreated;
-      totalProcessed++;
-    }
+    } while (batch.length === pageSize);
   } catch (err) {
     console.error("Error processing maintenances for event generation:", err);
   }

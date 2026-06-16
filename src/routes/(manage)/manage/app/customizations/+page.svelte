@@ -299,17 +299,7 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   async function saveFontUrl() {
     savingFont = true;
     try {
-      if (font.fileId) {
-        const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "deleteImage", data: { id: font.fileId } })
-        });
-        const deleteResult = await deleteRes.json();
-        if (deleteResult.error) {
-          console.warn("Failed to delete old font file:", deleteResult.error);
-        }
-      }
+      const previousFileId = font.fileId;
 
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
@@ -328,6 +318,18 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
         font.fileId = "";
         uploadedFontName = "";
         toast.success("Font settings saved successfully");
+
+        if (previousFileId) {
+          const deleteRes = await fetch(clientResolver(resolve, "/manage/api"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "deleteImage", data: { id: previousFileId } })
+          });
+          const deleteResult = await deleteRes.json();
+          if (deleteResult.error) {
+            console.warn("Failed to delete old font file:", deleteResult.error);
+          }
+        }
       }
     } catch (e) {
       toast.error("Failed to save font settings");

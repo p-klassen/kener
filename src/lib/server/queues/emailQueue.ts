@@ -58,7 +58,7 @@ const addWorker = () => {
   });
 
   worker.on("failed", (job: Job | undefined, err: Error) => {
-    const toEmails = job?.data?.toEmail || "unknown";
+    const toEmails = job?.data?.toEmails?.join(", ") || "unknown";
     console.error(`❌ Email job failed`, err.message);
   });
 
@@ -85,8 +85,8 @@ export const push = async (jobData: EmailJobData, options?: JobsOptions) => {
   const queue = getQueue();
   addWorker();
 
-  // Use deduplication to prevent duplicate emails to same recipient
-  const deDupId = `email-${CreateMD5Hash(jobData.toEmails.join(","))}-${Date.now()}`;
+  // Use deduplication to prevent duplicate emails to same recipient within a short window
+  const deDupId = `email-${CreateMD5Hash(jobData.toEmails.join(",") + jobData.templateSubject + jobData.templateHtmlBody)}`;
   if (!options.deduplication) {
     options.deduplication = {
       id: deDupId,

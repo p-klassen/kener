@@ -346,8 +346,8 @@ export const UpdateIncident = async (incident_id: number, data: IncidentUpdateIn
     throw new Error(`Incident with id ${incident_id} does not exist`);
   }
 
-  let endDateTime = data.end_date_time;
-  if (endDateTime && endDateTime < incidentExists.start_date_time) {
+  const effectiveStart = data.start_date_time ?? incidentExists.start_date_time;
+  if (data.end_date_time && data.end_date_time < effectiveStart) {
     throw new Error("End date time cannot be less than start date time");
   }
 

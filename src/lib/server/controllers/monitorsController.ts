@@ -295,14 +295,10 @@ export const GetLatestStatusActiveAll = async (): Promise<{ status: string }> =>
   const monitors = await db.getMonitors({ status: "ACTIVE", is_hidden: "NO" });
   const monitor_tags = monitors.map((m) => m.tag);
 
-  const latestData: MonitoringData[] = [];
-  for (let i = 0; i < monitor_tags.length; i++) {
-    const tag = monitor_tags[i];
-    const lastObj = await GetLastMonitoringValue(tag, () => GetLatestMonitoringData(tag));
-    if (lastObj) {
-      latestData.push(lastObj);
-    }
-  }
+  const results = await Promise.all(
+    monitor_tags.map((tag) => GetLastMonitoringValue(tag, () => GetLatestMonitoringData(tag))),
+  );
+  const latestData: MonitoringData[] = results.filter(Boolean) as MonitoringData[];
 
   let status: string = GC.NO_DATA;
   for (let i = 0; i < latestData.length; i++) {

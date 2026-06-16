@@ -50,10 +50,30 @@ class PingCall {
       };
     }
 
+    if (!evalResp) {
+      console.log(`Error in pingEval for ${tag}: did not return a valid response.`);
+      return {
+        status: GC.DOWN,
+        latency: 0,
+        type: GC.ERROR,
+        error_message: "Error in pingEval: did not return a valid response.",
+      };
+    }
+
+    if (!("status" in evalResp) || !("latency" in evalResp)) {
+      console.log(`Error in pingEval for ${tag}: did not return status or latency.`);
+      return {
+        status: GC.DOWN,
+        latency: 0,
+        type: GC.ERROR,
+        error_message: "Error in pingEval: did not return status or latency.",
+      };
+    }
+
     //reduce to get the status
     return {
-      status: evalResp?.status || GC.DOWN,
-      latency: evalResp?.latency || 0,
+      status: evalResp?.status ?? GC.DOWN,
+      latency: evalResp?.latency ?? 0,
       type: GC.REALTIME,
       error_message: errorMessages.length > 0 ? errorMessages.join("; ") : undefined,
     };

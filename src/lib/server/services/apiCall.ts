@@ -164,12 +164,13 @@ class ApiCall {
       };
       errorMessage += ` | Eval must return an object with a 'status' field (one of: ${GC.UP}, ${GC.DOWN}, ${GC.DEGRADED}, ${GC.MAINTENANCE}), but 'status' was missing`;
     } else if (([GC.UP, GC.DOWN, GC.DEGRADED, GC.MAINTENANCE] as string[]).indexOf(evalResp.status) === -1) {
+      const invalidStatus = evalResp.status;
       evalResp = {
         status: GC.DOWN,
         latency: latency,
         type: GC.ERROR,
       };
-      errorMessage += ` | Eval returned invalid 'status' value "${evalResp.status}". Must be one of: ${GC.UP}, ${GC.DOWN}, ${GC.DEGRADED}, ${GC.MAINTENANCE}`;
+      errorMessage += ` | Eval returned invalid 'status' value "${invalidStatus}". Must be one of: ${GC.UP}, ${GC.DOWN}, ${GC.DEGRADED}, ${GC.MAINTENANCE}`;
     } else {
       evalResp.type = GC.REALTIME;
       // Ensure latency is a valid number; fall back to measured latency

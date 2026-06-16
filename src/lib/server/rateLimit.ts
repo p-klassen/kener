@@ -110,7 +110,8 @@ export function getClientIp(request: Request): string {
   // TRUSTED_PROXY_COUNT: number of trusted reverse-proxy hops in front of the app.
   // Set to the number of proxies (e.g. 1 for a single nginx/load-balancer) so the
   // correct client IP is selected from XFF instead of the spoofable leftmost entry.
-  const proxyCount = process.env.TRUSTED_PROXY_COUNT ? parseInt(process.env.TRUSTED_PROXY_COUNT, 10) : null;
+  const raw = parseInt(process.env.TRUSTED_PROXY_COUNT ?? "", 10);
+  const proxyCount = Number.isFinite(raw) && raw > 0 ? raw : null;
   if (xff) {
     const parts = xff.split(",").map((s) => s.trim());
     if (proxyCount !== null && proxyCount > 0) {

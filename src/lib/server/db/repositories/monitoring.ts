@@ -275,7 +275,7 @@ export class MonitoringRepository extends BaseRepository {
       .from("last_records")
       .first();
 
-    return result.is_affected === 1;
+    return result?.is_affected === 1;
   }
 
   async consecutivelyLatencyGreaterThan(

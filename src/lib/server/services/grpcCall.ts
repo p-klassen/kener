@@ -1,6 +1,6 @@
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
-import { writeFileSync, unlinkSync, mkdtempSync } from "fs";
+import { writeFileSync, unlinkSync, mkdtempSync, rmdirSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import { performance } from "node:perf_hooks";
@@ -49,6 +49,7 @@ function getHealthProto() {
     });
     cachedProto = grpc.loadPackageDefinition(packageDef);
     unlinkSync(protoPath);
+    rmdirSync(tmpDir);
   }
   return cachedProto;
 }

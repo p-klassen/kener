@@ -206,14 +206,17 @@ export const GenerateMaintenanceEvents = async (
     const maintenanceTitle = maintenance?.title || "";
     const maintenanceDescription = maintenance?.description || null;
 
+    // Fetch existing events once before the loop to avoid repeated DB queries
+    const existing = await db.getMaintenanceEventsByMaintenanceId(maintenance_id);
+    const existingStarts = new Set(existing.map((e) => e.start_date_time));
+
     // Create events for each occurrence
     for (const occurrence of occurrences) {
       const eventStart = Math.floor(occurrence.getTime() / 1000);
       const eventEnd = eventStart + duration_seconds;
 
       // Check if event already exists for this time
-      const existing = await db.getMaintenanceEventsByMaintenanceId(maintenance_id);
-      const alreadyExists = existing.some((e) => e.start_date_time === eventStart);
+      const alreadyExists = existingStarts.has(eventStart);
 
       if (!alreadyExists) {
         const event = await CreateMaintenanceEventWithNotification(
