@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Kener API v4",
-    "version": "4.2.5",
-    "description": "OpenAPI specification for Kener self-hosted API v4. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages\n\nNew in v4.1.0: Authentication configuration (OIDC, LDAP) stored under site config keys \"auth.oidc\" and \"auth.ldap\".\n\nNew in v4.2.0: Triggers, Alert Configs, Images (full CRUD with upload), and Export/Import endpoints.\n\nNew in v4.2.4: Subscription notifications are now restricted to public monitors only — private and role-restricted monitors are excluded from all subscriber notifications.\n\nNew in v4.2.5: Bug fixes — embed theme isolation, badge locale picker, subscriber export/import, version display in admin badge preview."
+    "version": "4.2.6",
+    "description": "OpenAPI specification for Kener self-hosted API v4. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages\n\nNew in v4.1.0: Authentication configuration (OIDC, LDAP) stored under site config keys \"auth.oidc\" and \"auth.ldap\".\n\nNew in v4.2.0: Triggers, Alert Configs, Images (full CRUD with upload), and Export/Import endpoints.\n\nNew in v4.2.4: Subscription notifications are now restricted to public monitors only — private and role-restricted monitors are excluded from all subscriber notifications.\n\nNew in v4.2.5: Bug fixes — embed theme isolation, badge locale picker, subscriber export/import, version display in admin badge preview.\n\nNew in v4.2.6: Security and bug fixes — OIDC id_token validation enforced, BullMQ retry mechanism restored, privilege escalation prevention in import, OTP expiry enforced, UTC timestamp corrections, regex injection fix, N+1 query elimination, SSL/gRPC resource leak fixes, frontend bug fixes."
   },
   "servers": [
     {
