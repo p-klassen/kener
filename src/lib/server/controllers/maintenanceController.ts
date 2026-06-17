@@ -604,112 +604,92 @@ export const formatDurationSeconds = (seconds: number): string => {
 
 // ============ Scheduled Status Updates ============
 
+async function notifyMaintenanceEvent(
+  event: MaintenanceEventRecordDetailed,
+  siteUrl: string,
+  enabled: boolean,
+  statusText: string,
+  eventKey: string,
+  subject: string,
+): Promise<void> {
+  if (!enabled) return;
+  const monitors = await db.getMonitorsByMaintenanceId(event.maintenance_id);
+  const monitorNames = monitors.map((m) => `${m.monitor_name}(${m.monitor_impact})`).join(", ");
+  const update = maintenanceToVariables(
+    event,
+    monitorNames,
+    monitors.map((m) => m.monitor_tag),
+    statusText,
+    eventKey,
+    subject,
+    siteUrl,
+  );
+  await subscriberQueue.push(update);
+}
+
 /**
  * Update maintenance event statuses based on current time:
  * 1. SCHEDULED events starting within the reminder buffer → READY
- * 2. READY events where current time is within start/end → ONGOING
- * 3. ONGOING events where end_date_time has passed → COMPLETED
+ * 2. Catch-up: SCHEDULED events that missed READY window → ONGOING
+ * 3. READY events now in progress → ONGOING
+ * 4. ONGOING events that have ended → COMPLETED
  */
 export const UpdateMaintenanceEventStatuses = async (): Promise<void> => {
   const currentTimestamp = GetMinuteStartNowTimestampUTC();
   const siteData = await GetAllSiteData();
   const siteVars = siteDataToVariables(siteData);
   const siteUrl = siteVars.site_url;
-  //get global maintenance notification settings
   const notificationSettings =
     siteData.globalMaintenanceNotificationSettings || seedSiteData.globalMaintenanceNotificationSettings;
-
   const reminderBufferSeconds = notificationSettings.reminder_buffer_hours * 3600;
+
   try {
-    // 1. Mark SCHEDULED events starting within the reminder buffer as READY
+    // 1. SCHEDULED → READY (starting within reminder buffer)
     const scheduledEvents = await db.getScheduledEventsStartingSoon(currentTimestamp, reminderBufferSeconds);
     for (const event of scheduledEvents) {
       await db.updateMaintenanceEventStatus(event.id, GC.READY);
       console.log(`Maintenance event ${event.id} marked as READY (starts at ${event.start_date_time})`);
-      const monitors = await db.getMonitorsByMaintenanceId(event.maintenance_id);
-      const monitorNames = monitors.map((m) => `${m.monitor_name}(${m.monitor_impact})`).join(", ");
       const timeUntilStart = formatDistanceStrict(
         new Date(event.start_date_time * 1000),
         new Date(currentTimestamp * 1000),
       );
-      if (notificationSettings.event_types.reminder) {
-        const update = maintenanceToVariables(
-          event,
-          monitorNames,
-          monitors.map((m) => m.monitor_tag),
-          `**is starting in ${timeUntilStart}**`,
-          "starting_soon",
-          "Maintenance Starting Soon",
-          siteUrl,
-        );
-        await subscriberQueue.push(update);
-      }
+      await notifyMaintenanceEvent(
+        event, siteUrl, notificationSettings.event_types.reminder,
+        `**is starting in ${timeUntilStart}**`, "starting_soon", "Maintenance Starting Soon",
+      );
     }
 
-    // 2. Catch-up: SCHEDULED events that missed the READY window and already started → ONGOING
+    // 2. SCHEDULED → ONGOING (catch-up: missed the READY window)
     const scheduledStartedEvents = await db.getScheduledEventsAlreadyStarted(currentTimestamp);
     for (const event of scheduledStartedEvents) {
       await db.updateMaintenanceEventStatus(event.id, GC.ONGOING);
       console.log(`Maintenance event ${event.id} marked as ONGOING (catch-up from SCHEDULED)`);
-      const monitors = await db.getMonitorsByMaintenanceId(event.maintenance_id);
-      const monitorNames = monitors.map((m) => `${m.monitor_name}(${m.monitor_impact})`).join(", ");
-
-      if (notificationSettings.event_types.started) {
-        const update = maintenanceToVariables(
-          event,
-          monitorNames,
-          monitors.map((m) => m.monitor_tag),
-          "**is now in progress**",
-          "ongoing",
-          "Maintenance In Progress",
-          siteUrl,
-        );
-        await subscriberQueue.push(update);
-      }
+      await notifyMaintenanceEvent(
+        event, siteUrl, notificationSettings.event_types.started,
+        "**is now in progress**", "ongoing", "Maintenance In Progress",
+      );
     }
 
-    // 3. Mark READY events that are now in progress as ONGOING
+    // 3. READY → ONGOING
     const readyEvents = await db.getReadyEventsInProgress(currentTimestamp);
     for (const event of readyEvents) {
       await db.updateMaintenanceEventStatus(event.id, GC.ONGOING);
       console.log(`Maintenance event ${event.id} marked as ONGOING`);
-      const monitors = await db.getMonitorsByMaintenanceId(event.maintenance_id);
-      const monitorNames = monitors.map((m) => `${m.monitor_name}(${m.monitor_impact})`).join(", ");
-
-      if (notificationSettings.event_types.started) {
-        const update = maintenanceToVariables(
-          event,
-          monitorNames,
-          monitors.map((m) => m.monitor_tag),
-          "**is now in progress**",
-          "ongoing",
-          "Maintenance In Progress",
-          siteUrl,
-        );
-        await subscriberQueue.push(update);
-      }
+      await notifyMaintenanceEvent(
+        event, siteUrl, notificationSettings.event_types.started,
+        "**is now in progress**", "ongoing", "Maintenance In Progress",
+      );
     }
 
-    // 4. Mark ONGOING events that have ended as COMPLETED
+    // 4. ONGOING → COMPLETED
     const ongoingEvents = await db.getOngoingEventsCompleted(currentTimestamp);
     for (const event of ongoingEvents) {
       await db.updateMaintenanceEventStatus(event.id, GC.COMPLETED);
       console.log(`Maintenance event ${event.id} marked as COMPLETED`);
-      const monitors = await db.getMonitorsByMaintenanceId(event.maintenance_id);
-      const monitorNames = monitors.map((m) => `${m.monitor_name}(${m.monitor_impact})`).join(", ");
-
-      if (notificationSettings.event_types.ended) {
-        const update = maintenanceToVariables(
-          event,
-          monitorNames,
-          monitors.map((m) => m.monitor_tag),
-          "**has been completed**",
-          "completed",
-          "Maintenance Completed",
-          siteUrl,
-        );
-        await subscriberQueue.push(update);
-      }
+      await notifyMaintenanceEvent(
+        event, siteUrl, notificationSettings.event_types.ended,
+        "**has been completed**", "completed", "Maintenance Completed",
+      );
     }
   } catch (error) {
     console.error("Error updating maintenance event statuses:", error);

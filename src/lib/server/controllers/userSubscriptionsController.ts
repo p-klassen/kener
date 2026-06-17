@@ -703,6 +703,58 @@ export async function LoginWithAccount(
   return { success: true, token };
 }
 
+async function upsertEventTypeSubscription(
+  userId: number,
+  methodId: number,
+  eventType: SubscriptionEventType,
+  enabled: boolean | undefined,
+  monitorTags: string[] | undefined,
+  pageSlugs: string[] | undefined,
+  filterTags: (tags: string[]) => string[],
+  filterPages: (slugs: string[]) => string[],
+): Promise<void> {
+  if (enabled === undefined && monitorTags === undefined && pageSlugs === undefined) return;
+
+  const existingSub = await db.getUserSubscriptionsV2({
+    subscriber_user_id: userId,
+    subscriber_method_id: methodId,
+    event_type: eventType,
+  });
+  let subId: number | null = existingSub.find((s) => s.status === "ACTIVE")?.id ?? null;
+
+  if (enabled !== undefined) {
+    if (enabled) {
+      if (existingSub.length === 0) {
+        const created = await db.createUserSubscriptionV2({
+          subscriber_user_id: userId,
+          subscriber_method_id: methodId,
+          event_type: eventType,
+          status: "ACTIVE",
+        });
+        subId = created.id;
+      } else {
+        if (existingSub[0].status !== "ACTIVE") {
+          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
+        }
+        subId = existingSub[0].id;
+      }
+    } else {
+      if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
+        await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
+        subId = null;
+      }
+    }
+  }
+
+  if ((monitorTags !== undefined || pageSlugs !== undefined) && subId !== null) {
+    await db.upsertSubscriptionScopes(
+      subId,
+      filterTags(monitorTags ?? []),
+      filterPages(pageSlugs ?? []),
+    );
+  }
+}
+
 /**
  * Update subscription preferences
  */
@@ -742,87 +794,21 @@ export async function UpdateSubscriberPreferences(
   }
   const filterPages = (slugs: string[]) => slugs.filter((s) => allowedPageSlugs.has(s));
 
-  if (preferences.incidents !== undefined || preferences.incident_monitors !== undefined || preferences.incident_pages !== undefined) {
-    const existingSub = await db.getUserSubscriptionsV2({
-      subscriber_user_id: user.id,
-      subscriber_method_id: method.id,
-      event_type: "incidents",
-    });
-    let incidentSubId: number | null = existingSub.find((s) => s.status === "ACTIVE")?.id ?? null;
+  await upsertEventTypeSubscription(
+    user.id, method.id, "incidents",
+    preferences.incidents,
+    preferences.incident_monitors,
+    preferences.incident_pages,
+    filterTags, filterPages,
+  );
 
-    if (preferences.incidents !== undefined) {
-      if (preferences.incidents) {
-        if (existingSub.length === 0) {
-          const created = await db.createUserSubscriptionV2({
-            subscriber_user_id: user.id,
-            subscriber_method_id: method.id,
-            event_type: "incidents",
-            status: "ACTIVE",
-          });
-          incidentSubId = created.id;
-        } else {
-          if (existingSub[0].status !== "ACTIVE") {
-            await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
-          }
-          incidentSubId = existingSub[0].id;
-        }
-      } else {
-        if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
-          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
-          incidentSubId = null;
-        }
-      }
-    }
-
-    if ((preferences.incident_monitors !== undefined || preferences.incident_pages !== undefined) && incidentSubId !== null) {
-      await db.upsertSubscriptionScopes(
-        incidentSubId,
-        filterTags(preferences.incident_monitors ?? []),
-        filterPages(preferences.incident_pages ?? []),
-      );
-    }
-  }
-
-  if (preferences.maintenances !== undefined || preferences.maintenance_monitors !== undefined || preferences.maintenance_pages !== undefined) {
-    const existingSub = await db.getUserSubscriptionsV2({
-      subscriber_user_id: user.id,
-      subscriber_method_id: method.id,
-      event_type: "maintenances",
-    });
-    let maintenanceSubId: number | null = existingSub.find((s) => s.status === "ACTIVE")?.id ?? null;
-
-    if (preferences.maintenances !== undefined) {
-      if (preferences.maintenances) {
-        if (existingSub.length === 0) {
-          const created = await db.createUserSubscriptionV2({
-            subscriber_user_id: user.id,
-            subscriber_method_id: method.id,
-            event_type: "maintenances",
-            status: "ACTIVE",
-          });
-          maintenanceSubId = created.id;
-        } else {
-          if (existingSub[0].status !== "ACTIVE") {
-            await db.updateUserSubscriptionV2(existingSub[0].id, { status: "ACTIVE" });
-          }
-          maintenanceSubId = existingSub[0].id;
-        }
-      } else {
-        if (existingSub.length > 0 && existingSub[0].status === "ACTIVE") {
-          await db.updateUserSubscriptionV2(existingSub[0].id, { status: "INACTIVE" });
-          maintenanceSubId = null;
-        }
-      }
-    }
-
-    if ((preferences.maintenance_monitors !== undefined || preferences.maintenance_pages !== undefined) && maintenanceSubId !== null) {
-      await db.upsertSubscriptionScopes(
-        maintenanceSubId,
-        filterTags(preferences.maintenance_monitors ?? []),
-        filterPages(preferences.maintenance_pages ?? []),
-      );
-    }
-  }
+  await upsertEventTypeSubscription(
+    user.id, method.id, "maintenances",
+    preferences.maintenances,
+    preferences.maintenance_monitors,
+    preferences.maintenance_pages,
+    filterTags, filterPages,
+  );
 
   return { success: true };
 }
