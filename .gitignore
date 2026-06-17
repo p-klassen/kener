@@ -49,3 +49,6 @@ kener.db
 
 # Local docker-compose with actual configuration (may contain secrets)
 docker-compose.yml
+
+# Claude session log (may contain sensitive data)
+.claude-session.log

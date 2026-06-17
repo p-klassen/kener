@@ -14,6 +14,11 @@ Kener is an open-source status page application built with **SvelteKit 2.x (Svel
 2. **Always ensure update is possible**  When updating the database design make always sure that old deployments can automatically an properly migrate to the latest version.
 3. **Never use example data in production** Whenever an old installation is updated make sure, that you don't inject example data into the production database. For instance you are not allowed to change passwords, secrets etc. in production if it's not mandatory.
 
+## Claude Session Logging
+- **Save conversations to .claude-session.log** Always save every CLAUDE session of this project to .claude-session.log, this includes prompts given to you as well as your answers and the steps you do to find solutions to tasks given to you.
+- **.claude-session.log is gitignored, ALWAYS** Since .claude-session.log may contain sensible data this file will always be gitignored no matter what!
+- **Use .claude-session.log when compacting** When you compact a chat session, write it to .claude-session.log and use .claude-session.log for your next chat session to remind yourself of possible open tasks and todos or contradictions.
+
 ## Style
 
 - **Communication:** German, concise, technical. No marketing tone, no filler.
@@ -41,6 +46,11 @@ Kener is an open-source status page application built with **SvelteKit 2.x (Svel
 2. **Propper tagging** The latest image must always have the `kener-wobcom:latest` tag, additionally there will be a second tag `kener-wobcom:<version-number>`, the version number is the same as the version number of the project itself.
 3. **Always have latest image locally** After a new image build you must always pull the latest image to the local Docker daemon.
 4. **Always push latest image to remote registry** After a new image build you must always push the latest image with both tags (mentioned in 2.) to `harbor.service.wobcom.de/wobcom/kener-wobcom:latest` and `harbor.service.wobcom.de/wobcom/kener-wobcom:<version-number>`
+
+## Git instructions
+1. **Always ask if you should commit all pending changes** Never just commit and push on your own without explicitly being told to.
+2. **Always update the version number before commit/push** The version number is separated into four numbers <major-version>.<minor-version>.<patch-version>. Always updatem the patch version number before commiting changes and pushing them to the repo. Major and minor version numbers are only update if you were explicitly told to do so.
+3. **Build fresh dock image with latest verstion** Everytime you commit and push the changes under a new version, automatically buily a new docker image an restart the local container with that new image. Don't forget to use the "Build instructions for Docker image" above.
 
 ## Development Commands
 
