@@ -268,6 +268,7 @@ export const ACTION_PERMISSION_MAP: Record<string, string | null> = {
   // Export / Import
   exportData: "settings.read",
   importData: "settings.write",
+  previewImport: "settings.read",
 
   // Authentication (OIDC / LDAP)
   getOidcConfig: "settings.read",

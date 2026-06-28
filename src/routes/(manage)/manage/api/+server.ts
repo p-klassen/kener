@@ -163,7 +163,7 @@ import sendDiscord from "$lib/server/notification/discord_notification.js";
 import sendSlack from "$lib/server/notification/slack_notification.js";
 import serverResolver from "$lib/server/resolver.js";
 import { ACTION_PERMISSION_MAP } from "$lib/allPerms.js";
-import { exportData, importData } from "$lib/server/controllers/exportImportController.js";
+import { exportData, importData, previewImport } from "$lib/server/controllers/exportImportController.js";
 import { uploadImage } from "$lib/server/controllers/imageController.js";
 import {
   GetOidcConfig,
@@ -1173,8 +1173,10 @@ export async function POST({ request, cookies }) {
       resp = await TestLdapConnection(data);
     } else if (action == "exportData") {
       resp = await exportData(data.scope);
+    } else if (action == "previewImport") {
+      resp = await previewImport(data.payload);
     } else if (action == "importData") {
-      resp = await importData(data.payload);
+      resp = await importData(data.payload, data.options);
     }
   } catch (error: unknown) {
     console.error("[manage/api] unhandled error:", error);

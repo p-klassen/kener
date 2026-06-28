@@ -1,23 +1,20 @@
 <script lang="ts">
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
-  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import DownloadIcon from "@lucide/svelte/icons/download";
   import UploadIcon from "@lucide/svelte/icons/upload";
   import Loader from "@lucide/svelte/icons/loader";
-  import AlertTriangleIcon from "@lucide/svelte/icons/triangle-alert";
   import { toast } from "svelte-sonner";
   import { resolve } from "$app/paths";
   import clientResolver from "$lib/client/resolver.js";
   import { t } from "$lib/stores/i18n";
   import { page } from "$app/state";
-  import type { ExportPayload } from "$lib/server/controllers/exportImportController.js";
+  import ImportPreviewDialog from "$lib/components/ImportPreviewDialog.svelte";
+  import type { ExportPayload, ImportPreviewResult, ImportOptions } from "$lib/server/controllers/exportImportController.js";
 
   type Scope = "config" | "users_groups_roles" | "everything";
 
-  // M-46: Backend returns created/updated/skipped separately only for images (images_skipped).
-  // For all other entity types only a total count is available.
   type ImportResult = {
     imported: Record<string, number>;
   };
@@ -28,14 +25,12 @@
   let pendingImportScope: Scope | null = $state(null);
   let importResult: ImportResult | null = $state(null);
 
-  // M-44: scope mismatch warning state
-  let scopeMismatchWarning: string | null = $state(null);
-
-  // M-45: confirmation dialog state
-  let confirmDialogOpen = $state(false);
+  // Preview dialog state
+  let previewOpen = $state(false);
+  let previewLoading = $state(false);
+  let previewResult: ImportPreviewResult | null = $state(null);
   let pendingPayload: ExportPayload | null = $state(null);
-  let pendingFileScope: string | null = $state(null);
-  let pendingExportedAt: string | null = $state(null);
+  let scopeMismatchWarning: string | null = $state(null);
 
   const canWrite = $derived((page.data.userPermissions ?? []).includes("settings.write"));
 
@@ -70,11 +65,9 @@
 
   function triggerImport(scope: Scope) {
     pendingImportScope = scope;
-    scopeMismatchWarning = null;
     importFileInput?.click();
   }
 
-  // M-44 + M-45: Parse file, check scope mismatch, show confirmation dialog
   async function onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -91,27 +84,45 @@
       return;
     }
 
-    // M-44: compare file scope with tab scope
+    // Check scope mismatch
     const fileScope = payload.scope ?? null;
     if (fileScope && fileScope !== pendingImportScope) {
-      scopeMismatchWarning = $t("manage.export_import.scope_mismatch_warning")
+      scopeMismatchWarning = $t("manage.export_import.preview_scope_mismatch")
         .replace("{fileScope}", fileScope)
         .replace("{tabScope}", pendingImportScope);
     } else {
       scopeMismatchWarning = null;
     }
 
-    // M-45: collect info for the confirmation dialog and open it
     pendingPayload = payload;
-    pendingFileScope = fileScope;
-    pendingExportedAt = payload.exported_at ?? null;
-    confirmDialogOpen = true;
+    previewResult = null;
+    previewOpen = true;
+    previewLoading = true;
+
+    try {
+      const response = await fetch(clientResolver(resolve, "/manage/api"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "previewImport", data: { payload } }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || response.statusText);
+      }
+      previewResult = await response.json();
+    } catch (e: unknown) {
+      previewOpen = false;
+      toast.error(e instanceof Error ? e.message : String(e));
+      pendingPayload = null;
+      pendingImportScope = null;
+    } finally {
+      previewLoading = false;
+    }
   }
 
-  // Called when user confirms in the dialog
-  async function doImport() {
-    if (!pendingPayload || !pendingImportScope) return;
-    confirmDialogOpen = false;
+  async function doImport(options: ImportOptions) {
+    if (!pendingPayload) return;
+    previewOpen = false;
 
     importing = true;
     importResult = null;
@@ -119,7 +130,7 @@
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "importData", data: { payload: pendingPayload } }),
+        body: JSON.stringify({ action: "importData", data: { payload: pendingPayload, options } }),
       });
       if (!response.ok) {
         const err = await response.json();
@@ -133,97 +144,51 @@
       importing = false;
       pendingImportScope = null;
       pendingPayload = null;
-      pendingFileScope = null;
-      pendingExportedAt = null;
+      previewResult = null;
+      scopeMismatchWarning = null;
     }
   }
 
   function cancelImport() {
-    confirmDialogOpen = false;
+    previewOpen = false;
     pendingImportScope = null;
     pendingPayload = null;
-    pendingFileScope = null;
-    pendingExportedAt = null;
+    previewResult = null;
     scopeMismatchWarning = null;
   }
 
-  // M-46: Format a single result entry.
-  // The backend tracks images_skipped separately; all other keys are plain totals.
+  // Format a single result entry.
+  // The backend tracks *_skipped as companion keys — skip rendering them standalone.
   function formatResultEntry(key: string, count: number, imported: Record<string, number>): string | null {
-    // images_skipped is a companion to images — skip rendering it standalone
-    if (key === "images_skipped") return null;
+    if (key.endsWith("_skipped")) return null;
 
-    if (key === "images") {
-      const skipped = imported["images_skipped"] ?? 0;
-      if (skipped > 0) {
-        return `${count} ${$t("manage.export_import.result_created")}, ${skipped} ${$t("manage.export_import.result_skipped")}`;
-      }
-      return `${count} ${$t("manage.export_import.result_created")}`;
+    const skipped = imported[`${key}_skipped`] ?? 0;
+    if (key === "images" && skipped > 0) {
+      return `${count} ${$t("manage.export_import.result_created")}, ${skipped} ${$t("manage.export_import.result_skipped")}`;
     }
-
-    // All other entity types: backend only returns a total
+    if (skipped > 0) {
+      return `${count} ${$t("manage.export_import.result_total")}, ${skipped} ${$t("manage.export_import.result_skipped")}`;
+    }
     return `${count} ${$t("manage.export_import.result_total")}`;
   }
 </script>
 
 <input bind:this={importFileInput} type="file" accept=".json" class="hidden" onchange={onFileSelected} />
 
-<!-- M-45: Confirmation dialog -->
-<AlertDialog.Root bind:open={confirmDialogOpen}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>{$t("manage.export_import.confirm_title")}</AlertDialog.Title>
-      <AlertDialog.Description>{$t("manage.export_import.confirm_description")}</AlertDialog.Description>
-    </AlertDialog.Header>
-
-    <div class="my-4 space-y-2 text-sm">
-      {#if pendingFileScope}
-        <div class="flex gap-2">
-          <span class="text-muted-foreground w-28 shrink-0">{$t("manage.export_import.confirm_scope_label")}</span>
-          <span class="font-medium capitalize">{pendingFileScope.replace(/_/g, " ")}</span>
-        </div>
-      {/if}
-      {#if pendingExportedAt}
-        <div class="flex gap-2">
-          <span class="text-muted-foreground w-28 shrink-0">{$t("manage.export_import.confirm_exported_at_label")}</span>
-          <span class="font-medium">{new Date(pendingExportedAt).toLocaleString()}</span>
-        </div>
-      {/if}
-
-      <!-- M-44: also surface the scope mismatch inside the dialog if present -->
-      {#if scopeMismatchWarning}
-        <div class="bg-warning/10 text-warning-foreground border-warning/30 flex items-start gap-2 rounded-md border p-3">
-          <AlertTriangleIcon class="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{scopeMismatchWarning}</span>
-        </div>
-      {/if}
-
-      <div class="bg-destructive/10 text-destructive border-destructive/30 flex items-start gap-2 rounded-md border p-3">
-        <AlertTriangleIcon class="mt-0.5 h-4 w-4 shrink-0" />
-        <span>{$t("manage.export_import.confirm_overwrite_warning")}</span>
-      </div>
-    </div>
-
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel onclick={cancelImport}>{$t("manage.export_import.cancel_button")}</AlertDialog.Cancel>
-      <AlertDialog.Action onclick={doImport}>{$t("manage.export_import.confirm_button")}</AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
+<ImportPreviewDialog
+  bind:open={previewOpen}
+  preview={previewResult}
+  loading={previewLoading}
+  scopeMismatch={scopeMismatchWarning}
+  onconfirm={doImport}
+  oncancel={cancelImport}
+/>
 
 <div class="flex w-full flex-col gap-4 p-4">
   <div>
     <h1 class="text-2xl font-semibold">{$t("manage.export_import.title")}</h1>
     <p class="text-muted-foreground mt-1 text-sm">{$t("manage.export_import.description")}</p>
   </div>
-
-  <!-- M-44: scope mismatch warning shown near the import section -->
-  {#if scopeMismatchWarning}
-    <div class="bg-warning/10 text-warning-foreground border-warning/30 flex items-center gap-2 rounded-md border p-3 text-sm">
-      <AlertTriangleIcon class="h-4 w-4 shrink-0" />
-      {scopeMismatchWarning}
-    </div>
-  {/if}
 
   <Tabs.Root value="config">
     <Tabs.List>
@@ -320,7 +285,7 @@
     </Tabs.Content>
   </Tabs.Root>
 
-  <!-- M-46: Import result card with breakdown -->
+  <!-- Import result card with breakdown -->
   {#if importResult}
     <Card.Root>
       <Card.Header>

@@ -8,9 +8,50 @@ import type {
 } from "../types/db.js";
 import { GetOidcConfig, GetLdapConfig, SaveOidcConfig, SaveLdapConfig } from "./authConfigController.js";
 import type { OidcConfig, LdapConfig } from "./authConfigController.js";
+import { Cron } from "croner";
+import { migratePayload, CURRENT_EXPORT_VERSION } from "./exportMigrations.js";
+import type { MigrationResult } from "./exportMigrations.js";
+export type { MigrationChange, MigrationResult } from "./exportMigrations.js";
 
 export type ExportScope = "config" | "users_groups_roles" | "everything";
 export const VALID_EXPORT_SCOPES: ExportScope[] = ["config", "users_groups_roles", "everything"];
+
+export type ImportProblem = {
+  identifier: string;
+  description: string;
+  severity: "error" | "warning";
+};
+
+export type ImportEntityPreview = {
+  key: string;
+  label: string;
+  total: number;
+  new_count: number;
+  overwrite_count: number;
+  skip_count: number;
+  can_toggle_overwrite: boolean;
+  overwrite_default: boolean;
+  problems: ImportProblem[];
+};
+
+export type ImportPreviewResult = {
+  version_ok: boolean;
+  scope: ExportScope;
+  exported_at: string;
+  entities: ImportEntityPreview[];
+  has_errors: boolean;
+  migration: MigrationResult;
+};
+
+export type ImportOptions = {
+  overwrite_monitors: boolean;
+  overwrite_pages: boolean;
+  overwrite_triggers: boolean;
+  overwrite_images: boolean;
+  overwrite_site_data: boolean;
+  overwrite_auth: boolean;
+  overwrite_groups: boolean;
+};
 
 // "everything" scope label: exports configuration only (monitors, pages, triggers, images,
 // site data, auth config, users, groups, roles, subscribers).
@@ -333,14 +374,277 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
   return payload;
 }
 
-export async function importData(payload: ExportPayload): Promise<{ imported: Record<string, number> }> {
+export async function previewImport(rawPayload: ExportPayload): Promise<ImportPreviewResult> {
+  // Apply schema migrations before analysis so all checks run against the current format
+  const { payload, migration } = migratePayload(rawPayload);
+  const version_ok = (rawPayload.version ?? 0) <= CURRENT_EXPORT_VERSION;
+  const entities: ImportEntityPreview[] = [];
+
+  if (payload.config) {
+    const site_data = payload.config.site_data ?? [];
+    const monitors = payload.config.monitors ?? [];
+    const pages = payload.config.pages ?? [];
+    const triggers = payload.config.triggers ?? [];
+    const images = payload.config.images ?? [];
+
+    if (site_data.length > 0) {
+      const existingKeys = await db
+        .knex("site_data")
+        .select("key")
+        .then((rows: { key: string }[]) => new Set(rows.map((r) => r.key)));
+      const overwrite_count = site_data.filter((sd) => existingKeys.has(sd.key)).length;
+      entities.push({
+        key: "site_data",
+        label: "Site Settings",
+        total: site_data.length,
+        new_count: site_data.length - overwrite_count,
+        overwrite_count,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems: [],
+      });
+    }
+
+    if (monitors.length > 0) {
+      const existingTags = await db
+        .knex("monitors")
+        .select("tag")
+        .then((rows: { tag: string }[]) => new Set(rows.map((r) => r.tag)));
+      const overwrite_count = monitors.filter((m) => existingTags.has(m.tag)).length;
+      const problems: ImportProblem[] = [];
+      for (const m of monitors) {
+        if (m.cron) {
+          try {
+            new Cron(m.cron);
+          } catch {
+            problems.push({
+              identifier: m.tag,
+              description: `Invalid cron expression: "${m.cron}"`,
+              severity: "warning",
+            });
+          }
+        }
+      }
+      entities.push({
+        key: "monitors",
+        label: "Monitors",
+        total: monitors.length,
+        new_count: monitors.length - overwrite_count,
+        overwrite_count,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems,
+      });
+    }
+
+    if (pages.length > 0) {
+      const existingPaths = await db
+        .knex("pages")
+        .select("page_path")
+        .then((rows: { page_path: string }[]) => new Set(rows.map((r) => r.page_path)));
+      const overwrite_count = pages.filter((p) => existingPaths.has(p.page_path)).length;
+      const importedTags = new Set(monitors.map((m) => m.tag));
+      const dbTags = await db
+        .knex("monitors")
+        .select("tag")
+        .then((rows: { tag: string }[]) => new Set(rows.map((r) => r.tag)));
+      const allAvailableTags = new Set([...importedTags, ...dbTags]);
+      const problems: ImportProblem[] = [];
+      for (const p of pages) {
+        for (const pm of p.monitors ?? []) {
+          if (!allAvailableTags.has(pm.monitor_tag)) {
+            problems.push({
+              identifier: p.page_path,
+              description: `References unknown monitor: "${pm.monitor_tag}"`,
+              severity: "warning",
+            });
+          }
+        }
+      }
+      entities.push({
+        key: "pages",
+        label: "Pages",
+        total: pages.length,
+        new_count: pages.length - overwrite_count,
+        overwrite_count,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems,
+      });
+    }
+
+    if (triggers.length > 0) {
+      const existingNames = await db
+        .knex("triggers")
+        .select("name")
+        .then((rows: { name: string }[]) => new Set(rows.map((r) => r.name)));
+      const overwrite_count = triggers.filter((t) => existingNames.has(t.name)).length;
+      entities.push({
+        key: "triggers",
+        label: "Triggers",
+        total: triggers.length,
+        new_count: triggers.length - overwrite_count,
+        overwrite_count,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems: [],
+      });
+    }
+
+    if (images.length > 0) {
+      const existingIds = await db
+        .knex("images")
+        .select("id")
+        .then((rows: { id: string }[]) => new Set(rows.map((r) => r.id)));
+      const existing_count = images.filter((img) => existingIds.has(img.id)).length;
+      entities.push({
+        key: "images",
+        label: "Images",
+        total: images.length,
+        new_count: images.length - existing_count,
+        overwrite_count: existing_count,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: false,
+        problems: [],
+      });
+    }
+
+    if (payload.config.auth) {
+      entities.push({
+        key: "auth",
+        label: "Auth Configuration",
+        total: 1,
+        new_count: 0,
+        overwrite_count: 1,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems: [],
+      });
+    }
+  }
+
+  if (payload.users_groups_roles) {
+    const roles = payload.users_groups_roles.roles ?? [];
+    const users = payload.users_groups_roles.users ?? [];
+    const groups = payload.users_groups_roles.groups ?? [];
+    const subscribers = payload.users_groups_roles.subscribers ?? [];
+
+    if (roles.length > 0) {
+      const allExistingRoles = await db.getAllRoles();
+      const existingRoleNames = new Set(allExistingRoles.map((r) => r.role_name));
+      const readonly_count = roles.filter((r) => r.readonly).length;
+      const importable = roles.filter((r) => !r.readonly);
+      const existing_count = importable.filter((r) => existingRoleNames.has(r.role_name)).length;
+      entities.push({
+        key: "roles",
+        label: "Roles",
+        total: roles.length,
+        new_count: importable.length - existing_count,
+        overwrite_count: 0,
+        skip_count: existing_count + readonly_count,
+        can_toggle_overwrite: false,
+        overwrite_default: false,
+        problems: [],
+      });
+    }
+
+    if (users.length > 0) {
+      const existingEmails = await db
+        .knex("users")
+        .select("email")
+        .then((rows: { email: string }[]) => new Set(rows.map((r) => r.email)));
+      const existing_count = users.filter((u) => existingEmails.has(u.email)).length;
+      entities.push({
+        key: "users",
+        label: "Users",
+        total: users.length,
+        new_count: users.length - existing_count,
+        overwrite_count: existing_count,
+        skip_count: 0,
+        can_toggle_overwrite: false,
+        overwrite_default: true,
+        problems: [],
+      });
+    }
+
+    if (groups.length > 0) {
+      const allGroups = await db.getAllGroups();
+      const existingNames = new Set(allGroups.map((g) => g.name));
+      const overwrite_count = groups.filter((g) => existingNames.has(g.name)).length;
+      entities.push({
+        key: "groups",
+        label: "Groups",
+        total: groups.length,
+        new_count: groups.length - overwrite_count,
+        overwrite_count,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems: [],
+      });
+    }
+
+    if (subscribers.length > 0) {
+      const existingEmails = await db
+        .knex("subscriber_users")
+        .select("email")
+        .then((rows: { email: string }[]) => new Set(rows.map((r) => r.email)));
+      const skip_count = subscribers.filter((s) => existingEmails.has(s.email)).length;
+      entities.push({
+        key: "subscribers",
+        label: "Subscribers",
+        total: subscribers.length,
+        new_count: subscribers.length - skip_count,
+        overwrite_count: 0,
+        skip_count,
+        can_toggle_overwrite: false,
+        overwrite_default: false,
+        problems: [],
+      });
+    }
+  }
+
+  const has_errors = !version_ok || entities.some((e) => e.problems.some((p) => p.severity === "error"));
+
+  return {
+    version_ok,
+    scope: payload.scope,
+    exported_at: payload.exported_at,
+    entities,
+    has_errors,
+    migration,
+  };
+}
+
+export async function importData(
+  rawPayload: ExportPayload,
+  options?: ImportOptions,
+): Promise<{ imported: Record<string, number> }> {
   // M-25: Reject export files created by a newer version of this software
-  const CURRENT_EXPORT_VERSION = 1;
-  if (payload.version > CURRENT_EXPORT_VERSION) {
+  if ((rawPayload.version ?? 0) > CURRENT_EXPORT_VERSION) {
     throw new Error(
-      `Export file version ${payload.version} is newer than supported version ${CURRENT_EXPORT_VERSION}`,
+      `Export file version ${rawPayload.version} is newer than supported version ${CURRENT_EXPORT_VERSION}`,
     );
   }
+
+  // Apply schema migrations to bring the payload up to the current format
+  const { payload } = migratePayload(rawPayload);
+
+  const opts: Required<ImportOptions> = {
+    overwrite_monitors: options?.overwrite_monitors ?? true,
+    overwrite_pages: options?.overwrite_pages ?? true,
+    overwrite_triggers: options?.overwrite_triggers ?? true,
+    overwrite_images: options?.overwrite_images ?? false,
+    overwrite_site_data: options?.overwrite_site_data ?? true,
+    overwrite_auth: options?.overwrite_auth ?? true,
+    overwrite_groups: options?.overwrite_groups ?? true,
+  };
 
   const imported: Record<string, number> = {};
 
@@ -350,18 +654,34 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
       const { site_data, monitors, pages, triggers } = payload.config!;
       const counts: Record<string, number> = {};
 
+      let siteDataImported = 0;
+      let siteDataSkipped = 0;
       for (const sd of site_data ?? []) {
+        if (!opts.overwrite_site_data) {
+          const exists = await trx("site_data").where("key", sd.key).first();
+          if (exists) {
+            siteDataSkipped++;
+            continue;
+          }
+        }
         await trx("site_data")
           .insert({ key: sd.key, value: sd.value, data_type: sd.data_type })
           .onConflict("key")
           .merge(["value", "data_type"]);
+        siteDataImported++;
       }
-      counts.site_data = (site_data ?? []).length;
+      counts.site_data = siteDataImported;
+      if (siteDataSkipped > 0) counts.site_data_skipped = siteDataSkipped;
 
       let monitorsImported = 0;
+      let monitorsSkipped = 0;
       for (const m of monitors ?? []) {
         const existing = await trx("monitors").where("tag", m.tag).first();
         if (existing) {
+          if (!opts.overwrite_monitors) {
+            monitorsSkipped++;
+            continue;
+          }
           await trx("monitors").where("tag", m.tag).update({
             name: m.name,
             description: m.description,
@@ -405,13 +725,19 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
         monitorsImported++;
       }
       counts.monitors = monitorsImported;
+      if (monitorsSkipped > 0) counts.monitors_skipped = monitorsSkipped;
 
       let pagesImported = 0;
+      let pagesSkipped = 0;
       for (const p of pages ?? []) {
         const { monitors: pageMonitors, ...pageData } = p;
         const existing = await trx("pages").where("page_path", pageData.page_path).first();
         let pageId: number;
         if (existing) {
+          if (!opts.overwrite_pages) {
+            pagesSkipped++;
+            continue;
+          }
           await trx("pages").where("id", existing.id).update({ ...pageData, updated_at: trx.fn.now() });
           pageId = existing.id;
         } else {
@@ -435,12 +761,18 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
         pagesImported++;
       }
       counts.pages = pagesImported;
+      if (pagesSkipped > 0) counts.pages_skipped = pagesSkipped;
 
       let triggersImported = 0;
+      let triggersSkipped = 0;
       const allTriggers = await trx("triggers").select("*");
       for (const t of triggers ?? []) {
         const existing = allTriggers.find((tr: { name: string }) => tr.name === t.name);
         if (existing) {
+          if (!opts.overwrite_triggers) {
+            triggersSkipped++;
+            continue;
+          }
           await trx("triggers").where("id", existing.id).update({ ...t, updated_at: trx.fn.now() });
         } else {
           await trx("triggers").insert({ ...t, created_at: trx.fn.now(), updated_at: trx.fn.now() });
@@ -448,6 +780,7 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
         triggersImported++;
       }
       counts.triggers = triggersImported;
+      if (triggersSkipped > 0) counts.triggers_skipped = triggersSkipped;
 
       let imagesImported = 0;
       // L-16: Track images that were skipped because they already exist
@@ -467,6 +800,17 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
             updated_at: trx.fn.now(),
           });
           imagesImported++;
+        } else if (opts.overwrite_images) {
+          await trx("images").where("id", img.id).update({
+            data: img.data,
+            mime_type: img.mime_type,
+            original_name: img.original_name ?? null,
+            width: img.width ?? null,
+            height: img.height ?? null,
+            size: img.size ?? null,
+            updated_at: trx.fn.now(),
+          });
+          imagesImported++;
         } else {
           imagesSkipped++;
         }
@@ -480,7 +824,7 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
     Object.assign(imported, configCounts);
 
     // Auth config is saved outside the transaction because it calls external controllers
-    if (payload.config.auth) {
+    if (payload.config.auth && opts.overwrite_auth) {
       const { oidc, ldap } = payload.config.auth;
       // L-15: Preserve existing auth secrets that are not included in the export.
       // The exported types intentionally omit client_secret and bind_password.
@@ -569,11 +913,16 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
 
       // Import groups — create new or sync roles and members for existing
       let groupsImported = 0;
+      let groupsSkipped = 0;
       const allGroups = await db.getAllGroups();
       for (const g of groups ?? []) {
         const existing = allGroups.find((ex) => ex.name === g.name);
         let groupId: number;
         if (existing) {
+          if (!opts.overwrite_groups) {
+            groupsSkipped++;
+            continue;
+          }
           groupId = existing.id;
           // Sync role assignments: clear existing and re-add from export
           const existingRoles = await db.getGroupRoles(groupId);
@@ -601,6 +950,7 @@ export async function importData(payload: ExportPayload): Promise<{ imported: Re
         }
       }
       counts.groups = groupsImported;
+      if (groupsSkipped > 0) counts.groups_skipped = groupsSkipped;
 
       return counts;
     });
