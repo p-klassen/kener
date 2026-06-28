@@ -227,8 +227,35 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
       }),
     );
 
+    // auth.oidc and auth.ldap are exported separately via config.auth with secrets stripped;
+    // exclude them here to avoid leaking source-system credentials via the site_data array.
+    const AUTH_SITE_DATA_KEYS = new Set(["auth.oidc", "auth.ldap"]);
+    const sanitizedSiteData = siteData
+      .filter((sd) => !AUTH_SITE_DATA_KEYS.has(sd.key))
+      .map((sd) => {
+        if (sd.key === "smtp" && sd.data_type === "object") {
+          try {
+            const parsed = JSON.parse(sd.value) as Record<string, unknown>;
+            const { smtp_pass: _omit, ...rest } = parsed;
+            return { ...sd, value: JSON.stringify(rest) };
+          } catch {
+            return sd;
+          }
+        }
+        if (sd.key === "resend" && sd.data_type === "object") {
+          try {
+            const parsed = JSON.parse(sd.value) as Record<string, unknown>;
+            const { resend_api_key: _omit, ...rest } = parsed;
+            return { ...sd, value: JSON.stringify(rest) };
+          } catch {
+            return sd;
+          }
+        }
+        return sd;
+      });
+
     payload.config = {
-      site_data: siteData,
+      site_data: sanitizedSiteData,
       monitors: monitors.map((m) => ({
         tag: m.tag,
         name: m.name,
@@ -387,22 +414,41 @@ export async function previewImport(rawPayload: ExportPayload): Promise<ImportPr
     const triggers = payload.config.triggers ?? [];
     const images = payload.config.images ?? [];
 
-    if (site_data.length > 0) {
+    const AUTH_SITE_DATA_SKIP = new Set(["auth.oidc", "auth.ldap"]);
+    const visible_site_data = site_data.filter((sd) => !AUTH_SITE_DATA_SKIP.has(sd.key));
+    if (visible_site_data.length > 0) {
       const existingKeys = await db
         .knex("site_data")
         .select("key")
         .then((rows: { key: string }[]) => new Set(rows.map((r) => r.key)));
-      const overwrite_count = site_data.filter((sd) => existingKeys.has(sd.key)).length;
+      const overwrite_count = visible_site_data.filter((sd) => existingKeys.has(sd.key)).length;
+      const problems: ImportProblem[] = [];
+      const hasSmtp = visible_site_data.some((sd) => sd.key === "smtp");
+      const hasResend = visible_site_data.some((sd) => sd.key === "resend");
+      if (hasSmtp) {
+        problems.push({
+          identifier: "smtp",
+          description: "SMTP password is not included in exports. It will be preserved if already configured, otherwise must be re-entered.",
+          severity: "warning",
+        });
+      }
+      if (hasResend) {
+        problems.push({
+          identifier: "resend",
+          description: "Resend API key is not included in exports. It will be preserved if already configured, otherwise must be re-entered.",
+          severity: "warning",
+        });
+      }
       entities.push({
         key: "site_data",
         label: "Site Settings",
-        total: site_data.length,
-        new_count: site_data.length - overwrite_count,
+        total: visible_site_data.length,
+        new_count: visible_site_data.length - overwrite_count,
         overwrite_count,
         skip_count: 0,
         can_toggle_overwrite: true,
         overwrite_default: true,
-        problems: [],
+        problems,
       });
     }
 
@@ -654,9 +700,12 @@ export async function importData(
       const { site_data, monitors, pages, triggers } = payload.config!;
       const counts: Record<string, number> = {};
 
+      // auth.oidc and auth.ldap are imported via SaveOidcConfig/SaveLdapConfig below
+      const AUTH_SITE_DATA_SKIP = new Set(["auth.oidc", "auth.ldap"]);
       let siteDataImported = 0;
       let siteDataSkipped = 0;
       for (const sd of site_data ?? []) {
+        if (AUTH_SITE_DATA_SKIP.has(sd.key)) continue;
         if (!opts.overwrite_site_data) {
           const exists = await trx("site_data").where("key", sd.key).first();
           if (exists) {
@@ -664,8 +713,28 @@ export async function importData(
             continue;
           }
         }
+        // For smtp/resend: credentials are stripped on export; merge with existing to preserve them
+        let valueToWrite = sd.value;
+        if ((sd.key === "smtp" || sd.key === "resend") && sd.data_type === "object") {
+          try {
+            const importParsed = JSON.parse(sd.value) as Record<string, unknown>;
+            const existing = await trx("site_data").where("key", sd.key).first<{ value: string } | undefined>();
+            if (existing) {
+              const existingParsed = JSON.parse(existing.value) as Record<string, unknown>;
+              if (sd.key === "smtp" && !importParsed.smtp_pass) {
+                importParsed.smtp_pass = existingParsed.smtp_pass ?? "";
+              }
+              if (sd.key === "resend" && !importParsed.resend_api_key) {
+                importParsed.resend_api_key = existingParsed.resend_api_key ?? "";
+              }
+            }
+            valueToWrite = JSON.stringify(importParsed);
+          } catch {
+            // keep original value on parse error
+          }
+        }
         await trx("site_data")
-          .insert({ key: sd.key, value: sd.value, data_type: sd.data_type })
+          .insert({ key: sd.key, value: valueToWrite, data_type: sd.data_type })
           .onConflict("key")
           .merge(["value", "data_type"]);
         siteDataImported++;
