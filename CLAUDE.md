@@ -43,9 +43,20 @@ Kener is an open-source status page application built with **SvelteKit 2.x (Svel
 ## Build instructions for Docker image
 
 1. **Always build multiarch** The docker image must always be multiarch
-2. **Propper tagging** The latest image must always have the `kener-wobcom:latest` tag, additionally there will be a second tag `kener-wobcom:<version-number>`, the version number is the same as the version number of the project itself.
-3. **Always have latest image locally** After a new image build you must always pull the latest image to the local Docker daemon.
-4. **Always push latest image to remote registry** After a new image build you must always push the latest image with both tags (mentioned in 2.) to `harbor.service.wobcom.de/wobcom/kener-wobcom:latest` and `harbor.service.wobcom.de/wobcom/kener-wobcom:<version-number>`
+2. **Always include docs** Always pass `--build-arg WITH_DOCS=true` — the docs are self-hosted and internal links in the UI depend on them being present.
+3. **Proper tagging** The latest image must always have the `kener-wobcom:latest` tag, additionally there will be a second tag `kener-wobcom:<version-number>`, the version number is the same as the version number of the project itself.
+4. **Always have latest image locally** After a new image build you must always pull the latest image to the local Docker daemon.
+5. **Always push latest image to remote registry** After a new image build you must always push the latest image with both tags (mentioned in 3.) to `harbor.service.wobcom.de/wobcom/kener-wobcom:latest` and `harbor.service.wobcom.de/wobcom/kener-wobcom:<version-number>`
+
+The canonical build command:
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --build-arg WITH_DOCS=true \
+  --tag harbor.service.wobcom.de/wobcom/kener-wobcom:<version> \
+  --tag harbor.service.wobcom.de/wobcom/kener-wobcom:latest \
+  --push .
+```
 
 ## Git instructions
 1. **Always ask if you should commit all pending changes** Never just commit and push on your own without explicitly being told to.
@@ -60,7 +71,7 @@ The correct update command after a new image has been built and pulled:
 
 ```bash
 # Stop the old container, then recreate with identical config:
-docker stop kener-dev && docker rm kener-dev
+docker stop kener-dev && docker rm kener-dev && docker pull harbor.service.wobcom.de/wobcom/kener-wobcom:latest
 docker run -d \
   --name kener-dev \
   --network kener_default \

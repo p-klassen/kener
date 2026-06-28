@@ -79,7 +79,7 @@
         {
           label: "Domain",
           type: "text",
-          placeholder: "kener.ing",
+          placeholder: "example.com",
           required: true,
           value: ""
         },
