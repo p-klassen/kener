@@ -1,3 +1,4 @@
+import type { Knex as KnexType } from "knex";
 import {
   GetMinuteStartNowTimestampUTC,
   GetMinuteStartTimestampUTC,
@@ -241,16 +242,8 @@ export const CloneMonitor = async ({ sourceTag, newTag, newName }: CloneMonitorI
     throw new Error("Source monitor not found");
   }
 
-  const existingTag = await db.getMonitorsByTag(newTagTrimmed);
-  if (existingTag) {
-    throw new Error("Monitor tag already exists");
-  }
-
-  const allMonitors = await db.getMonitors({});
-  if (allMonitors.some((m) => m.name === newNameTrimmed)) {
-    throw new Error("Monitor name already exists");
-  }
-
+  // M-09: Rely on the DB unique index on (tag, name) rather than a full-table scan.
+  // insertMonitor will throw a duplicate-key error if either value is taken.
   return await db.insertMonitor({
     tag: newTagTrimmed,
     name: newNameTrimmed,
@@ -383,9 +376,13 @@ export const RegisterHeartbeat = async (tag: string, secret: string): Promise<st
 /**
  * Removes a monitor tag from all GROUP monitors that reference it,
  * rebalances weights equally, and deactivates groups left with < 2 members.
+ *
+ * @param trx - Optional Knex transaction. When provided all writes participate in the caller's transaction.
  */
-async function removeTagFromGroupMonitors(tag: string): Promise<void> {
+async function removeTagFromGroupMonitors(tag: string, trx?: KnexType.Transaction): Promise<void> {
   const groupMonitors = await GetMonitorsParsed({ monitor_type: "GROUP" });
+
+  const errors: unknown[] = [];
 
   for (const group of groupMonitors) {
     const typeData = group.type_data as GroupMonitorTypeData;
@@ -397,19 +394,18 @@ async function removeTagFromGroupMonitors(tag: string): Promise<void> {
     // Remove the deleted tag
     const remaining = typeData.monitors.filter((m) => m.tag !== tag);
 
-    // Rebalance weights equally across remaining monitors
+    // M-03: Rebalance weights using exact fractions to guarantee sum = 1.
+    // The last member absorbs any floating-point remainder.
     if (remaining.length > 0) {
-      const weight = Math.round((1 / remaining.length) * 1000) / 1000;
+      const w = 1 / remaining.length;
       for (let i = 0; i < remaining.length; i++) {
-        remaining[i].weight =
-          i === remaining.length - 1 ? Math.round((1 - weight * (remaining.length - 1)) * 1000) / 1000 : weight;
+        remaining[i].weight = i === remaining.length - 1 ? 1 - w * (remaining.length - 1) : w;
       }
     }
 
     typeData.monitors = remaining;
 
-    const updateData: Record<string, unknown> = {
-      id: group.id,
+    const updatePayload = {
       tag: group.tag,
       name: group.name,
       description: group.description,
@@ -431,20 +427,44 @@ async function removeTagFromGroupMonitors(tag: string): Promise<void> {
       external_url: group.external_url,
     };
 
-    await db.updateMonitor(updateData as unknown as MonitorRecord);
+    try {
+      // M-02: Wrap each update so errors are captured, not silently dropped.
+      if (trx) {
+        await trx("monitors").where({ id: group.id }).update(updatePayload);
+      } else {
+        await db.updateMonitor({ id: group.id, ...updatePayload } as unknown as MonitorRecord);
+      }
+    } catch (err) {
+      console.error(`Failed to update group monitor "${group.tag}" while removing tag "${tag}":`, err);
+      errors.push(err);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new AggregateError(errors, `removeTagFromGroupMonitors: ${errors.length} group update(s) failed`);
   }
 }
 
 export const DeleteMonitorCompletelyUsingTag = async (tag: string): Promise<number> => {
-  await db.deleteMonitorDataByTag(tag);
-  await db.deleteIncidentMonitorsByTag(tag);
-  await db.deleteMonitorAlertsByTag(tag);
-  await db.deletePageMonitorsByTag(tag);
-  await db.deleteMaintenanceMonitorsByTag(tag);
-  await db.deleteRolesMonitorsByTag(tag);
-  await removeTagFromGroupMonitors(tag);
+  let deletedCount: number;
+
+  // H-03: Wrap all DB mutations in a single transaction so a mid-delete failure
+  // cannot leave the database in a partially deleted state.
+  await db.knex.transaction(async (trx) => {
+    await trx("monitoring_data").where("monitor_tag", tag).delete();
+    await trx("incident_monitors").where("monitor_tag", tag).delete();
+    await trx("monitor_alerts").where("monitor_tag", tag).delete();
+    await trx("pages_monitors").where("monitor_tag", tag).delete();
+    await trx("maintenance_monitors").where("monitor_tag", tag).delete();
+    await trx("roles_monitors").where("monitor_tag", tag).delete();
+    await removeTagFromGroupMonitors(tag, trx);
+    deletedCount = await trx("monitors").where("tag", tag).delete();
+  });
+
+  // Cache purge is best-effort and intentionally runs outside the transaction
   await DeleteMonitorCaches(tag);
-  return await db.deleteMonitorsByTag(tag);
+
+  return deletedCount!;
 };
 
 //getMonitorsByTag
@@ -517,13 +537,10 @@ function formatDuration(rangeInSeconds: number): string {
   const hours = Math.floor((rangeInSeconds % 86400) / 3600);
   const minutes = Math.floor((rangeInSeconds % 3600) / 60);
 
-  if (days > 0 || minutes < 1) {
-    return `${days}d`;
-  } else if (hours > 0) {
-    return `${hours}h`;
-  } else if (minutes > 0) {
-    return `${minutes}m`;
-  }
+  // M-10: Simple sequential checks — largest unit wins.
+  if (days > 0) return `${days}d`;
+  if (hours > 0) return `${hours}h`;
+  if (minutes > 0) return `${minutes}m`;
   return "";
 }
 
@@ -620,8 +637,10 @@ export const GetBadge = async (badgeType: BadgeType, params: BadgeParams): Promi
       sinceLast = Number(sinceLastParam);
     }
     const rangeInSeconds = sinceLast;
-    const now = Math.floor(Date.now() / 1000);
-    const since = GetMinuteStartNowTimestampUTC() - rangeInSeconds;
+    // L-01: Use the same minute-aligned clock for both 'now' and 'since' to
+    // avoid a one-minute window mismatch between the two values.
+    const now = GetMinuteStartNowTimestampUTC();
+    const since = now - rangeInSeconds;
 
     const hideDuration = params.hideDuration === "true";
     const formatted = formatDuration(rangeInSeconds);
@@ -805,8 +824,9 @@ export const GetPageBadge = async (badgeType: "status" | "uptime", params: PageB
     } else {
       sinceLast = Number(sinceLastParam);
     }
-    const now = Math.floor(Date.now() / 1000);
-    const since = GetMinuteStartNowTimestampUTC() - sinceLast;
+    // L-01: Use the same minute-aligned clock for both 'now' and 'since'.
+    const now = GetMinuteStartNowTimestampUTC();
+    const since = now - sinceLast;
     const hideDuration = params.hideDuration === "true";
     const formatted = formatDuration(sinceLast);
 

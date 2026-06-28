@@ -17,9 +17,7 @@ const config = {
     paths: {
       base: basePath,
     },
-    csrf: {
-      trustedOrigins: ["*"],
-    },
+    // CSRF protection uses SvelteKit default; custom csrfHandle in hooks.server.ts provides additional defence
   },
 
   compilerOptions: {

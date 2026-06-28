@@ -12,6 +12,10 @@ import type { OidcConfig, LdapConfig } from "./authConfigController.js";
 export type ExportScope = "config" | "users_groups_roles" | "everything";
 export const VALID_EXPORT_SCOPES: ExportScope[] = ["config", "users_groups_roles", "everything"];
 
+// "everything" scope label: exports configuration only (monitors, pages, triggers, images,
+// site data, auth config, users, groups, roles, subscribers).
+// NOTE: incidents, maintenances, and alert configs are NOT included.
+
 type ExportedImage = {
   id: string;
   data: string; // base64
@@ -73,6 +77,7 @@ interface ExportedUser {
   is_active: number;
   is_verified: number;
   is_owner: string;
+  role_names: string[];
 }
 
 interface ExportedSubscriberSubscription {
@@ -141,6 +146,12 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
   };
 
   if (scope === "config" || scope === "everything") {
+    // H-26: Guard against excessively large image exports before fetching binary data
+    const imageSizeCheck = await db.knex("images").sum("size as total").first<{ total: number | null }>();
+    if ((imageSizeCheck?.total ?? 0) > 50 * 1024 * 1024) {
+      throw new Error("Image export exceeds 50MB limit. Export images separately.");
+    }
+
     const [siteData, monitors, pages, triggers, images, oidcConfig, ldapConfig] = await Promise.all([
       db.getAllSiteData(),
       db.getMonitors({}),
@@ -217,12 +228,20 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
   }
 
   if (scope === "users_groups_roles" || scope === "everything") {
+    // H-25: No cursor-based fetch exists; use paginated with a large limit.
+    // TODO: replace with cursor-based fetch when subscriber count exceeds 100k
+    const SUBSCRIBER_FETCH_LIMIT = 100000;
     const [users, groups, roles, allSubscriberUsers] = await Promise.all([
       db.getAllUsers(),
       db.getAllGroups(),
       db.getAllRoles(),
-      db.getSubscriberUsersPaginated(1, 100000),
+      db.getSubscriberUsersPaginated(1, SUBSCRIBER_FETCH_LIMIT),
     ]);
+    if (allSubscriberUsers.length === SUBSCRIBER_FETCH_LIMIT) {
+      console.warn(
+        `[exportData] Subscriber export reached the fetch limit of ${SUBSCRIBER_FETCH_LIMIT}. Some subscribers may not be exported.`,
+      );
+    }
 
     const exportedGroups: ExportedGroup[] = await Promise.all(
       groups.map(async (g) => {
@@ -285,14 +304,26 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
       }),
     );
 
+    // H-15: Export direct role assignments per user so they can be re-applied on import
+    const exportedUsers: ExportedUser[] = await Promise.all(
+      users.map(async (u) => {
+        const roleIds = await db.getUserRoleIds(u.id);
+        const roleNames = roleIds
+          .map((rid) => roles.find((r) => r.id === rid)?.role_name)
+          .filter((name): name is string => name !== undefined);
+        return {
+          email: u.email,
+          name: u.name,
+          is_active: u.is_active,
+          is_verified: u.is_verified,
+          is_owner: u.is_owner,
+          role_names: roleNames,
+        };
+      }),
+    );
+
     payload.users_groups_roles = {
-      users: users.map((u) => ({
-        email: u.email,
-        name: u.name,
-        is_active: u.is_active,
-        is_verified: u.is_verified,
-        is_owner: u.is_owner,
-      })),
+      users: exportedUsers,
       groups: exportedGroups,
       roles: exportedRoles,
       subscribers: exportedSubscribers,
@@ -303,199 +334,281 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
 }
 
 export async function importData(payload: ExportPayload): Promise<{ imported: Record<string, number> }> {
+  // M-25: Reject export files created by a newer version of this software
+  const CURRENT_EXPORT_VERSION = 1;
+  if (payload.version > CURRENT_EXPORT_VERSION) {
+    throw new Error(
+      `Export file version ${payload.version} is newer than supported version ${CURRENT_EXPORT_VERSION}`,
+    );
+  }
+
   const imported: Record<string, number> = {};
 
   if (payload.config) {
-    const { site_data, monitors, pages, triggers } = payload.config;
+    // C-02: Wrap the entire config import in a transaction so it is atomic
+    const configCounts = await db.knex.transaction(async (trx) => {
+      const { site_data, monitors, pages, triggers } = payload.config!;
+      const counts: Record<string, number> = {};
 
-    for (const sd of site_data ?? []) {
-      await db.insertOrUpdateSiteData(sd.key, sd.value, sd.data_type);
-    }
-    imported.site_data = (site_data ?? []).length;
-
-    let monitorsImported = 0;
-    for (const m of monitors ?? []) {
-      const existing = await db.getMonitorsByTag(m.tag);
-      if (existing) {
-        await db.updateMonitor({
-          ...existing,
-          name: m.name,
-          description: m.description,
-          image: m.image,
-          cron: m.cron,
-          default_status: m.default_status,
-          status: m.status,
-          category_name: m.category_name,
-          monitor_type: m.monitor_type,
-          type_data: m.type_data,
-          day_degraded_minimum_count: m.day_degraded_minimum_count,
-          day_down_minimum_count: m.day_down_minimum_count,
-          include_degraded_in_downtime: m.include_degraded_in_downtime,
-          is_hidden: m.is_hidden,
-          monitor_settings_json: m.monitor_settings_json,
-          external_url: m.external_url ?? null,
-        });
-      } else {
-        await db.insertMonitor({
-          tag: m.tag,
-          name: m.name,
-          description: m.description,
-          image: m.image,
-          cron: m.cron,
-          default_status: m.default_status,
-          status: m.status,
-          category_name: m.category_name,
-          monitor_type: m.monitor_type,
-          type_data: m.type_data,
-          day_degraded_minimum_count: m.day_degraded_minimum_count,
-          day_down_minimum_count: m.day_down_minimum_count,
-          include_degraded_in_downtime: m.include_degraded_in_downtime,
-          is_hidden: m.is_hidden,
-          monitor_settings_json: m.monitor_settings_json,
-          external_url: m.external_url ?? null,
-        });
+      for (const sd of site_data ?? []) {
+        await trx("site_data")
+          .insert({ key: sd.key, value: sd.value, data_type: sd.data_type })
+          .onConflict("key")
+          .merge(["value", "data_type"]);
       }
-      monitorsImported++;
-    }
-    imported.monitors = monitorsImported;
+      counts.site_data = (site_data ?? []).length;
 
-    let pagesImported = 0;
-    for (const p of pages ?? []) {
-      const { monitors: pageMonitors, ...pageData } = p;
-      const existing = await db.getPageByPath(pageData.page_path);
-      let pageId: number;
-      if (existing) {
-        await db.updatePage(existing.id, pageData);
-        pageId = existing.id;
-      } else {
-        const created = await db.createPage(pageData);
-        pageId = created.id;
+      let monitorsImported = 0;
+      for (const m of monitors ?? []) {
+        const existing = await trx("monitors").where("tag", m.tag).first();
+        if (existing) {
+          await trx("monitors").where("tag", m.tag).update({
+            name: m.name,
+            description: m.description,
+            image: m.image,
+            cron: m.cron,
+            default_status: m.default_status,
+            status: m.status,
+            category_name: m.category_name,
+            monitor_type: m.monitor_type,
+            type_data: m.type_data,
+            day_degraded_minimum_count: m.day_degraded_minimum_count,
+            day_down_minimum_count: m.day_down_minimum_count,
+            include_degraded_in_downtime: m.include_degraded_in_downtime,
+            is_hidden: m.is_hidden,
+            monitor_settings_json: m.monitor_settings_json,
+            external_url: m.external_url ?? null,
+            updated_at: trx.fn.now(),
+          });
+        } else {
+          await trx("monitors").insert({
+            tag: m.tag,
+            name: m.name,
+            description: m.description,
+            image: m.image,
+            cron: m.cron,
+            default_status: m.default_status,
+            status: m.status,
+            category_name: m.category_name,
+            monitor_type: m.monitor_type,
+            type_data: m.type_data,
+            day_degraded_minimum_count: m.day_degraded_minimum_count,
+            day_down_minimum_count: m.day_down_minimum_count,
+            include_degraded_in_downtime: m.include_degraded_in_downtime,
+            is_hidden: m.is_hidden,
+            monitor_settings_json: m.monitor_settings_json,
+            external_url: m.external_url ?? null,
+            created_at: trx.fn.now(),
+            updated_at: trx.fn.now(),
+          });
+        }
+        monitorsImported++;
       }
-      // Fully sync monitor assignments: clear current, re-add from export
-      await db.deletePageMonitorsByPageId(pageId);
-      for (const m of pageMonitors ?? []) {
-        await db.addMonitorToPage({
-          page_id: pageId,
-          monitor_tag: m.monitor_tag,
-          monitor_settings_json: m.monitor_settings_json ?? null,
-          position: m.position,
-        });
-      }
-      pagesImported++;
-    }
-    imported.pages = pagesImported;
+      counts.monitors = monitorsImported;
 
-    let triggersImported = 0;
-    const allTriggers = await db.getTriggers({});
-    for (const t of triggers ?? []) {
-      const existing = allTriggers.find((tr) => tr.name === t.name);
-      if (existing) {
-        await db.updateTrigger({ ...existing, ...t });
-      } else {
-        await db.createNewTrigger(t);
+      let pagesImported = 0;
+      for (const p of pages ?? []) {
+        const { monitors: pageMonitors, ...pageData } = p;
+        const existing = await trx("pages").where("page_path", pageData.page_path).first();
+        let pageId: number;
+        if (existing) {
+          await trx("pages").where("id", existing.id).update({ ...pageData, updated_at: trx.fn.now() });
+          pageId = existing.id;
+        } else {
+          const [newId] = await trx("pages")
+            .insert({ ...pageData, created_at: trx.fn.now(), updated_at: trx.fn.now() })
+            .returning("id");
+          pageId = typeof newId === "object" ? (newId as { id: number }).id : (newId as number);
+        }
+        // Fully sync monitor assignments: clear current, re-add from export
+        await trx("pages_monitors").where("page_id", pageId).delete();
+        for (const m of pageMonitors ?? []) {
+          await trx("pages_monitors").insert({
+            page_id: pageId,
+            monitor_tag: m.monitor_tag,
+            monitor_settings_json: m.monitor_settings_json ?? null,
+            position: m.position,
+            created_at: trx.fn.now(),
+            updated_at: trx.fn.now(),
+          });
+        }
+        pagesImported++;
       }
-      triggersImported++;
-    }
-    imported.triggers = triggersImported;
+      counts.pages = pagesImported;
 
-    let imagesImported = 0;
-    for (const img of payload.config.images ?? []) {
-      const existing = await db.getImageById(img.id);
-      if (!existing) {
-        await db.insertImage({
-          id: img.id,
-          data: img.data,
-          mime_type: img.mime_type,
-          original_name: img.original_name ?? null,
-          width: img.width ?? null,
-          height: img.height ?? null,
-          size: img.size ?? null,
-        });
-        imagesImported++;
+      let triggersImported = 0;
+      const allTriggers = await trx("triggers").select("*");
+      for (const t of triggers ?? []) {
+        const existing = allTriggers.find((tr: { name: string }) => tr.name === t.name);
+        if (existing) {
+          await trx("triggers").where("id", existing.id).update({ ...t, updated_at: trx.fn.now() });
+        } else {
+          await trx("triggers").insert({ ...t, created_at: trx.fn.now(), updated_at: trx.fn.now() });
+        }
+        triggersImported++;
       }
-    }
-    imported.images = imagesImported;
+      counts.triggers = triggersImported;
 
+      let imagesImported = 0;
+      // L-16: Track images that were skipped because they already exist
+      let imagesSkipped = 0;
+      for (const img of payload.config!.images ?? []) {
+        const existing = await trx("images").where("id", img.id).first();
+        if (!existing) {
+          await trx("images").insert({
+            id: img.id,
+            data: img.data,
+            mime_type: img.mime_type,
+            original_name: img.original_name ?? null,
+            width: img.width ?? null,
+            height: img.height ?? null,
+            size: img.size ?? null,
+            created_at: trx.fn.now(),
+            updated_at: trx.fn.now(),
+          });
+          imagesImported++;
+        } else {
+          imagesSkipped++;
+        }
+      }
+      counts.images = imagesImported;
+      counts.images_skipped = imagesSkipped;
+
+      return counts;
+    });
+
+    Object.assign(imported, configCounts);
+
+    // Auth config is saved outside the transaction because it calls external controllers
     if (payload.config.auth) {
       const { oidc, ldap } = payload.config.auth;
-      if (oidc) await SaveOidcConfig(oidc);
-      if (ldap) await SaveLdapConfig(ldap);
+      // L-15: Preserve existing auth secrets that are not included in the export.
+      // The exported types intentionally omit client_secret and bind_password.
+      // Read the current stored values and merge them back so they are not lost.
+      if (oidc) {
+        const existingOidc = await GetOidcConfig();
+        await SaveOidcConfig({
+          ...oidc,
+          // Re-apply the stored secret so the import does not clear it
+          client_secret: existingOidc.client_secret,
+        });
+      }
+      if (ldap) {
+        const existingLdap = await GetLdapConfig();
+        await SaveLdapConfig({
+          ...ldap,
+          // Re-apply the stored password so the import does not clear it
+          bind_password: existingLdap.bind_password,
+        });
+      }
       imported.auth_config = 1;
     }
   }
 
   if (payload.users_groups_roles) {
-    const { roles, groups, users } = payload.users_groups_roles;
+    // C-02: Wrap users/groups/roles import in a transaction
+    const ugCounts = await db.knex.transaction(async (_trx) => {
+      const { roles, groups, users } = payload.users_groups_roles!;
+      const counts: Record<string, number> = {};
 
-    // Import users — created as inactive/unverified since passwords are not exported
-    let usersImported = 0;
-    for (const u of users ?? []) {
-      const existing = await db.getUserByEmail(u.email);
-      if (!existing) {
-        await db.insertUser({
-          email: u.email,
-          name: u.name,
-          password_hash: "",
-          role_ids: [],
-          is_active: 0,
-          is_verified: 0,
-          is_owner: u.is_owner,
-          must_change_password: 1,
-        });
-        usersImported++;
-      }
-    }
-    imported.users = usersImported;
-
-    // Import roles — only create new roles, never modify existing role permissions.
-    // Syncing permissions for existing roles via any API key would allow privilege
-    // escalation (a stolen key could grant itself admin rights). Existing roles are
-    // intentionally left unchanged; use the manage UI for role permission edits.
-    // External IDs are never adopted — a name-based lookup prevents ID collisions
-    // that could cause privilege escalation against existing roles in the target DB.
-    let rolesImported = 0;
-    const allExistingRoles = await db.getAllRoles();
-    for (const r of roles ?? []) {
-      if (r.readonly) continue;
-      const existingByName = allExistingRoles.find((er) => er.role_name === r.role_name);
-      if (!existingByName) {
-        const newId = crypto.randomUUID();
-        await db.insertRole({ id: newId, role_name: r.role_name });
-        for (const pid of r.permissions ?? []) {
-          await db.addRolePermission(newId, pid);
+      // Import roles first so that user and group role assignments can reference them.
+      // Only create new roles, never modify existing role permissions.
+      // Syncing permissions for existing roles via any API key would allow privilege
+      // escalation (a stolen key could grant itself admin rights). Existing roles are
+      // intentionally left unchanged; use the manage UI for role permission edits.
+      // External IDs are never adopted — a name-based lookup prevents ID collisions
+      // that could cause privilege escalation against existing roles in the target DB.
+      let rolesImported = 0;
+      const allExistingRoles = await db.getAllRoles();
+      for (const r of roles ?? []) {
+        if (r.readonly) continue;
+        const existingByName = allExistingRoles.find((er) => er.role_name === r.role_name);
+        if (!existingByName) {
+          const newId = crypto.randomUUID();
+          await db.insertRole({ id: newId, role_name: r.role_name });
+          for (const pid of r.permissions ?? []) {
+            await db.addRolePermission(newId, pid);
+          }
+          rolesImported++;
         }
-        rolesImported++;
       }
-    }
-    imported.roles = rolesImported;
+      counts.roles = rolesImported;
 
-    // Import groups — create new or sync roles for existing
-    let groupsImported = 0;
-    const allGroups = await db.getAllGroups();
-    const allRoles = await db.getAllRoles();
-    for (const g of groups ?? []) {
-      const existing = allGroups.find((ex) => ex.name === g.name);
-      let groupId: number;
-      if (existing) {
-        groupId = existing.id;
-        // Sync role assignments: clear existing and re-add from export
-        const existingRoles = await db.getGroupRoles(groupId);
-        for (const gr of existingRoles) {
-          await db.removeGroupRole(groupId, gr.id);
+      // Reload roles to include any newly created ones
+      const allRoles = await db.getAllRoles();
+
+      // Import users — created as inactive/unverified since passwords are not exported.
+      // H-15: After inserting, assign direct role memberships from the export.
+      let usersImported = 0;
+      for (const u of users ?? []) {
+        const existing = await db.getUserByEmail(u.email);
+        let userId: number;
+        if (!existing) {
+          const [insertedId] = await db.insertUser({
+            email: u.email,
+            name: u.name,
+            password_hash: "",
+            role_ids: [],
+            is_active: 0,
+            is_verified: 0,
+            is_owner: u.is_owner,
+            must_change_password: 1,
+          });
+          userId = insertedId;
+          usersImported++;
+        } else {
+          userId = existing.id;
         }
-      } else {
-        const created = await db.createGroup({ name: g.name, description: g.description });
-        groupId = created.id;
-        groupsImported++;
+        // H-15: Assign direct role memberships by name lookup
+        for (const roleName of u.role_names ?? []) {
+          const role = allRoles.find((r) => r.role_name === roleName);
+          if (role) await db.addUserToRole(role.id, userId);
+        }
       }
-      for (const roleName of g.role_names ?? []) {
-        const role = allRoles.find((r) => r.role_name === roleName);
-        if (role) await db.addGroupRole(groupId, role.id);
+      counts.users = usersImported;
+
+      // Import groups — create new or sync roles and members for existing
+      let groupsImported = 0;
+      const allGroups = await db.getAllGroups();
+      for (const g of groups ?? []) {
+        const existing = allGroups.find((ex) => ex.name === g.name);
+        let groupId: number;
+        if (existing) {
+          groupId = existing.id;
+          // Sync role assignments: clear existing and re-add from export
+          const existingRoles = await db.getGroupRoles(groupId);
+          for (const gr of existingRoles) {
+            await db.removeGroupRole(groupId, gr.id);
+          }
+        } else {
+          const created = await db.createGroup({ name: g.name, description: g.description });
+          groupId = created.id;
+          groupsImported++;
+        }
+        for (const roleName of g.role_names ?? []) {
+          const role = allRoles.find((r) => r.role_name === roleName);
+          if (role) await db.addGroupRole(groupId, role.id);
+        }
+        // C-03: Re-import group member email assignments
+        // Clear all existing members first, then re-add from the export
+        const currentMembers = await db.getGroupMembers(groupId);
+        for (const member of currentMembers) {
+          await db.removeGroupMember(groupId, member.id);
+        }
+        for (const email of g.member_emails ?? []) {
+          const user = await db.getUserByEmail(email);
+          if (user) await db.addGroupMember(groupId, user.id);
+        }
       }
-    }
-    imported.groups = groupsImported;
+      counts.groups = groupsImported;
+
+      return counts;
+    });
+
+    Object.assign(imported, ugCounts);
 
     // Import subscribers — create new ones; skip if email already exists
+    // (run outside the transaction because it involves many sub-queries per subscriber)
     let subscribersImported = 0;
     for (const sub of payload.users_groups_roles.subscribers ?? []) {
       let subscriberUser = await db.getSubscriberUserByEmail(sub.email);

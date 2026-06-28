@@ -46,11 +46,12 @@
 	</style>`}
   <script src={clientResolver(resolve, "/capture.js")}></script>
 </svelte:head>
-<main class="kener-public">
+<!-- --nav-height controls both the content top padding and ThemePlus sticky offset -->
+<main class="kener-public" style="--nav-height: 4.5rem">
   <!-- Nav -->
   <KenerNav />
-  <!-- Body -->
-  <div class="mx-auto max-w-5xl px-4 pt-18">
+  <!-- Body — pt-[var(--nav-height)] keeps the content below the fixed nav bar -->
+  <div class="mx-auto max-w-5xl px-4 pt-[var(--nav-height)]">
     <Tooltip.Provider>
       {@render children()}
     </Tooltip.Provider>

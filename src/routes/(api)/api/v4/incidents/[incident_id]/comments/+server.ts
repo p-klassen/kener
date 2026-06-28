@@ -85,6 +85,16 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return json(errorResponse, { status: 400 });
   }
 
+  if (body.comment.length > 10000) {
+    const errorResponse: BadRequestResponse = {
+      error: {
+        code: "BAD_REQUEST",
+        message: "Comment exceeds 10,000 character limit",
+      },
+    };
+    return json(errorResponse, { status: 400 });
+  }
+
   // Timestamp is optional - use current time if not provided
   // Always normalize to minute start
   let timestamp: number;

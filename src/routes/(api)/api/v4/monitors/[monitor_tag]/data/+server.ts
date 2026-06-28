@@ -54,6 +54,17 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     return json(errorResponse, { status: 400 });
   }
 
+  const MAX_RANGE = 90 * 24 * 60 * 60; // 90 days in seconds
+  if (endTs - startTs > MAX_RANGE) {
+    const errorResponse: BadRequestResponse = {
+      error: {
+        code: "BAD_REQUEST",
+        message: "Requested range exceeds the maximum allowed 90 days",
+      },
+    };
+    return json(errorResponse, { status: 400 });
+  }
+
   const rawData = await db.getMonitoringData(monitorTag, startTs, endTs);
 
   const data: MonitoringDataPoint[] = rawData.map((d) => ({

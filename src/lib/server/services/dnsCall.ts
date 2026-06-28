@@ -94,10 +94,12 @@ class DnsCall {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const latency = Math.round(performance.now() - queryStartTime);
+      const lowerMessage = message.toLowerCase();
+      const errorType = lowerMessage.includes("timed out") || lowerMessage.includes("timeout") ? GC.TIMEOUT : GC.ERROR;
       return {
         status: GC.DOWN,
         latency,
-        type: GC.REALTIME,
+        type: errorType,
         error_message: `DNS query failed for ${host} (${recordType}): ${message}`,
       };
     }

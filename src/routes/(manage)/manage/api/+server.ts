@@ -13,6 +13,7 @@ import {
   UpdateTriggerData,
   DeleteTrigger,
   GetIncidentByIDDashboard,
+  GetIncidentMonitors,
   GetMonitorsParsed,
   GetAllAPIKeys,
   GetAllSiteData,
@@ -53,6 +54,7 @@ import {
 } from "$lib/server/controllers/controller.js";
 
 import { GetNowTimestampUTC } from "$lib/server/tool.js";
+import { siteDataKeys } from "$lib/server/controllers/siteDataKeys.js";
 import {
   CreatePage,
   GetAllPages,
@@ -371,6 +373,8 @@ export async function POST({ request, cookies }) {
       resp = await RemoveIncidentMonitor(data.incident_id, data.monitor_tag);
     } else if (action == "getComments") {
       resp = await GetIncidentActiveComments(data.incident_id);
+    } else if (action == "getIncidentMonitors") {
+      resp = await GetIncidentMonitors(data.incident_id);
     } else if (action == "addComment") {
       resp = await AddIncidentComment(data.incident_id, data.comment, data.state, data.commented_at);
     } else if (action == "deleteComment") {
@@ -1186,7 +1190,16 @@ export async function POST({ request, cookies }) {
   }
   return json(resp, { status: 200 });
 }
+const VALID_SITE_DATA_KEYS = new Set(siteDataKeys.map((k) => k.key));
+
 async function storeSiteData(data: { [x: string]: any }) {
+  // Validate all keys before writing any of them
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key) && !VALID_SITE_DATA_KEYS.has(key)) {
+      throw new Error(`Unknown site data key: '${key}'`);
+    }
+  }
+
   for (const key in data) {
     if (Object.prototype.hasOwnProperty.call(data, key)) {
       let element = data[key];

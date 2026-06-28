@@ -36,6 +36,7 @@ class HeartbeatCall {
       };
     }
 
+    if (nowMs < lastHeartbeatMs) console.warn('[Heartbeat] Clock skew detected for', this.monitor.tag);
     const diffInMs = Math.max(0, nowMs - lastHeartbeatMs);
 
     const downMinutes = Number(this.monitor.type_data?.downRemainingMinutes ?? 10);

@@ -1,5 +1,5 @@
 import dns2 from "dns2";
-import dgram, { type Socket } from "dgram";
+import dgram from "dgram";
 import { Resolver as NodeResolver } from "node:dns/promises";
 import { AllRecordTypes } from "../clientTools";
 
@@ -27,11 +27,9 @@ interface DNSRecordResult {
 
 class DNSResolver {
   nameserver: string;
-  socket: Socket;
 
   constructor() {
     this.nameserver = "8.8.8.8";
-    this.socket = dgram.createSocket("udp4");
   }
 
   createQuery(domain: string, type: string): InstanceType<typeof dns2.Packet> {
@@ -49,30 +47,40 @@ class DNSResolver {
     return packet;
   }
 
-  async query(domain: string, recordType: string, nameserverOverride?: string): Promise<DNSResponse> {
+  async query(domain: string, recordType: string, nameserverOverride?: string, timeoutMs = 3000): Promise<DNSResponse> {
+    // Each query gets its own socket to avoid concurrent-use races.
+    const socket = dgram.createSocket("udp4");
+
     return new Promise((resolve, reject) => {
       const query = this.createQuery(domain, recordType);
       const buffer = query.toBuffer();
       const targetNameserver = nameserverOverride || this.nameserver;
 
+      const cleanup = () => {
+        try { socket.close(); } catch { /* already closed */ }
+      };
+
       const onMessage = (message: Buffer) => {
         clearTimeout(timeoutId);
+        cleanup();
         // @ts-expect-error dns2 types are incomplete
         const response = dns2.Packet.parse(message) as DNSResponse;
         resolve(response);
       };
 
       const timeoutId = setTimeout(() => {
-        this.socket.removeListener("message", onMessage);
+        socket.removeListener("message", onMessage);
+        cleanup();
         reject(new Error(`DNS query timed out for ${domain} (${recordType}) via ${targetNameserver}`));
-      }, 3000);
+      }, timeoutMs);
 
-      this.socket.once("message", onMessage);
+      socket.once("message", onMessage);
 
-      this.socket.send(buffer, 0, buffer.length, 53, targetNameserver, (err: Error | null) => {
+      socket.send(buffer, 0, buffer.length, 53, targetNameserver, (err: Error | null) => {
         if (err) {
           clearTimeout(timeoutId);
-          this.socket.removeListener("message", onMessage);
+          socket.removeListener("message", onMessage);
+          cleanup();
           reject(err);
         }
       });
@@ -103,12 +111,13 @@ class DNSResolver {
     domain: string,
     recordType: string,
     fallbackNameserver?: string,
+    timeoutMs = 3000,
   ): Promise<DNSResponse> {
     const authoritativeNameServers = await this.getAuthoritativeNameServers(domain, fallbackNameserver);
 
     for (const ns of authoritativeNameServers) {
       try {
-        const response = await this.query(domain, recordType, ns);
+        const response = await this.query(domain, recordType, ns, timeoutMs);
         if (response.answers && response.answers.length > 0) {
           return response;
         }
@@ -118,7 +127,7 @@ class DNSResolver {
     }
 
     // Fallback to configured recursive resolver
-    return await this.query(domain, recordType, fallbackNameserver);
+    return await this.query(domain, recordType, fallbackNameserver, timeoutMs);
   }
 
   extractData(answer: DNSAnswer, recordType: string): unknown {
@@ -141,11 +150,12 @@ class DNSResolver {
     domain: string,
     recordType: string,
     nameserverOverride?: string,
+    timeoutMs = 3000,
   ): Promise<Record<string, DNSRecordResult[]>> {
     const results: Record<string, DNSRecordResult[]> = {};
 
     try {
-      const response = await this.queryAuthoritativeRecord(domain, recordType, nameserverOverride);
+      const response = await this.queryAuthoritativeRecord(domain, recordType, nameserverOverride, timeoutMs);
       results[recordType] = response.answers.map((answer: DNSAnswer) => ({
         name: answer.name,
         type: recordType,
@@ -156,8 +166,6 @@ class DNSResolver {
     } catch (error) {
       console.error("Error querying DNS records:", error);
       throw error;
-    } finally {
-      this.socket.close();
     }
   }
 }

@@ -437,6 +437,46 @@ export class MonitorAlertConfigRepository extends BaseRepository {
   }
 
   /**
+   * Batch-fetch triggers and monitor_tags for multiple config IDs in two queries.
+   * Returns a map from config ID to { triggers, monitor_tags }.
+   */
+  async getTriggersAndTagsForConfigIds(
+    configIds: number[],
+  ): Promise<Map<number, { triggers: TriggerRecord[]; monitor_tags: string[] }>> {
+    const result = new Map<number, { triggers: TriggerRecord[]; monitor_tags: string[] }>();
+    for (const id of configIds) {
+      result.set(id, { triggers: [], monitor_tags: [] });
+    }
+    if (configIds.length === 0) return result;
+
+    const triggerRows = await this.knex("monitor_alerts_config_triggers as mact")
+      .join("triggers as t", "mact.trigger_id", "t.id")
+      .select("t.*", "mact.monitor_alerts_id")
+      .whereIn("mact.monitor_alerts_id", configIds);
+
+    for (const row of triggerRows) {
+      const entry = result.get(row.monitor_alerts_id);
+      if (entry) {
+        const { monitor_alerts_id: _id, ...trigger } = row;
+        entry.triggers.push(trigger as TriggerRecord);
+      }
+    }
+
+    const tagRows = await this.knex("monitor_alerts_config_monitors")
+      .select("monitor_alerts_id", "monitor_tag")
+      .whereIn("monitor_alerts_id", configIds);
+
+    for (const row of tagRows) {
+      const entry = result.get(row.monitor_alerts_id);
+      if (entry) {
+        entry.monitor_tags.push(row.monitor_tag);
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Check if a trigger is associated with any monitor alert config
    */
   async isTriggerUsedInMonitorAlertConfig(triggerId: number): Promise<boolean> {

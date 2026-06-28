@@ -168,6 +168,9 @@ export async function up(knex: Knex): Promise<void> {
   }
 }
 
+// NOTE: This down() migration can only restore the first monitor association per alert config.
+// Configs with multiple monitors will lose all but the first association on rollback.
+// This is a known limitation of the SQLite table rebuild approach.
 export async function down(knex: Knex): Promise<void> {
   // Step 1: Drop the composite index on monitor_alerts_v2
   try {

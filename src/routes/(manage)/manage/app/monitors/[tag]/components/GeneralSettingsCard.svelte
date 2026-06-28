@@ -28,6 +28,9 @@
 
   let savingGeneral = $state(false);
   let uploadingImage = $state(false);
+  let saveAttempted = $state(false);
+
+  const isValid = $derived(monitor.name.trim() !== "" && monitor.tag.trim() !== "");
 
   async function handleImageUpload(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
@@ -99,6 +102,8 @@
   }
 
   async function saveGeneralSettings() {
+    saveAttempted = true;
+    if (!isValid) return;
     savingGeneral = true;
 
     try {
@@ -149,11 +154,18 @@
       <div class="flex flex-col gap-2">
         <Label for="monitor-name">Name <span class="text-destructive">*</span></Label>
         <Input id="monitor-name" bind:value={monitor.name} placeholder="My API Monitor" />
+        {#if saveAttempted && monitor.name.trim() === ""}
+          <p class="text-destructive text-xs">Name is required</p>
+        {/if}
       </div>
       <div class="flex flex-col gap-2">
         <Label for="monitor-tag">Tag <span class="text-destructive">*</span></Label>
         <Input id="monitor-tag" bind:value={monitor.tag} placeholder="my-api-monitor" disabled={!isNew} />
-        <p class="text-muted-foreground mt-1 text-xs">Unique identifier (cannot be changed after creation)</p>
+        {#if saveAttempted && monitor.tag.trim() === ""}
+          <p class="text-destructive text-xs">Tag is required</p>
+        {:else}
+          <p class="text-muted-foreground mt-1 text-xs">Unique identifier (cannot be changed after creation)</p>
+        {/if}
       </div>
     </div>
 
@@ -266,7 +278,7 @@
     </div>
   </Card.Content>
   <Card.Footer class="flex justify-end">
-    <Button onclick={saveGeneralSettings} disabled={savingGeneral}>
+    <Button onclick={saveGeneralSettings} disabled={savingGeneral || !isValid}>
       {#if savingGeneral}
         <Loader class="size-4 animate-spin" />
       {:else}

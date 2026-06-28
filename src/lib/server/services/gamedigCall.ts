@@ -68,9 +68,14 @@ class GamedigCall {
     }
 
     // Result
+    const validStatuses = [GC.UP, GC.DOWN, GC.DEGRADED] as string[];
+    const resolvedStatus = evalResp?.status ?? GC.DOWN;
+    if (!validStatuses.includes(resolvedStatus)) {
+      console.warn(`[GameDig] Invalid status "${resolvedStatus}" from eval for ${tag}, defaulting to DOWN`);
+    }
     return {
-      status: evalResp?.status || GC.DOWN,
-      latency: evalResp?.latency || 0,
+      status: validStatuses.includes(resolvedStatus) ? resolvedStatus : GC.DOWN,
+      latency: evalResp?.latency ?? 0,
       type: GC.REALTIME,
     };
   }

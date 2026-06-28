@@ -108,8 +108,9 @@ export const push = async (variables: SubscriptionVariableMap, options?: JobsOpt
   const queue = getQueue();
   addWorker();
 
-  // Use deduplication to prevent duplicate notifications
-  const deDupId = `subscriber-${variables.event_type}-${variables.update_id}-${Date.now()}`;
+  // Use deduplication to prevent duplicate notifications for the same event update.
+  // Date.now() is intentionally excluded so the key is stable across retries.
+  const deDupId = `sub-${variables.event_type}-${variables.update_id}`;
   if (!options.deduplication) {
     options.deduplication = {
       id: deDupId,

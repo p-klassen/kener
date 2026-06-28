@@ -22,10 +22,9 @@
 
   let { maintenance, class: className = "", hideMonitors = false }: Props = $props();
   // Check if maintenance is ongoing (current time is between start and end)
-  const isOngoing = $derived(() => {
-    const now = Date.now() / 1000;
-    return now >= maintenance.start_date_time && now <= maintenance.end_date_time;
-  });
+  const isOngoing = $derived(
+    Date.now() / 1000 >= maintenance.start_date_time && Date.now() / 1000 <= maintenance.end_date_time
+  );
   const isEmbedded = page.route.id?.includes("(embed)");
   const target = isEmbedded ? "_blank" : "_self";
 </script>

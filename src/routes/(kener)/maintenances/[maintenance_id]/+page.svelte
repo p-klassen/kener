@@ -232,10 +232,3 @@
     </div>
   </div>
 </div>
-<div class="container mx-auto px-4 py-8">
-  <!-- Maintenance Header -->
-
-  <div class="my-4 flex justify-end gap-2"></div>
-
-  <!-- Maintenance Meta -->
-</div>

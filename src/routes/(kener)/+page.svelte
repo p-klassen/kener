@@ -223,5 +223,7 @@
         {/each}
       </div>
     </div>
+  {:else}
+    <p class="text-muted-foreground py-8 text-center text-sm">{$t("No monitors are configured for this page.")}</p>
   {/if}
 </div>

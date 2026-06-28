@@ -10,6 +10,7 @@ import {
   LoginWithAccount,
 } from "$lib/server/controllers/userSubscriptionsController";
 import { GetLoggedInSession } from "$lib/server/controllers/userController";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 import db from "$lib/server/db/db.js";
 
 interface LoginRequest {
@@ -69,7 +70,7 @@ export default async function post(req: APIServerRequest): Promise<Response> {
     case "login":
       return handleLogin((body as LoginRequest).email, config);
     case "verify":
-      return handleVerify((body as VerifyRequest).email, (body as VerifyRequest).code);
+      return handleVerify((body as VerifyRequest).email, (body as VerifyRequest).code, req);
     case "getPreferences":
       return handleGetPreferences((body as GetPreferencesRequest).token, config);
     case "updatePreferences":
@@ -107,10 +108,19 @@ async function handleLogin(email: string, config: SubscriptionsConfig): Promise<
   return json({ success: true, message: "Verification code sent" });
 }
 
-async function handleVerify(email: string, code: string): Promise<Response> {
+async function handleVerify(email: string, code: string, req: APIServerRequest): Promise<Response> {
+  // Rate limit: max 10 attempts per 5 minutes per IP+email combination
+  const ip = getClientIp(new Request("http://localhost", { headers: req.headers }));
+  const rateLimitKey = `otp-verify:${ip}:${email.toLowerCase().trim()}`;
+  const rl = await checkRateLimit(rateLimitKey, ip, { windowMs: 5 * 60 * 1000, maxRequests: 10 });
+  if (!rl.allowed) {
+    return error(429, { message: "Too many verification attempts. Try again later." });
+  }
+
   const result = await VerifySubscriberOTP(email, code);
   if (!result.success) {
-    return error(400, { message: result.error || "Verification failed" });
+    // Use a uniform message to avoid leaking whether the email exists
+    return error(400, { message: "Invalid email or verification code" });
   }
 
   return json({ success: true, token: result.token });

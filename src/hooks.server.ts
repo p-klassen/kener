@@ -6,6 +6,7 @@ import serverResolve from "$lib/server/resolver";
 import db from "$lib/server/db/db";
 import type { UnauthorizedResponse, NotFoundResponse } from "$lib/types/api";
 import { GetMonitorsParsed } from "$lib/server/controllers/monitorsController";
+import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
 
 const API_PATH_PREFIX = "/api/";
 
@@ -136,6 +137,12 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
 
     const isValidKey = await VerifyAPIKey(token);
     if (!isValidKey) {
+      // Rate-limit failed API key attempts to prevent brute-force enumeration
+      const ip = getClientIp(event.request);
+      const rl = await checkRateLimit("api-auth", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
+      if (!rl.allowed) {
+        return json({ error: { code: "TOO_MANY_REQUESTS", message: "Too many failed authentication attempts. Try again later." } }, { status: 429 });
+      }
       const errorResponse: UnauthorizedResponse = {
         error: {
           code: "UNAUTHORIZED",

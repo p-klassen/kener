@@ -6,7 +6,7 @@ import { GetLatestMonitoringData } from "../controllers/controller.js";
 
 /**
  * Numeric scores for each status (normalized 0–1).
- * UP = 1, DEGRADED = 0.5, DOWN = 0
+ * UP = 1, DEGRADED = 0.5, DOWN = 0, NO_DATA = 0.5
  * MAINTENANCE members are treated as UP (score 1).
  *
  * Weighted sum = Σ(weight × score), weights should sum to 1.
@@ -16,6 +16,7 @@ const STATUS_SCORE: Record<string, number> = {
   [GC.UP]: 1,
   [GC.DEGRADED]: 0.5,
   [GC.DOWN]: 0,
+  [GC.NO_DATA]: 0.5,
 };
 
 /** Map a weighted score back to a status string. */
@@ -66,23 +67,30 @@ class GroupCall {
     }
 
     // --- Status calculation via weighted scores ---
-    // Each status has a normalized score: UP=1, DEGRADED=0.5, DOWN=0
+    // Each status has a normalized score: UP=1, DEGRADED=0.5, DOWN=0, NO_DATA=0.5
     // MAINTENANCE members are treated as UP (score 1).
     // Weighted sum = Σ(weight × score), weights should sum to 1.
     // Result: 1 → UP, (0,1) → DEGRADED, 0 → DOWN
     let weightedScore = 0;
     let totalWeight = 0;
+    let allNoData = true;
 
     for (const member of members) {
       const data = statusMap.get(member.tag);
       if (!data) continue;
+      if (data.status !== GC.NO_DATA) allNoData = false;
       const score = STATUS_SCORE[data.status] ?? 1;
       weightedScore += member.weight * score;
       totalWeight += member.weight;
     }
 
+    // If every member reported NO_DATA, propagate that instead of UP
+    if (totalWeight === 0 || allNoData) {
+      return { status: GC.NO_DATA, latency, type: GC.REALTIME };
+    }
+
     // Normalize if weights don't sum to 1 (safety net)
-    if (totalWeight > 0 && totalWeight !== 1) {
+    if (totalWeight !== 1) {
       weightedScore = weightedScore / totalWeight;
     }
 

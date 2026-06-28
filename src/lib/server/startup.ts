@@ -24,7 +24,7 @@ async function Startup(): Promise<void> {
 }
 
 // Call Startup() when run directly (works with both tsx and vite-node)
-const isMainModule = process.argv[1]?.includes("startup") || process.argv[1]?.includes("vite-node");
+const isMainModule = process.argv[1]?.endsWith("startup.ts") || process.argv[1]?.endsWith("startup.js");
 
 if (isMainModule) {
   Startup();

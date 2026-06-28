@@ -29,12 +29,16 @@ const addWorker = () => {
     try {
       const activeMonitors = (await GetMonitorsParsed({ status: "ACTIVE" })).map((monitor) => ({
         ...monitor,
-        hash: monitor.tag + "::" + HashString(JSON.stringify(monitor)),
+        // Hash only scheduling-relevant fields so that cosmetic changes (name,
+        // description, …) do not trigger a spurious immediate re-execution.
+        hash:
+          monitor.tag +
+          "::" +
+          HashString(JSON.stringify({ tag: monitor.tag, cron: monitor.cron, type_data: monitor.type_data })),
       }));
 
-      const minNumOfWorkers = Math.max(activeMonitors.length, 1);
       //get all schedulers
-      const schedulers = await getSchedulers(minNumOfWorkers);
+      const schedulers = await getSchedulers();
 
       const activeMap = new Map<string, MonitorRecordTyped>();
       for (let i = 0; i < activeMonitors.length; i++) {
@@ -50,7 +54,7 @@ const addWorker = () => {
         if (!matchingMonitor) {
           //remove scheduler
           console.log("REMOVING INACTIVE SCHEDULER: " + existingJob.name.split("::")[0]);
-          await removeJobFromSchedulerQueue(existingJob.name, minNumOfWorkers);
+          await removeJobFromSchedulerQueue(existingJob.name);
         }
       }
 
@@ -66,7 +70,7 @@ const addWorker = () => {
         const monitor = activeMonitors[i];
         const existingJob = activeJobMap.get(monitor.hash);
         if (!existingJob && monitor.cron) {
-          await addJobToSchedulerQueue(minNumOfWorkers, monitor, monitor.hash);
+          await addJobToSchedulerQueue(monitor, monitor.hash);
           console.log("ADDING NEW SCHEDULER: " + monitor.tag);
         }
       }

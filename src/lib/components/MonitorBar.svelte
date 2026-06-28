@@ -46,7 +46,7 @@
     DOWN: ICONS.DOWN,
     DEGRADED: ICONS.DEGRADED,
     MAINTENANCE: ICONS.MAINTENANCE,
-    NO_DATA: ICONS.MAINTENANCE
+    NO_DATA: ICONS.NO_DATA
   } as const;
 
   const STATUS_STROKE = {
@@ -136,11 +136,11 @@
         <StatusBarCalendar data={data.uptimeData} monitorTag={tag} barHeight={40} radius={8} />
         <div class="flex min-w-0 justify-between gap-3">
           <p class="text-muted-foreground min-w-0 truncate text-xs font-medium">
-            {$formatDate(new Date(data.fromTimeStamp * 1000), page.data.dateAndTimeFormat.dateOnly)}
+            {$formatDate(data.fromTimeStamp, page.data.dateAndTimeFormat.dateOnly)}
           </p>
 
           <p class="text-muted-foreground min-w-0 truncate text-right text-xs font-medium">
-            {$formatDate(new Date(data.toTimeStamp * 1000), page.data.dateAndTimeFormat.dateOnly)}
+            {$formatDate(data.toTimeStamp, page.data.dateAndTimeFormat.dateOnly)}
           </p>
         </div>
       </div>

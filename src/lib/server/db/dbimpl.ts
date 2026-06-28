@@ -30,7 +30,7 @@ export type * from "../types/db.js";
  * maintaining backward compatibility with existing code.
  */
 class DbImpl {
-  private knex: KnexType;
+  private _knex: KnexType;
 
   // Domain repositories
   private monitoring!: MonitoringRepository;
@@ -203,6 +203,7 @@ class DbImpl {
   // ============ Incident Monitors ============
   insertIncidentMonitor!: IncidentsRepository["insertIncidentMonitor"];
   getIncidentMonitorsByIncidentID!: IncidentsRepository["getIncidentMonitorsByIncidentID"];
+  getIncidentMonitorsByIncidentIds!: IncidentsRepository["getIncidentMonitorsByIncidentIds"];
   getMonitorsByIncidentId!: IncidentsRepository["getMonitorsByIncidentId"];
   removeIncidentMonitor!: IncidentsRepository["removeIncidentMonitor"];
   insertIncidentMonitorWithMerge!: IncidentsRepository["insertIncidentMonitorWithMerge"];
@@ -212,6 +213,7 @@ class DbImpl {
   insertIncidentComment!: IncidentsRepository["insertIncidentComment"];
   getIncidentComments!: IncidentsRepository["getIncidentComments"];
   getActiveIncidentComments!: IncidentsRepository["getActiveIncidentComments"];
+  getActiveIncidentCommentsByIncidentIds!: IncidentsRepository["getActiveIncidentCommentsByIncidentIds"];
   getIncidentCommentByIDAndIncident!: IncidentsRepository["getIncidentCommentByIDAndIncident"];
   updateIncidentCommentByID!: IncidentsRepository["updateIncidentCommentByID"];
   updateIncidentCommentStatusByID!: IncidentsRepository["updateIncidentCommentStatusByID"];
@@ -251,6 +253,7 @@ class DbImpl {
   getMaintenancesByIds!: MaintenancesRepository["getMaintenancesByIds"];
   getAllMaintenances!: MaintenancesRepository["getAllMaintenances"];
   getMaintenancesPaginated!: MaintenancesRepository["getMaintenancesPaginated"];
+  getMaintenancesAfterIdPaginated!: MaintenancesRepository["getMaintenancesAfterIdPaginated"];
   getMaintenancesCount!: MaintenancesRepository["getMaintenancesCount"];
   updateMaintenance!: MaintenancesRepository["updateMaintenance"];
   deleteMaintenance!: MaintenancesRepository["deleteMaintenance"];
@@ -262,6 +265,7 @@ class DbImpl {
   removeMonitorFromMaintenance!: MaintenancesRepository["removeMonitorFromMaintenance"];
   removeAllMonitorsFromMaintenance!: MaintenancesRepository["removeAllMonitorsFromMaintenance"];
   getMaintenanceMonitors!: MaintenancesRepository["getMaintenanceMonitors"];
+  getMaintenanceMonitorsByMaintenanceIds!: MaintenancesRepository["getMaintenanceMonitorsByMaintenanceIds"];
   getMonitorsByMaintenanceId!: MaintenancesRepository["getMonitorsByMaintenanceId"];
   getMaintenancesForMonitor!: MaintenancesRepository["getMaintenancesForMonitor"];
   deleteMaintenanceMonitorsByTag!: MaintenancesRepository["deleteMaintenanceMonitorsByTag"];
@@ -271,6 +275,7 @@ class DbImpl {
   createMaintenanceEvent!: MaintenancesRepository["createMaintenanceEvent"];
   getMaintenanceEventById!: MaintenancesRepository["getMaintenanceEventById"];
   getMaintenanceEventsByMaintenanceId!: MaintenancesRepository["getMaintenanceEventsByMaintenanceId"];
+  getMaintenanceEventsByMaintenanceIds!: MaintenancesRepository["getMaintenanceEventsByMaintenanceIds"];
   getMaintenanceEventsByMaintenanceIdWithLimits!: MaintenancesRepository["getMaintenanceEventsByMaintenanceIdWithLimits"];
   getMaintenanceEvents!: MaintenancesRepository["getMaintenanceEvents"];
   getActiveMaintenanceEvents!: MaintenancesRepository["getActiveMaintenanceEvents"];
@@ -319,6 +324,7 @@ class DbImpl {
   getMonitorAlertConfigWithTriggers!: MonitorAlertConfigRepository["getMonitorAlertConfigWithTriggers"];
   getMonitorAlertConfigsWithTriggersByMonitorTag!: MonitorAlertConfigRepository["getMonitorAlertConfigsWithTriggersByMonitorTag"];
   getActiveMonitorAlertConfigsWithTriggers!: MonitorAlertConfigRepository["getActiveMonitorAlertConfigsWithTriggers"];
+  getTriggersAndTagsForConfigIds!: MonitorAlertConfigRepository["getTriggersAndTagsForConfigIds"];
   isTriggerUsedInMonitorAlertConfig!: MonitorAlertConfigRepository["isTriggerUsedInMonitorAlertConfig"];
   getMonitorAlertConfigsByTriggerId!: MonitorAlertConfigRepository["getMonitorAlertConfigsByTriggerId"];
 
@@ -418,24 +424,29 @@ class DbImpl {
   getEffectiveAccess!: ResourceAccessRepository["getEffectiveAccess"];
   getAccessibleResources!: ResourceAccessRepository["getAccessibleResources"];
 
+  /** Exposes the underlying Knex instance for transaction support. */
+  get knex(): KnexType {
+    return this._knex;
+  }
+
   constructor(opts: KnexType.Config) {
-    this.knex = Knex(opts);
+    this._knex = Knex(opts);
 
     // Initialize repositories
-    this.monitoring = new MonitoringRepository(this.knex);
-    this.monitors = new MonitorsRepository(this.knex);
-    this.alerts = new AlertsRepository(this.knex);
-    this.users = new UsersRepository(this.knex);
-    this.siteData = new SiteDataRepository(this.knex);
-    this.incidents = new IncidentsRepository(this.knex);
-    this.images = new ImagesRepository(this.knex);
-    this.pages = new PagesRepository(this.knex);
-    this.maintenances = new MaintenancesRepository(this.knex);
-    this.monitorAlertConfig = new MonitorAlertConfigRepository(this.knex);
-    this.subscriptionSystem = new SubscriptionSystemRepository(this.knex);
-    this.emailTemplateConfig = new EmailTemplateConfigRepository(this.knex);
-    this.groups = new GroupsRepository(this.knex);
-    this.resourceAccess = new ResourceAccessRepository(this.knex);
+    this.monitoring = new MonitoringRepository(this._knex);
+    this.monitors = new MonitorsRepository(this._knex);
+    this.alerts = new AlertsRepository(this._knex);
+    this.users = new UsersRepository(this._knex);
+    this.siteData = new SiteDataRepository(this._knex);
+    this.incidents = new IncidentsRepository(this._knex);
+    this.images = new ImagesRepository(this._knex);
+    this.pages = new PagesRepository(this._knex);
+    this.maintenances = new MaintenancesRepository(this._knex);
+    this.monitorAlertConfig = new MonitorAlertConfigRepository(this._knex);
+    this.subscriptionSystem = new SubscriptionSystemRepository(this._knex);
+    this.emailTemplateConfig = new EmailTemplateConfigRepository(this._knex);
+    this.groups = new GroupsRepository(this._knex);
+    this.resourceAccess = new ResourceAccessRepository(this._knex);
 
     // Bind all methods from each repository to this instance
     this.bindAll(this.monitoring);
@@ -473,18 +484,18 @@ class DbImpl {
   }
 
   async init(): Promise<void> {
-    const clientName = (this.knex.client as any)?.config?.client;
+    const clientName = (this._knex.client as any)?.config?.client;
     if (clientName === "better-sqlite3") {
       // WAL mode: readers don't block writers; reduces lock contention between
       // the dev-mode scheduler process and the SvelteKit server process.
-      await this.knex.raw("PRAGMA journal_mode = WAL");
+      await this._knex.raw("PRAGMA journal_mode = WAL");
       // Retry for up to 5 s when another process holds a write lock.
-      await this.knex.raw("PRAGMA busy_timeout = 5000");
+      await this._knex.raw("PRAGMA busy_timeout = 5000");
     }
   }
 
   async close(): Promise<void> {
-    return await this.knex.destroy();
+    return await this._knex.destroy();
   }
 }
 

@@ -11,6 +11,7 @@
   import * as Select from "$lib/components/ui/select/index.js";
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import * as RadioGroup from "$lib/components/ui/radio-group/index.js";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import SaveIcon from "@lucide/svelte/icons/save";
   import Loader from "@lucide/svelte/icons/loader";
   import TrashIcon from "@lucide/svelte/icons/trash";
@@ -47,6 +48,11 @@
   let loading = $state(true);
   let saving = $state(false);
   let error = $state<string | null>(null);
+
+  // Delete dialog state
+  let deleteMaintenanceDialogOpen = $state(false);
+  let deleteEventDialogOpen = $state(false);
+  let eventIdToDelete = $state<number | null>(null);
 
   // Schedule type for UI switching
   type ScheduleType = "ONE_TIME" | "RECURRING";
@@ -368,8 +374,6 @@
 
   // Delete maintenance
   async function deleteMaintenance() {
-    if (!confirm($t("manage.maintenance_detail.delete_confirm"))) return;
-
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
@@ -389,8 +393,16 @@
   }
 
   // Delete event
-  async function deleteEvent(eventId: number) {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+  function openDeleteEventDialog(eventId: number) {
+    eventIdToDelete = eventId;
+    deleteEventDialogOpen = true;
+  }
+
+  async function deleteEvent() {
+    if (eventIdToDelete === null) return;
+    const eventId = eventIdToDelete;
+    deleteEventDialogOpen = false;
+    eventIdToDelete = null;
 
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
@@ -406,7 +418,7 @@
         await fetchEvents();
       }
     } catch {
-      toast.error("Failed to delete event");
+      toast.error($t("manage.maintenance_detail.delete_error"));
     }
   }
 
@@ -787,7 +799,7 @@
       </Card.Content>
       <Card.Footer class="flex justify-end gap-2">
         {#if !isNew}
-          <Button variant="destructive" onclick={deleteMaintenance}>
+          <Button variant="destructive" onclick={() => (deleteMaintenanceDialogOpen = true)}>
             <TrashIcon class="size-4" />
             {$t("manage.maintenance_detail.delete_button")}
           </Button>
@@ -847,7 +859,7 @@
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" onclick={() => deleteEvent(event.id)}>
+                  <Button variant="ghost" size="icon" onclick={() => openDeleteEventDialog(event.id)}>
                     <TrashIcon class="size-4" />
                   </Button>
                 </div>
@@ -859,3 +871,39 @@
     {/if}
   {/if}
 </div>
+
+<!-- Delete maintenance confirmation dialog -->
+<AlertDialog.Root bind:open={deleteMaintenanceDialogOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>{$t("manage.maintenance_detail.delete_dialog_title")}</AlertDialog.Title>
+      <AlertDialog.Description>
+        {$t("manage.maintenance_detail.delete_dialog_desc")}
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>{$t("manage.common.cancel")}</AlertDialog.Cancel>
+      <AlertDialog.Action onclick={deleteMaintenance}>
+        {$t("manage.common.delete")}
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+
+<!-- Delete event confirmation dialog -->
+<AlertDialog.Root bind:open={deleteEventDialogOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>{$t("manage.maintenance_detail.delete_event_dialog_title")}</AlertDialog.Title>
+      <AlertDialog.Description>
+        {$t("manage.maintenance_detail.delete_event_dialog_desc")}
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>{$t("manage.common.cancel")}</AlertDialog.Cancel>
+      <AlertDialog.Action onclick={deleteEvent}>
+        {$t("manage.common.delete")}
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>

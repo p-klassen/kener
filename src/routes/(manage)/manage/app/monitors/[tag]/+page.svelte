@@ -17,7 +17,8 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import { toast } from "svelte-sonner";
-  import { goto } from "$app/navigation";
+  import { goto, beforeNavigate } from "$app/navigation";
+  import { onMount } from "svelte";
   import type { SiteSubMenuOptions, SiteMonitorDefaults } from "$lib/types/site";
   import { t } from "$lib/stores/i18n";
 
@@ -103,6 +104,9 @@
 
     loading = true;
     error = null;
+    // Reset dirty tracking so the new fetch establishes a fresh baseline
+    isDirty = false;
+    loadedSnapshot = null;
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
@@ -259,6 +263,39 @@
     fetchPages();
     getSiteLevelSharingConfig();
     fetchMonitorDefaults();
+  });
+
+  // Unsaved-changes guard
+  let isDirty = $state(false);
+  // Snapshot of form state captured once loading completes; used to detect mutations
+  let loadedSnapshot = $state<string | null>(null);
+
+  $effect(() => {
+    // Only start tracking after initial load is done
+    if (loading) return;
+    const current = JSON.stringify({ monitor, typeData, uptimeSettings, statusHistoryDays });
+    if (loadedSnapshot === null) {
+      // First time loading completes – capture baseline
+      loadedSnapshot = current;
+      return;
+    }
+    isDirty = current !== loadedSnapshot;
+  });
+
+  beforeNavigate(({ cancel }) => {
+    if (isDirty && !confirm("You have unsaved changes. Leave anyway?")) cancel();
+  });
+
+  onMount(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (isDirty) {
+        e.preventDefault();
+        // Legacy support: some browsers require returnValue to be set
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   });
 
   let activeAccordionItem = $derived<string>(isNew ? "general" : "configuration");

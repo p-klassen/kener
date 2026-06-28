@@ -11,7 +11,12 @@ export function redisIOConnection(): IORedis {
     if (!process.env.REDIS_URL) {
       throw new Error("REDIS_URL is not defined in environment variables");
     }
-    redisIOClient = new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
+    redisIOClient = new IORedis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+      connectTimeout: 5000,
+      commandTimeout: 5000,
+    });
+    redisIOClient.on("error", (err) => console.error("[Redis] Connection error:", err));
   }
   return redisIOClient;
 }
@@ -21,7 +26,12 @@ export function redisConnection(): Redis {
     if (!process.env.REDIS_URL) {
       throw new Error("REDIS_URL is not defined in environment variables");
     }
-    redisClient = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
+    redisClient = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: null,
+      connectTimeout: 5000,
+      commandTimeout: 5000,
+    });
+    redisClient.on("error", (err) => console.error("[Redis] Connection error:", err));
   }
   return redisClient;
 }

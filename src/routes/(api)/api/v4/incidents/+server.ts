@@ -20,11 +20,20 @@ function formatDateToISO(date: Date | string): string {
   return parsed.toISOString();
 }
 
+const MAX_INCIDENTS_LIMIT = 200;
+const DEFAULT_INCIDENTS_LIMIT = 50;
+
 export const GET: RequestHandler = async ({ url }) => {
   // Parse query params for filtering
   const startTsParam = url.searchParams.get("start_ts");
   const endTsParam = url.searchParams.get("end_ts");
   const monitorTagsParam = url.searchParams.get("monitor_tags");
+
+  // Pagination params
+  const pageParam = url.searchParams.get("page");
+  const limitParam = url.searchParams.get("limit");
+  const page = Math.max(1, pageParam ? parseInt(pageParam, 10) : 1);
+  const limit = Math.min(MAX_INCIDENTS_LIMIT, Math.max(1, limitParam ? parseInt(limitParam, 10) : DEFAULT_INCIDENTS_LIMIT));
 
   const startTs = startTsParam ? parseInt(startTsParam, 10) : undefined;
   const endTs = endTsParam ? parseInt(endTsParam, 10) : undefined;
@@ -39,10 +48,9 @@ export const GET: RequestHandler = async ({ url }) => {
     filter.end = endTs;
   }
 
-  // Get incidents with pagination (use large limit for API)
-  let rawIncidents = await db.getIncidentsPaginated(1, 1000, filter.start || filter.end ? filter : null);
+  let rawIncidents = await db.getIncidentsPaginated(page, limit, filter.start || filter.end ? filter : null);
 
-  // If filtering by monitor tags, we need to filter the results
+  // If filtering by monitor tags, filter results (post-filter — use monitor_tags for server-side join when available)
   if (monitorTags && monitorTags.length > 0) {
     const filteredIncidents = [];
     for (const incident of rawIncidents) {
@@ -75,8 +83,9 @@ export const GET: RequestHandler = async ({ url }) => {
     });
   }
 
-  const response: GetIncidentsListResponse = {
+  const response: GetIncidentsListResponse & { pagination: { page: number; limit: number } } = {
     incidents,
+    pagination: { page, limit },
   };
 
   return json(response);

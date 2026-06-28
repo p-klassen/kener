@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import * as Item from "$lib/components/ui/item/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
   import EventsCard from "$lib/components/EventsCard.svelte";
   import MonitorBar from "$lib/components/MonitorBar.svelte";
   import ThemePlus from "$lib/components/ThemePlus.svelte";
@@ -15,6 +16,7 @@
   import { requestMonitorBar } from "$lib/client/monitor-bar-client";
   import type { MonitorBarResponse } from "$lib/server/api-server/monitor-bar/get";
   import { SveltePurify } from "@humanspeak/svelte-purify";
+  import LockIcon from "@lucide/svelte/icons/lock";
 
   let { data } = $props();
   let pageSettings = $derived(data.pageDetails.page_settings);
@@ -145,12 +147,12 @@
 <!-- page title -->
 {#if data.locked && data.lockedMode === 'locked'}
   <div class="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
-    <span class="text-5xl" aria-hidden="true">🔒</span>
+    <LockIcon class="text-muted-foreground size-12" aria-hidden="true" />
     <h2 class="text-xl font-semibold">{$t("page.locked.title")}</h2>
     <p class="text-muted-foreground text-sm">{$t("page.locked.desc")}</p>
-    <a href={clientResolver(resolve, "/account/signin")} class="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium">
+    <Button href={clientResolver(resolve, "/account/signin")} variant="default">
       {$t("page.locked.sign_in")}
-    </a>
+    </Button>
   </div>
 {:else if data.locked && data.lockedMode === 'teaser'}
   <div class="flex flex-col gap-3 sm:gap-4">

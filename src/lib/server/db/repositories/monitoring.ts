@@ -301,7 +301,7 @@ export class MonitoringRepository extends BaseRepository {
       .from("last_records")
       .first();
 
-    return result.is_affected === 1;
+    return result?.is_affected === 1;
   }
 
   async consecutivelyLatencyLessThan(monitor_tag: string, latencyThreshold: number, lastX: number): Promise<boolean> {
@@ -323,7 +323,7 @@ export class MonitoringRepository extends BaseRepository {
       .from("last_records")
       .first();
 
-    return result.is_recovered === 1;
+    return result?.is_recovered === 1;
   }
 
   async updateMonitoringData(

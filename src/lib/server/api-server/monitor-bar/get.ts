@@ -45,10 +45,14 @@ export default async function get(req: APIServerRequest): Promise<Response> {
   }
 
   const monitor = await db.getMonitorByTag(tag);
-  if (!monitor) {
+  if (!monitor || monitor.is_public !== 1) {
     return error(404, { message: "Monitor not found" });
   }
-  const response = await buildMonitorBarResponse(monitor, days, endOfDayTodayAtTz);
+
+  const now = Math.floor(Date.now() / 1000);
+  const clampedEndOfDay = Math.min(Math.max(endOfDayTodayAtTz, now - 30 * 86400), now + 30 * 86400);
+
+  const response = await buildMonitorBarResponse(monitor, days, clampedEndOfDay);
 
   return json(response);
 }

@@ -32,6 +32,10 @@ export default async function post(req: APIServerRequest): Promise<Response> {
     return error(400, { message: "end_ts is required and must be a number" });
   }
 
+  if (body.end_ts - body.start_ts > 31 * 86400) {
+    return error(400, { message: "Requested range exceeds the maximum allowed 31 days" });
+  }
+
   // get site data
   const siteData = await GetAllSiteData();
   const { globalPageVisibilitySettings } = siteData;

@@ -1,5 +1,6 @@
 export const DefaultAPIEval = `async function (statusCode, responseTime, responseRaw, modules) {
 	let statusCodeShort = Math.floor(statusCode/100);
+    // 429 (Too Many Requests) treated as UP: server is alive but rate-limiting, not a service outage
     if(statusCode == 429 || (statusCodeShort >=2 && statusCodeShort <= 3)) {
         return {
 			status: 'UP',

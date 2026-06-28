@@ -53,13 +53,18 @@ export default async function get(req: APIServerRequest): Promise<Response> {
     return error(400, { message: `Maximum ${MAX_TAGS} tags are allowed` });
   }
 
-  const startTime = endOfDayTodayAtTz - days * 24 * 60 * 60;
+  const now = Math.floor(Date.now() / 1000);
+  const clampedEndOfDay = Math.min(Math.max(endOfDayTodayAtTz, now - 30 * 86400), now + 30 * 86400);
+  const startTime = clampedEndOfDay - days * 24 * 60 * 60;
 
-  const [monitors, latestDataAll, aggregatedData] = await Promise.all([
+  const [allMonitors, latestDataAll, aggregatedData] = await Promise.all([
     db.getMonitorsByTags(tags),
     GetLatestMonitoringDataAllActive(tags),
     GetStatusCountsByIntervalGroupedByMonitor(tags, startTime, 86400, days),
   ]);
+
+  // Only expose public monitors
+  const monitors = allMonitors.filter((m) => m.is_public === 1);
 
   const latestStatusByTag = new Map<string, StatusType>(
     latestDataAll.map((d) => [d.monitor_tag, (d.status as StatusType) || GC.NO_DATA]),
@@ -96,7 +101,7 @@ export default async function get(req: APIServerRequest): Promise<Response> {
           monitor,
           aggregatedByTag.get(tag) || [],
           days,
-          endOfDayTodayAtTz,
+          clampedEndOfDay,
           latestStatusByTag.get(tag) || GC.NO_DATA,
         );
         return { tag, payload };

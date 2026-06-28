@@ -8,6 +8,8 @@ import type {
   BadRequestResponse,
 } from "$lib/types/api";
 
+const VALID_TRIGGER_TYPES = ["webhook", "email", "discord", "slack"] as const;
+
 function formatDateToISO(date: Date | string): string {
   if (date instanceof Date) {
     return date.toISOString();
@@ -61,6 +63,13 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
   if ("name" in body) {
     return json(
       { error: { code: "BAD_REQUEST", message: "Trigger name cannot be changed after creation" } },
+      { status: 400 },
+    );
+  }
+
+  if (body.trigger_type !== undefined && !(VALID_TRIGGER_TYPES as readonly string[]).includes(body.trigger_type)) {
+    return json(
+      { error: { code: "BAD_REQUEST", message: `trigger_type must be one of: ${VALID_TRIGGER_TYPES.join(", ")}` } },
       { status: 400 },
     );
   }

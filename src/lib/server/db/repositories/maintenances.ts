@@ -84,6 +84,30 @@ export class MaintenancesRepository extends BaseRepository {
       .offset((page - 1) * limit);
   }
 
+  async getMaintenancesAfterIdPaginated(
+    lastId: number,
+    limit: number,
+    filter?: MaintenanceFilter,
+  ): Promise<MaintenanceRecord[]> {
+    let query = this.knex("maintenances").select("*").where("id", ">", lastId);
+
+    if (filter?.status) {
+      query = query.andWhere("status", filter.status);
+    }
+
+    return await query.orderBy("id", "asc").limit(limit);
+  }
+
+  async getMaintenanceEventsByMaintenanceIds(ids: number[]): Promise<MaintenanceEventRecord[]> {
+    if (ids.length === 0) return [];
+    return await this.knex("maintenances_events").whereIn("maintenance_id", ids).orderBy("start_date_time", "asc");
+  }
+
+  async getMaintenanceMonitorsByMaintenanceIds(ids: number[]): Promise<MaintenanceMonitorRecord[]> {
+    if (ids.length === 0) return [];
+    return await this.knex("maintenance_monitors").whereIn("maintenance_id", ids);
+  }
+
   async getMaintenancesCount(filter?: MaintenanceFilter): Promise<CountResult | undefined> {
     let query = this.knex("maintenances").count("id as count").whereRaw("1=1");
 
@@ -333,9 +357,12 @@ export class MaintenancesRepository extends BaseRepository {
         "me.end_date_time as end_date_time",
         "mm.monitor_impact",
       )
-      .innerJoin("maintenance_monitors as mm", "me.maintenance_id", "mm.maintenance_id")
+      .leftJoin("maintenance_monitors as mm", "me.maintenance_id", "mm.maintenance_id")
       .innerJoin("maintenances as m", "me.maintenance_id", "m.id")
-      .where("mm.monitor_tag", monitor_tag)
+      .where(function () {
+        // Match either by explicit monitor assignment or by global maintenance flag
+        this.where("mm.monitor_tag", monitor_tag).orWhere("m.is_global", "YES");
+      })
       .andWhere("me.start_date_time", "<=", timestamp)
       .andWhere("me.end_date_time", ">=", timestamp)
       .whereIn("me.status", [GC.SCHEDULED, GC.READY, GC.ONGOING])

@@ -214,6 +214,10 @@
       addError = "Email is required";
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim())) {
+      addError = "Please enter a valid email address";
+      return;
+    }
 
     addingSubscriber = true;
     addError = "";
@@ -391,8 +395,10 @@
     fetchSubscribers();
   }
 
+  let saveTimer: ReturnType<typeof setTimeout>;
   function handleConfigChange() {
-    saveConfig();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveConfig(), 400);
   }
 
   onMount(() => {
@@ -654,6 +660,9 @@
           bind:value={newEmail}
           disabled={addingSubscriber}
         />
+        {#if addError && !addingSubscriber}
+          <p class="text-destructive text-sm">{addError}</p>
+        {/if}
       </div>
       <div class="space-y-4">
         <div class="flex items-center justify-between">
@@ -671,7 +680,7 @@
           <Switch id="new-maintenances" bind:checked={newMaintenances} disabled={addingSubscriber} />
         </div>
       </div>
-      {#if addError}
+      {#if addError && addingSubscriber}
         <Alert.Root variant="destructive">
           <Alert.Description>{addError}</Alert.Description>
         </Alert.Root>

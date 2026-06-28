@@ -3,6 +3,12 @@ import type { RequestHandler } from "./$types";
 import { importData, type ExportPayload, VALID_EXPORT_SCOPES } from "$lib/server/controllers/exportImportController";
 import type { ImportResultResponse, InternalServerErrorResponse } from "$lib/types/api";
 
+// TODO(H-27): The API key system currently has no per-key permission or role field (see ApiKeyRecord in types/db.ts).
+// Import is a destructive, privileged operation. Once API keys gain a permission/role field (e.g. "admin"
+// or "settings.write"), add a check here: if (!key.is_admin) return 403.
+// For now, access is restricted to any valid API key bearer (enforced by hooks.server.ts).
+// Track this in the product roadmap before exposing the import endpoint publicly.
+
 export const POST: RequestHandler = async ({ request }) => {
 	const contentType = request.headers.get("content-type") ?? "";
 	if (!contentType.includes("application/json")) {

@@ -90,7 +90,7 @@
   </div>
   <div class="bg-background flex flex-col justify-start gap-y-3 rounded-3xl border p-4">
     <div class="relative flex flex-col px-2">
-      <h2 class="text-base font-medium">{$t("Last Updated")}</h2>
+      <p class="text-base font-medium">{$t("Last Updated")}</p>
       <p class="text-muted-foreground text-xs">
         <span>{$formatDate(data.monitorLastStatusTimestamp * 1000, page.data.dateAndTimeFormat.datePlusTime)}</span>
       </p>

@@ -33,25 +33,29 @@ service Health {
 }`;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedProto: any = null;
+let _protoInitPromise: Promise<any> | null = null;
 
-function getHealthProto() {
-  if (!cachedProto) {
-    const tmpDir = mkdtempSync(path.join(tmpdir(), "kener-grpc-"));
-    const protoPath = path.join(tmpDir, "health.proto");
-    writeFileSync(protoPath, HEALTH_PROTO);
-    const packageDef = protoLoader.loadSync(protoPath, {
-      keepCase: true,
-      longs: String,
-      enums: String,
-      defaults: true,
-      oneofs: true,
-    });
-    cachedProto = grpc.loadPackageDefinition(packageDef);
-    unlinkSync(protoPath);
-    rmdirSync(tmpDir);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getHealthProto(): Promise<any> {
+  if (!_protoInitPromise) {
+    _protoInitPromise = (async () => {
+      const tmpDir = mkdtempSync(path.join(tmpdir(), "kener-grpc-"));
+      const protoPath = path.join(tmpDir, "health.proto");
+      writeFileSync(protoPath, HEALTH_PROTO);
+      const packageDef = protoLoader.loadSync(protoPath, {
+        keepCase: true,
+        longs: String,
+        enums: String,
+        defaults: true,
+        oneofs: true,
+      });
+      const proto = grpc.loadPackageDefinition(packageDef);
+      unlinkSync(protoPath);
+      rmdirSync(tmpDir);
+      return proto;
+    })();
   }
-  return cachedProto;
+  return _protoInitPromise;
 }
 
 class GrpcCall {
@@ -69,7 +73,7 @@ class GrpcCall {
     const start = performance.now();
 
     try {
-      const proto = getHealthProto();
+      const proto = await getHealthProto();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const healthService = (proto.grpc as any).health.v1.Health;
 
@@ -82,7 +86,7 @@ class GrpcCall {
           { service: service || "" },
           { deadline },
           (err: grpc.ServiceError | null, response: { status: string }) => {
-            client.close();
+            try { client.close(); } catch (_) {}
             if (err) {
               reject(err);
             } else {

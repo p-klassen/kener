@@ -4,7 +4,7 @@ import type { Knex } from "knex";
 export async function seed(knex: Knex): Promise<void> {
   // Check if the table is empty
   const count = await knex("monitors").count("id as CNT").first();
-  if (count && count.CNT == 0) {
+  if (count && Number(count.CNT) === 0) {
     // Deletes ALL existing entries
     for (const monitor of monitorSeed) {
       await knex("monitors").insert({

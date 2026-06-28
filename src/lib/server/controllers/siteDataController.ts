@@ -160,8 +160,16 @@ export const IsSetupComplete = async (): Promise<boolean> => {
   }
   let data = await db.getAllSiteData();
 
-  if (!data) {
+  if (!data || data.length === 0) {
     return false;
   }
-  return data.length > 0;
+
+  // Require at least one owner account to be present
+  const users = await db.getAllUsers();
+  const hasOwner = users.some((u) => u.is_owner === "YES");
+  if (!hasOwner) {
+    return false;
+  }
+
+  return true;
 };

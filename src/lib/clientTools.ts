@@ -324,9 +324,8 @@ function GetStatusSummary(item: TimestampStatusCount): string {
   const downPercent = (item.countOfDown / total) * 100;
   const degradedPercent = (item.countOfDegraded / total) * 100;
 
-  if (maintenancePercent > 0) {
-    return PAGE_STATUS_MESSAGES.UNDER_MAINTENANCE;
-  } else if (downPercent >= 75) {
+  // DOWN outages take priority over maintenance status
+  if (downPercent >= 75) {
     return PAGE_STATUS_MESSAGES.MAJOR_OUTAGE;
   } else if (downPercent >= 50) {
     return PAGE_STATUS_MESSAGES.PARTIAL_OUTAGE;
@@ -338,6 +337,9 @@ function GetStatusSummary(item: TimestampStatusCount): string {
     return PAGE_STATUS_MESSAGES.PARTIAL_DEGRADED;
   } else if (item.countOfDegraded > 0) {
     return PAGE_STATUS_MESSAGES.PARTIAL_DEGRADED;
+  } else if (maintenancePercent > 0) {
+    // Only report maintenance when no DOWN or DEGRADED monitors exist
+    return PAGE_STATUS_MESSAGES.UNDER_MAINTENANCE;
   } else if (item.countOfUp === total) {
     return PAGE_STATUS_MESSAGES.ALL_OPERATIONAL;
   }

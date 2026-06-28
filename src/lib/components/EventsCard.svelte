@@ -13,7 +13,7 @@
 </script>
 
 <div class="flex flex-col gap-3 lg:flex-row">
-  <div class="flex min-h-20 w-full flex-row justify-start gap-y-3 rounded-3xl border p-4 lg:w-full lg:min-w-72">
+  <div class="flex w-full flex-row justify-start gap-y-3 rounded-3xl border p-4 lg:w-full">
     <div class="flex w-full flex-row items-center gap-4">
       <div class="relative flex justify-between">
         <span class="relative flex size-4">

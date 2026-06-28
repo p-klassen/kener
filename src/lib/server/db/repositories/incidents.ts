@@ -707,6 +707,27 @@ export class IncidentsRepository extends BaseRepository {
       .where("incident_id", incident_id);
   }
 
+  async getIncidentMonitorsByIncidentIds(
+    incident_ids: number[],
+  ): Promise<Array<{ incident_id: number; monitor_tag: string; monitor_impact: string | null }>> {
+    if (incident_ids.length === 0) return [];
+    return await this.knex("incident_monitors")
+      .select("incident_id", "monitor_tag", "monitor_impact")
+      .whereIn("incident_id", incident_ids);
+  }
+
+  async getActiveIncidentCommentsByIncidentIds(
+    incident_ids: number[],
+  ): Promise<IncidentCommentRecord[]> {
+    if (incident_ids.length === 0) return [];
+    return await this.knex("incident_comments")
+      .select("*")
+      .whereIn("incident_id", incident_ids)
+      .andWhere("status", "ACTIVE")
+      .orderBy("commented_at", "desc")
+      .orderBy("id", "desc");
+  }
+
   async getIncidentMonitors(filter?: { incident_id?: number; monitor_tag?: string }): Promise<IncidentMonitorRecord[]> {
     let query = this.knex("incident_monitors").select("*");
 

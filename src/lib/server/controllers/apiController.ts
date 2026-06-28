@@ -1,5 +1,6 @@
 import db from "../db/db.js";
 import crypto from "crypto";
+// synchronous, returns string directly
 import { MaskString, CreateHash } from "./commonController.js";
 
 interface ApiKeyInput {
@@ -23,7 +24,7 @@ function generateApiKey() {
 export const CreateNewAPIKey = async (data: ApiKeyInput): Promise<{ apiKey: string; name: string }> => {
   //generate a new key
   const apiKey = generateApiKey();
-  const hashed_key = await CreateHash(apiKey);
+  const hashed_key = CreateHash(apiKey);
   //insert into db
 
   //data.name cant be empty

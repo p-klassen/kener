@@ -130,6 +130,9 @@
   let deleteTarget = $state<UserRecordDashboard | null>(null);
   let deleting = $state(false);
 
+  // Subscriber type-change confirmation state
+  let showSubscriberConfirmDialog = $state(false);
+
   // Inline activate/deactivate state
   let togglingActiveId = $state<number | null>(null);
 
@@ -286,8 +289,8 @@
     showSettingsSheet = true;
   }
 
-  // Resend invitation email
-  async function resendInvitationEmail(email: string) {
+  // Resend invitation email; returns true on success
+  async function resendInvitationEmail(email: string): Promise<boolean> {
     try {
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
@@ -300,11 +303,14 @@
       const result = await response.json();
       if (!response.ok || result.error) {
         toast.error(result.error || $t("manage.users.toast_resend_error"));
+        return false;
       } else {
         toast.success($t("manage.users.toast_resend_success"));
+        return true;
       }
     } catch (error) {
       toast.error($t("manage.users.toast_resend_error"));
+      return false;
     }
   }
 
@@ -326,7 +332,7 @@
       }
       toast.success($t("manage.users.toast_verify_success"));
     } catch (error) {
-      const message = error instanceof Error ? error.message : $t("manage.users.toast_verify_success");
+      const message = error instanceof Error ? error.message : "Failed to send verification email";
       toast.error(message);
     } finally {
       sendingSelfVerification = false;
@@ -739,6 +745,35 @@
   </Dialog.Content>
 </Dialog.Root>
 
+<!-- Subscriber Type-Change Confirmation Dialog -->
+<Dialog.Root bind:open={showSubscriberConfirmDialog}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>{$t("manage.users.account_type_subscriber")}</Dialog.Title>
+      <Dialog.Description>
+        {$t("manage.users.change_to_subscriber_confirm")}
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => (showSubscriberConfirmDialog = false)}>
+        {$t("manage.common.cancel")}
+      </Button>
+      <Button
+        variant="destructive"
+        onclick={() => {
+          showSubscriberConfirmDialog = false;
+          if (toEditUser) {
+            toEditUser.user_type = "subscriber";
+            manualUpdateData("user_type");
+          }
+        }}
+      >
+        {$t("manage.users.account_type_subscriber")}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
 <!-- Add User Dialog -->
 <Dialog.Root bind:open={showAddUserDialog}>
   <Dialog.Content class="sm:max-w-md">
@@ -880,9 +915,9 @@
                   onclick={async () => {
                     toEditUser!.actions.resendingInvitation = true;
                     manualSuccess = "";
-                    await resendInvitationEmail(toEditUser!.email);
+                    const ok = await resendInvitationEmail(toEditUser!.email);
                     toEditUser!.actions.resendingInvitation = false;
-                    manualSuccess = "Invitation email resent successfully";
+                    if (ok) manualSuccess = "Invitation email resent successfully";
                   }}
                 >
                   {#if toEditUser.actions.resendingInvitation}
@@ -960,10 +995,7 @@
                   size="sm"
                   onclick={() => {
                     if (toEditUser!.user_type !== "subscriber") {
-                      if (confirm($t("manage.users.change_to_subscriber_confirm"))) {
-                        toEditUser!.user_type = "subscriber";
-                        manualUpdateData("user_type");
-                      }
+                      showSubscriberConfirmDialog = true;
                     }
                   }}
                 >{$t("manage.users.account_type_subscriber")}</Button>

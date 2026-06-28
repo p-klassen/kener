@@ -192,26 +192,22 @@
   async function fetchIncidentMonitors() {
     if (isNew) return;
     try {
-      // We get monitors from the getIncident response - need to fetch full incident data
       const response = await fetch(clientResolver(resolve, "/manage/api"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "getIncidents",
-          data: { page: 1, limit: 100, filter: { status: "ALL" } }
+          action: "getIncidentMonitors",
+          data: { incident_id: parseInt(params.incident_id) }
         })
       });
       const result = await response.json();
-      if (!result.error && result.incidents) {
-        const found = result.incidents.find((i: any) => i.id === parseInt(params.incident_id));
-        if (found && found.monitors) {
-          incidentMonitors = found.monitors.map((m: any) => ({
-            monitor_tag: m.tag || m.monitor_tag,
-            monitor_impact: m.impact_type || m.monitor_impact
-          }));
-          // Store original monitors to compare on save
-          originalMonitors = [...incidentMonitors];
-        }
+      if (!result.error && Array.isArray(result)) {
+        incidentMonitors = result.map((m: any) => ({
+          monitor_tag: m.monitor_tag,
+          monitor_impact: m.monitor_impact
+        }));
+        // Store original monitors to compare on save
+        originalMonitors = [...incidentMonitors];
       }
     } catch {
       // Ignore errors
@@ -268,35 +264,51 @@
 
           // Add monitors
           for (const monitor of incidentMonitors) {
-            await fetch(clientResolver(resolve, "/manage/api"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "addMonitor",
-                data: {
-                  incident_id: incidentId,
-                  monitor_tag: monitor.monitor_tag,
-                  monitor_impact: monitor.monitor_impact
-                }
-              })
-            });
+            try {
+              const monitorResp = await fetch(clientResolver(resolve, "/manage/api"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "addMonitor",
+                  data: {
+                    incident_id: incidentId,
+                    monitor_tag: monitor.monitor_tag,
+                    monitor_impact: monitor.monitor_impact
+                  }
+                })
+              });
+              const monitorResult = await monitorResp.json();
+              if (monitorResult.error) {
+                toast.warning(`Monitor ${monitor.monitor_tag}: ${monitorResult.error}`);
+              }
+            } catch {
+              toast.warning($t("manage.incident_detail.monitor_add_error"));
+            }
           }
 
           // Add first comment if provided
           if (firstComment.trim()) {
-            await fetch(clientResolver(resolve, "/manage/api"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "addComment",
-                data: {
-                  incident_id: incidentId,
-                  comment: firstComment,
-                  state: GC.INVESTIGATING,
-                  commented_at: incident.start_date_time
-                }
-              })
-            });
+            try {
+              const commentResp = await fetch(clientResolver(resolve, "/manage/api"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "addComment",
+                  data: {
+                    incident_id: incidentId,
+                    comment: firstComment,
+                    state: GC.INVESTIGATING,
+                    commented_at: incident.start_date_time
+                  }
+                })
+              });
+              const commentResult = await commentResp.json();
+              if (commentResult.error) {
+                toast.warning($t("manage.incident_detail.update_save_error"));
+              }
+            } catch {
+              toast.warning($t("manage.incident_detail.update_save_error"));
+            }
           }
           toast.success($t("manage.incident_detail.created_toast"));
           goto(clientResolver(resolve, `/manage/app/incidents/${incidentId}`));
@@ -515,8 +527,8 @@
           toast.error(result.error);
         } else {
           toast.success($t("manage.incident_detail.update_saved_toast"));
+          incident.state = commentState;
           await fetchComments();
-          await fetchIncident();
           cancelEditComment();
         }
       } else {
@@ -539,8 +551,8 @@
           toast.error(result.error);
         } else {
           toast.success($t("manage.incident_detail.update_added_toast"));
+          incident.state = commentState;
           await fetchComments();
-          await fetchIncident();
           cancelAddComment();
         }
       }

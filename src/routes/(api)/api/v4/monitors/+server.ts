@@ -1,4 +1,5 @@
 import { json, type RequestHandler } from "@sveltejs/kit";
+import { Cron } from "croner";
 import db from "$lib/server/db/db";
 import type {
   GetMonitorsListResponse,
@@ -10,6 +11,19 @@ import type {
 import type { MonitorRecord } from "$lib/server/types/db";
 import { GetMonitorsParsed } from "$lib/server/controllers/monitorsController";
 
+const VALID_MONITOR_TYPES = ["API", "PING", "TCP", "DNS", "SSL", "SQL", "HEARTBEAT", "GAMEDIG", "GROUP", "GRPC", "NONE"] as const;
+const VALID_IS_HIDDEN = ["YES", "NO"] as const;
+const VALID_STATUS = ["ACTIVE", "INACTIVE"] as const;
+
+function isValidCron(cron: string): boolean {
+  try {
+    new Cron(cron, { maxRuns: 0 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function formatDateToISO(date: Date | string): string {
   if (date instanceof Date) {
     return date.toISOString();
@@ -20,10 +34,24 @@ function formatDateToISO(date: Date | string): string {
 }
 
 export const GET: RequestHandler = async ({ url }) => {
-  const status = url.searchParams.get("status") || undefined;
+  const statusParam = url.searchParams.get("status") || undefined;
   const category_name = url.searchParams.get("category_name") || undefined;
-  const monitor_type = url.searchParams.get("monitor_type") || undefined;
-  const is_hidden = url.searchParams.get("is_hidden") || undefined;
+  const monitor_typeParam = url.searchParams.get("monitor_type") || undefined;
+  const is_hiddenParam = url.searchParams.get("is_hidden") || undefined;
+
+  if (is_hiddenParam !== undefined && !(VALID_IS_HIDDEN as readonly string[]).includes(is_hiddenParam)) {
+    return json({ error: { code: "BAD_REQUEST", message: `is_hidden must be one of: ${VALID_IS_HIDDEN.join(", ")}` } }, { status: 400 });
+  }
+  if (statusParam !== undefined && !(VALID_STATUS as readonly string[]).includes(statusParam)) {
+    return json({ error: { code: "BAD_REQUEST", message: `status must be one of: ${VALID_STATUS.join(", ")}` } }, { status: 400 });
+  }
+  if (monitor_typeParam !== undefined && !(VALID_MONITOR_TYPES as readonly string[]).includes(monitor_typeParam)) {
+    return json({ error: { code: "BAD_REQUEST", message: `monitor_type must be one of: ${VALID_MONITOR_TYPES.join(", ")}` } }, { status: 400 });
+  }
+
+  const status = statusParam;
+  const monitor_type = monitor_typeParam;
+  const is_hidden = is_hiddenParam;
 
   const rawMonitors = await GetMonitorsParsed({
     status,
@@ -84,6 +112,28 @@ export const POST: RequestHandler = async ({ request }) => {
       error: {
         code: "BAD_REQUEST",
         message: "Name is required and must be a non-empty string",
+      },
+    };
+    return json(errorResponse, { status: 400 });
+  }
+
+  // Validate monitor_type if provided
+  if (body.monitor_type != null && !(VALID_MONITOR_TYPES as readonly string[]).includes(body.monitor_type)) {
+    const errorResponse: BadRequestResponse = {
+      error: {
+        code: "BAD_REQUEST",
+        message: `monitor_type must be one of: ${VALID_MONITOR_TYPES.join(", ")}`,
+      },
+    };
+    return json(errorResponse, { status: 400 });
+  }
+
+  // Validate cron expression if provided
+  if (body.cron !== undefined && body.cron !== null && !isValidCron(body.cron)) {
+    const errorResponse: BadRequestResponse = {
+      error: {
+        code: "BAD_REQUEST",
+        message: "cron is not a valid cron expression",
       },
     };
     return json(errorResponse, { status: 400 });

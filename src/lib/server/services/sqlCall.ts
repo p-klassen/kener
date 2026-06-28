@@ -40,17 +40,23 @@ class SqlCall {
       // Initialize knex
       knexInstance = Knex(config);
 
-      // Set up a timeout for the query execution
-      let timeoutHandle: ReturnType<typeof setTimeout>;
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutHandle = setTimeout(() => reject(new Error("Query timeout")), timeout);
-      });
-
-      // Execute query; clear the timeout handle when it resolves or rejects
-      const queryPromise = knexInstance.raw(query).finally(() => clearTimeout(timeoutHandle!));
-
-      // Race the promises to handle timeouts
-      await Promise.race([queryPromise, timeoutPromise]);
+      if (client === "sqlite3" || client === "better-sqlite3") {
+        // SQLite does not support server-side query cancellation via the Knex timeout
+        // option, so we fall back to Promise.race. The query will continue running in
+        // the background after the timeout fires, but connection cleanup in `finally`
+        // will still occur.
+        let timeoutHandle: ReturnType<typeof setTimeout>;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error("Query timeout")), timeout);
+        });
+        const queryPromise = knexInstance.raw(query).finally(() => clearTimeout(timeoutHandle!));
+        await Promise.race([queryPromise, timeoutPromise]);
+      } else {
+        // For MySQL and PostgreSQL, Knex supports a built-in timeout with { cancel: true }
+        // which sends a KILL QUERY / pg_cancel_backend() so the query is actually stopped
+        // on the server rather than merely abandoned client-side.
+        await knexInstance.raw(query).timeout(timeout, { cancel: true });
+      }
 
       // Calculate latency
       const latency = Math.round(performance.now() - startTime);

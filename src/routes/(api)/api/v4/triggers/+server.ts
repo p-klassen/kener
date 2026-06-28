@@ -17,6 +17,8 @@ function formatDateToISO(date: Date | string): string {
   return parsed.toISOString();
 }
 
+const VALID_TRIGGER_TYPES = ["webhook", "email", "discord", "slack"] as const;
+
 function formatTrigger(t: TriggerRecord) {
   let meta: Record<string, unknown> = {};
   try {
@@ -64,6 +66,12 @@ export const POST: RequestHandler = async ({ request }) => {
   }
   if (!body.trigger_type || typeof body.trigger_type !== "string" || body.trigger_type.trim().length === 0) {
     return json({ error: { code: "BAD_REQUEST", message: "trigger_type is required" } }, { status: 400 });
+  }
+  if (!(VALID_TRIGGER_TYPES as readonly string[]).includes(body.trigger_type.trim())) {
+    return json(
+      { error: { code: "BAD_REQUEST", message: `trigger_type must be one of: ${VALID_TRIGGER_TYPES.join(", ")}` } },
+      { status: 400 },
+    );
   }
 
   // Check for duplicate name

@@ -3,7 +3,7 @@ import type { RequestHandler } from "./$types";
 import { exportData, type ExportScope, VALID_EXPORT_SCOPES } from "$lib/server/controllers/exportImportController";
 import type { InternalServerErrorResponse } from "$lib/types/api";
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, request }) => {
 	const scopeParam = url.searchParams.get("scope") ?? "everything";
 
 	if (!VALID_EXPORT_SCOPES.includes(scopeParam as ExportScope)) {
@@ -20,6 +20,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	try {
 		const payload = await exportData(scopeParam as ExportScope);
+		console.log("[export] Export triggered - scope:", scopeParam, "ip:", request.headers.get("x-forwarded-for") || "unknown");
 		return json(payload);
 	} catch (err) {
 		const errorResponse: InternalServerErrorResponse = {

@@ -25,7 +25,7 @@
         return "down";
       case "INFO":
       default:
-        return "muted";
+        return "border";
     }
   });
 

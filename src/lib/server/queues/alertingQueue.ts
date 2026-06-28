@@ -184,7 +184,8 @@ async function sendAlertNotifications(
         triggerMetaParsed.url,
       );
     } else {
-      throw new Error("Unsupported trigger type for testing");
+      console.warn('[alerting] Unknown trigger type, skipping:', trigger.trigger_type);
+      continue;
     }
   }
 }
@@ -202,9 +203,17 @@ const addWorker = () => {
   worker = q.createWorker(getQueue(), async (job: Job): Promise<void> => {
     const { monitor_name, monitor_tag, numerator, denominator, status, monitor_alerts_configured } =
       job.data as JobData;
-    const siteData = await GetAllSiteData();
-    const templateSiteVars = siteDataToVariables(siteData);
+
+    // Suppress alerting during active maintenance windows
+    const nowTs = Math.floor(Date.now() / 1000);
+    const activeMaintenances = await db.getMaintenancesByMonitorTagRealtime(monitor_tag, nowTs);
+    if (activeMaintenances.length > 0) {
+      return;
+    }
+
     try {
+      const siteData = await GetAllSiteData();
+      const templateSiteVars = siteDataToVariables(siteData);
       const typeOfConfig = monitor_alerts_configured.alert_for;
       const alertValue = monitor_alerts_configured.alert_value;
       const failureThreshold = monitor_alerts_configured.failure_threshold;
@@ -221,8 +230,8 @@ const addWorker = () => {
       } else if (typeOfConfig === GC.UPTIME) {
         isAffected = await IsUptimeLessThanXPercent(
           monitor_tag,
-          parseFloat(alertValue),
           failureThreshold,
+          parseFloat(alertValue),
           numerator,
           denominator,
         );
@@ -271,8 +280,8 @@ const addWorker = () => {
           } else if (typeOfConfig === GC.UPTIME) {
             isUp = await IsUptimeGreaterThanXPercent(
               monitor_tag,
-              parseFloat(alertValue),
               successThreshold,
+              parseFloat(alertValue),
               numerator,
               denominator,
             );

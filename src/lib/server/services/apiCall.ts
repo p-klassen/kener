@@ -12,12 +12,23 @@ import type { ApiMonitor, EvalResponse, MonitoringResult } from "../types/monito
 class ApiCall {
   monitor: ApiMonitor;
   envSecrets: Array<{ find: string; replace: string | undefined }>;
+  // Two agents cover both rejectUnauthorized values; chosen per request to avoid per-call allocation.
+  private agentStrict: https.Agent;
+  private agentPermissive: https.Agent;
 
   constructor(monitor: ApiMonitor) {
     this.monitor = monitor;
     this.envSecrets = GetRequiredSecrets(
       `${monitor.type_data.url} ${monitor.type_data.body || ""} ${JSON.stringify(monitor.type_data.headers || [])}`,
     );
+    const sharedOptions: https.AgentOptions = {
+      keepAlive: true,
+      keepAliveMsecs: 30000,
+      maxSockets: 50,
+      maxFreeSockets: 10,
+    };
+    this.agentStrict = new https.Agent({ ...sharedOptions, rejectUnauthorized: true });
+    this.agentPermissive = new https.Agent({ ...sharedOptions, rejectUnauthorized: false });
   }
 
   async execute(): Promise<MonitoringResult> {
@@ -77,17 +88,10 @@ class ApiCall {
       maxBodyLength: Infinity,
     };
 
-    // Always configure HTTPS agent for better connection handling
-    const httpsAgentOptions: https.AgentOptions = {
-      keepAlive: true,
-      keepAliveMsecs: 30000,
-      maxSockets: 50,
-      maxFreeSockets: 10,
-      timeout: timeout,
-      rejectUnauthorized: !this.monitor.type_data.allowSelfSignedCert,
-    };
-
-    options.httpsAgent = new https.Agent(httpsAgentOptions);
+    // Reuse pre-allocated agents; choose based on allowSelfSignedCert setting.
+    options.httpsAgent = this.monitor.type_data.allowSelfSignedCert
+      ? this.agentPermissive
+      : this.agentStrict;
 
     if (!!body) {
       options.data = body;
@@ -109,8 +113,8 @@ class ApiCall {
         response?: { status?: number; data?: string };
       };
       errorMessage = error.message || "Unknown error";
-      // Better timeout detection
-      if (error.code === "ECONNABORTED" || (error.message && error.message.includes("timeout"))) {
+      // Better timeout detection: ECONNABORTED (axios), ETIMEDOUT (OS-level), or message fallback
+      if (['ECONNABORTED', 'ETIMEDOUT'].includes(error.code ?? '') || (error.message && error.message.includes("timeout"))) {
         timeoutError = true;
         errorMessage = "Request timed out";
       }

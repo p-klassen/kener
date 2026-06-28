@@ -79,9 +79,9 @@
   });
 </script>
 
-<div class="theme-plus-bar scrollbar-hidden sticky top-18 z-20 flex w-full items-center gap-2 rounded py-2">
+<div class="theme-plus-bar scrollbar-hidden sticky top-[var(--nav-height)] z-20 flex w-full items-center gap-2 rounded py-2">
   <!-- Show the switcher if not forced exclusivity and switcher is enabled -->
-  {#if !!!page.data.globalPageVisibilitySettings.forceExclusivity && page.data.globalPageVisibilitySettings.showSwitcher}
+  {#if !page.data.globalPageVisibilitySettings.forceExclusivity && page.data.globalPageVisibilitySettings.showSwitcher}
     <PageSelector />
   {/if}
   <div class="ml-auto flex shrink-0 items-center gap-2">
@@ -141,7 +141,7 @@
           variant="outline"
           size="sm"
           onclick={toggleMode}
-          aria-label="toggle theme mode "
+          aria-label="toggle theme mode"
           class="bg-background/80 dark:bg-background/70 border-foreground/10 relative rounded-full border shadow-none backdrop-blur-md"
         >
           <Sun class="absolute left-2  scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />

@@ -14,6 +14,7 @@ const getSSLExpiry = (domain: string, port: number = 443): Promise<SSLExpiryResu
   return new Promise((resolve, reject) => {
     const startTime = performance.now();
     const socket = tls.connect(port, domain, { servername: domain }, () => {
+      clearTimeout(timer);
       const { valid_to } = socket.getPeerCertificate();
       if (!valid_to) {
         socket.destroy();
@@ -22,16 +23,20 @@ const getSSLExpiry = (domain: string, port: number = 443): Promise<SSLExpiryResu
       }
       const latency = Math.round(performance.now() - startTime);
       const timeTillExpiryMs = new Date(valid_to).getTime() - new Date().getTime();
+      // Close the socket before resolving so it is always cleaned up
+      socket.end();
       resolve({
         domain,
         expiryDate: new Date(valid_to),
         timeTillExpiryMs,
         latency,
       });
-      socket.end();
     });
 
+    const timer = setTimeout(() => socket.destroy(new Error("TLS connection timeout")), 10000);
+
     socket.on("error", (err) => {
+      clearTimeout(timer);
       socket.destroy();
       reject(err);
     });
@@ -52,6 +57,17 @@ class SSLCall {
     let downRemainingHours = Number(this.monitor.type_data.downRemainingHours);
     try {
       const { timeTillExpiryMs, latency } = await getSSLExpiry(domain, port);
+
+      // Explicitly handle already-expired certificates before threshold comparisons
+      if (timeTillExpiryMs <= 0) {
+        return {
+          status: GC.DOWN,
+          latency: latency,
+          type: GC.REALTIME,
+          error_message: "SSL certificate has already expired",
+        };
+      }
+
       const timeTillExpiryHours = timeTillExpiryMs / 1000 / 60 / 60;
       if (timeTillExpiryHours > degradedRemainingHours) {
         return {

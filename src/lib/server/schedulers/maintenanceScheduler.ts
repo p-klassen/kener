@@ -25,8 +25,9 @@ const getQueue = () => {
 const generateEventsForMaintenance = async (maintenance: MaintenanceRecord): Promise<number> => {
   let eventsCreated = 0;
 
-  // Skip one-time maintenances (COUNT=1) - they're handled at creation time
-  if (maintenance.rrule.includes("COUNT=1")) {
+  // Skip one-time maintenances (COUNT=1) - they're handled at creation time.
+  // Use a regex so COUNT=10, COUNT=100, etc. are not falsely matched.
+  if (/(?:^|;)COUNT=1(?:;|$)/.test(maintenance.rrule)) {
     return eventsCreated;
   }
 
@@ -58,17 +59,34 @@ const generateEventsForMaintenance = async (maintenance: MaintenanceRecord): Pro
 
       // Check if event already exists for this start time
       if (!existingStartTimes.has(eventStart)) {
-        await CreateMaintenanceEventWithNotification(
-          maintenance.id,
-          eventStart,
-          eventEnd,
-          maintenance.title,
-          maintenance.description || null,
-        );
-        eventsCreated++;
-        console.log(
-          `Created maintenance event for "${maintenance.title}" at ${new Date(eventStart * 1000).toISOString()}`,
-        );
+        try {
+          await CreateMaintenanceEventWithNotification(
+            maintenance.id,
+            eventStart,
+            eventEnd,
+            maintenance.title,
+            maintenance.description || null,
+          );
+          eventsCreated++;
+          console.log(
+            `Created maintenance event for "${maintenance.title}" at ${new Date(eventStart * 1000).toISOString()}`,
+          );
+        } catch (insertErr: any) {
+          // Unique constraint violation: another process already created this event. Skip it.
+          const msg: string = insertErr?.message ?? "";
+          if (
+            msg.includes("UNIQUE constraint failed") ||
+            msg.includes("unique constraint") ||
+            msg.includes("Duplicate entry") ||
+            msg.includes("duplicate key")
+          ) {
+            console.warn(
+              `Skipping duplicate maintenance event for "${maintenance.title}" at ${new Date(eventStart * 1000).toISOString()}`,
+            );
+          } else {
+            throw insertErr;
+          }
+        }
       }
     }
   } catch (err) {
@@ -86,21 +104,24 @@ const processAllMaintenances = async (): Promise<{ total: number; eventsCreated:
   let totalEventsCreated = 0;
 
   try {
-    // Get all active maintenances, paginated to avoid hard 1000-record limit
-    let page = 1;
+    // Cursor-based pagination to avoid offset drift on large tables.
+    let lastId = 0;
     const pageSize = 100;
     let batch: MaintenanceRecord[];
     do {
-      batch = await db.getMaintenancesPaginated(page++, pageSize, { status: "ACTIVE" });
+      batch = await db.getMaintenancesAfterIdPaginated(lastId, pageSize, { status: "ACTIVE" });
       for (const maintenance of batch) {
-        // Skip one-time maintenances
-        if (maintenance.rrule.includes("COUNT=1")) {
+        // Skip one-time maintenances (use regex to avoid false match on COUNT=10, COUNT=100, etc.)
+        if (/(?:^|;)COUNT=1(?:;|$)/.test(maintenance.rrule)) {
           continue;
         }
 
         const eventsCreated = await generateEventsForMaintenance(maintenance);
         totalEventsCreated += eventsCreated;
         totalProcessed++;
+      }
+      if (batch.length > 0) {
+        lastId = batch[batch.length - 1].id;
       }
     } while (batch.length === pageSize);
   } catch (err) {

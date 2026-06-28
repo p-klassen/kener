@@ -109,12 +109,33 @@ export const CreateMaintenanceEventWithNotification = async (
     siteData.globalMaintenanceNotificationSettings || seedSiteData.globalMaintenanceNotificationSettings;
   const reminderBufferSeconds = notificationSettings.reminder_buffer_hours * 3600;
 
-  const event = await db.createMaintenanceEvent({
-    maintenance_id,
-    start_date_time,
-    end_date_time,
-    status: determineEventStatus(start_date_time, end_date_time, reminderBufferSeconds),
-  });
+  let event: MaintenanceEventRecord;
+  try {
+    event = await db.createMaintenanceEvent({
+      maintenance_id,
+      start_date_time,
+      end_date_time,
+      status: determineEventStatus(start_date_time, end_date_time, reminderBufferSeconds),
+    });
+  } catch (createErr: any) {
+    // Unique constraint violation: a concurrent process already inserted this event. Skip silently.
+    const msg: string = createErr?.message ?? "";
+    if (
+      msg.includes("UNIQUE constraint failed") ||
+      msg.includes("unique constraint") ||
+      msg.includes("Duplicate entry") ||
+      msg.includes("duplicate key")
+    ) {
+      console.warn(
+        `Skipping duplicate maintenance event for maintenance_id=${maintenance_id} start=${start_date_time}`,
+      );
+      // Return a minimal placeholder so callers that depend on the return value don't break.
+      const existing = await db.getMaintenanceEvents({ maintenance_id });
+      const match = existing.find((e) => e.start_date_time === start_date_time);
+      if (match) return match;
+    }
+    throw createErr;
+  }
 
   try {
     if (notificationSettings.event_types.created) {
@@ -334,15 +355,33 @@ export const GetMaintenancesDashboard = async (data: {
   const totalResult = await db.getMaintenancesCount(filter);
   const total = totalResult ? Number(totalResult.count) : 0;
 
-  // Enrich with events and monitors
-  const enriched: MaintenanceWithEvents[] = [];
-  for (const m of maintenances) {
-    const events = await db.getMaintenanceEventsByMaintenanceId(m.id);
-    const monitorRecords = await db.getMaintenanceMonitors(m.id);
-    const now = Math.floor(Date.now() / 1000);
-    // Find the first event that hasn't ended yet (ongoing or future)
+  // Batch-fetch events and monitors for all maintenances in 2 queries (avoids N+1)
+  const ids = maintenances.map((m) => m.id);
+  const [allEvents, allMonitorRecords] = await Promise.all([
+    db.getMaintenanceEventsByMaintenanceIds(ids),
+    db.getMaintenanceMonitorsByMaintenanceIds(ids),
+  ]);
+
+  const eventsByMaintenanceId = new Map<number, typeof allEvents>();
+  for (const event of allEvents) {
+    const list = eventsByMaintenanceId.get(event.maintenance_id) ?? [];
+    list.push(event);
+    eventsByMaintenanceId.set(event.maintenance_id, list);
+  }
+
+  const monitorsByMaintenanceId = new Map<number, typeof allMonitorRecords>();
+  for (const mr of allMonitorRecords) {
+    const list = monitorsByMaintenanceId.get(mr.maintenance_id) ?? [];
+    list.push(mr);
+    monitorsByMaintenanceId.set(mr.maintenance_id, list);
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const enriched: MaintenanceWithEvents[] = maintenances.map((m) => {
+    const events = eventsByMaintenanceId.get(m.id) ?? [];
+    const monitorRecords = monitorsByMaintenanceId.get(m.id) ?? [];
     const upcomingEvent = events.find((e) => e.end_date_time > now);
-    enriched.push({
+    return {
       ...m,
       monitors: monitorRecords.map((mr) => ({
         monitor_tag: mr.monitor_tag,
@@ -350,8 +389,8 @@ export const GetMaintenancesDashboard = async (data: {
       })),
       events,
       upcoming_event: upcomingEvent || null,
-    });
-  }
+    };
+  });
 
   return { maintenances: enriched, total };
 };
@@ -375,46 +414,63 @@ export const UpdateMaintenance = async (id: number, data: UpdateMaintenanceInput
     (data.rrule !== undefined && data.rrule !== existing.rrule) ||
     (data.duration_seconds !== undefined && data.duration_seconds !== existing.duration_seconds);
 
-  // Update the maintenance record
-  const result = await db.updateMaintenance(id, updateData);
+  // Wrap all mutations in a single transaction so a partial failure leaves the DB consistent.
+  const result = await db.knex.transaction(async (trx) => {
+    // Update the maintenance record
+    const updateResult = await trx("maintenances")
+      .where("id", id)
+      .update({ ...updateData, updated_at: trx.fn.now() });
 
-  // Update monitors if provided
-  if (monitors !== undefined) {
-    await db.removeAllMonitorsFromMaintenance(id);
-    if (monitors.length > 0) {
-      await db.addMonitorsToMaintenanceWithStatus(id, monitors);
+    // Update monitors if provided
+    if (monitors !== undefined) {
+      await trx("maintenance_monitors").where({ maintenance_id: id }).del();
+      if (monitors.length > 0) {
+        const insertData = monitors.map((m) => ({
+          maintenance_id: id,
+          monitor_tag: m.monitor_tag,
+          monitor_impact: m.monitor_impact,
+          created_at: trx.fn.now(),
+          updated_at: trx.fn.now(),
+        }));
+        await trx("maintenance_monitors").insert(insertData).onConflict(["maintenance_id", "monitor_tag"]).merge(["monitor_impact", "updated_at"]);
+      }
     }
-  }
 
-  // Handle schedule changes differently for one-time vs recurring
+    // Handle schedule changes differently for one-time vs recurring
+    if (scheduleChanged) {
+      const updated = await trx("maintenances").where("id", id).first();
+      if (updated) {
+        const events = await trx("maintenances_events")
+          .where("maintenance_id", id)
+          .orderBy("start_date_time", "asc");
+        const now = Math.floor(Date.now() / 1000);
+
+        if (isOneTime) {
+          // For one-time maintenance: delete all non-terminal events and create a new one
+          for (const event of events) {
+            if (event.status !== "COMPLETED" && event.status !== "CANCELLED") {
+              await trx("maintenances_events").where("id", event.id).del();
+            }
+          }
+        } else {
+          // For recurring maintenances: delete future SCHEDULED events
+          for (const event of events) {
+            if (event.status === "SCHEDULED" && event.start_date_time > now) {
+              await trx("maintenances_events").where("id", event.id).del();
+            }
+          }
+        }
+      }
+    }
+
+    return updateResult;
+  });
+
+  // Regenerate events outside the transaction (involves external calls like notifications)
   if (scheduleChanged) {
-    // Get current values (may have been updated)
     const updated = await db.getMaintenanceById(id);
     if (updated) {
-      const events = await db.getMaintenanceEventsByMaintenanceId(id);
-      const now = Math.floor(Date.now() / 1000);
-
-      if (isOneTime) {
-        // For one-time maintenance: delete all events that aren't completed and create a new one
-        for (const event of events) {
-          // Delete events that are not COMPLETED or CANCELLED
-          if (event.status !== "COMPLETED" && event.status !== "CANCELLED") {
-            await db.deleteMaintenanceEvent(event.id);
-          }
-        }
-        // Regenerate the event
-        await GenerateMaintenanceEvents(id, updated.start_date_time, updated.rrule, updated.duration_seconds, 1);
-      } else {
-        // For recurring maintenances: delete future SCHEDULED events and regenerate
-        for (const event of events) {
-          // Only delete SCHEDULED events in the future
-          if (event.status === "SCHEDULED" && event.start_date_time > now) {
-            await db.deleteMaintenanceEvent(event.id);
-          }
-        }
-        // Regenerate events
-        await GenerateMaintenanceEvents(id, updated.start_date_time, updated.rrule, updated.duration_seconds, 1);
-      }
+      await GenerateMaintenanceEvents(id, updated.start_date_time, updated.rrule, updated.duration_seconds, 1);
     }
   }
 

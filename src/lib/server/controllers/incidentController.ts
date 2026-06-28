@@ -58,13 +58,29 @@ export const GetIncidentsOpenHome = async (
     monitors?: unknown[];
     comments?: unknown[];
   })[];
-  for (let i = 0; i < incidents.length; i++) {
-    incidents[i].monitors = await GetIncidentMonitors(incidents[i].id);
+
+  if (incidents.length === 0) return incidents;
+
+  const ids = incidents.map((i) => i.id);
+  const allMonitors = await db.getIncidentMonitorsByIncidentIds(ids);
+  const monitorsMap = new Map<number, Array<{ monitor_tag: string; monitor_impact: string | null }>>();
+  for (const m of allMonitors) {
+    const list = monitorsMap.get(m.incident_id) ?? [];
+    list.push({ monitor_tag: m.monitor_tag, monitor_impact: m.monitor_impact });
+    monitorsMap.set(m.incident_id, list);
   }
 
-  //get comments
-  for (let i = 0; i < incidents.length; i++) {
-    incidents[i].comments = await GetIncidentActiveComments(incidents[i].id);
+  const allComments = await db.getActiveIncidentCommentsByIncidentIds(ids);
+  const commentsMap = new Map<number, IncidentCommentRecord[]>();
+  for (const c of allComments) {
+    const list = commentsMap.get(c.incident_id) ?? [];
+    list.push(c);
+    commentsMap.set(c.incident_id, list);
+  }
+
+  for (const incident of incidents) {
+    incident.monitors = monitorsMap.get(incident.id) ?? [];
+    incident.comments = commentsMap.get(incident.id) ?? [];
   }
 
   return incidents;
@@ -78,20 +94,12 @@ export const GetIncidentComments = async (incident_id: number): Promise<Incident
   return await db.getIncidentComments(incident_id);
 };
 export const GetIncidentActiveComments = async (incident_id: number): Promise<IncidentCommentRecord[]> => {
-  let incidentExists = await db.getIncidentById(incident_id);
-  if (!incidentExists) {
-    throw new Error(`Incident with id ${incident_id} does not exist`);
-  }
   return await db.getActiveIncidentComments(incident_id);
 };
 
 export const GetIncidentMonitors = async (
   incident_id: number,
 ): Promise<Array<{ monitor_tag: string; monitor_impact: string | null }>> => {
-  let incidentExists = await db.getIncidentById(incident_id);
-  if (!incidentExists) {
-    throw new Error(`Incident with id ${incident_id} does not exist`);
-  }
   let incidentMonitors = await db.getIncidentMonitorsByIncidentID(incident_id);
   return incidentMonitors.map((m) => ({
     monitor_tag: m.monitor_tag,
@@ -122,9 +130,20 @@ export const GetIncidentsDashboard = async (
   let totalResult = await db.getIncidentsCount(filter);
   let total = totalResult ? Number(totalResult.count) : 0;
 
-  for (let i = 0; i < incidents.length; i++) {
-    incidents[i].monitors = await GetIncidentMonitors(incidents[i].id);
-    incidents[i].isAutoCreated = await db.alertExistsIncident(incidents[i].id);
+  if (incidents.length > 0) {
+    const ids = incidents.map((i) => i.id);
+    const allMonitors = await db.getIncidentMonitorsByIncidentIds(ids);
+    const monitorsMap = new Map<number, Array<{ monitor_tag: string; monitor_impact: string | null }>>();
+    for (const m of allMonitors) {
+      const list = monitorsMap.get(m.incident_id) ?? [];
+      list.push({ monitor_tag: m.monitor_tag, monitor_impact: m.monitor_impact });
+      monitorsMap.set(m.incident_id, list);
+    }
+
+    for (const incident of incidents) {
+      incident.monitors = monitorsMap.get(incident.id) ?? [];
+      incident.isAutoCreated = await db.alertExistsIncident(incident.id);
+    }
   }
 
   return {
@@ -146,42 +165,50 @@ export const GetIncidentsPaginated = async (
   direction: "after" | "before",
 ): Promise<unknown[]> => {
   let incidents = (await db.getIncidentsPaginated(page, limit, filter, direction)) as (IncidentRecord & {
-    monitors?: Array<{ monitor_tag: string; monitor_impact: string | null }>;
+    monitors?: unknown[];
     comments?: unknown[];
   })[];
 
-  let allMonitors: Record<string, unknown> = {};
+  if (incidents.length === 0) return incidents;
 
-  for (let i = 0; i < incidents.length; i++) {
-    let incidentMonitors = await GetIncidentMonitors(incidents[i].id);
-    incidents[i].monitors = incidentMonitors;
-  }
+  const ids = incidents.map((i) => i.id);
 
-  //for each monitor tag, in monitorsTagAndImpact for every incident, call get monitor by tag
-  for (let i = 0; i < incidents.length; i++) {
-    const monitors = incidents[i].monitors || [];
-    for (let j = 0; j < monitors.length; j++) {
-      let monitorTag = monitors[j].monitor_tag;
-      let monitorImpact = monitors[j].monitor_impact;
-      if (!allMonitors[monitorTag]) {
-        let monitor = await db.getMonitorByTag(monitorTag);
-        if (monitor) {
-          allMonitors[monitorTag] = {
-            id: monitor.id,
-            tag: monitor.tag,
-            name: monitor.name,
-            image: monitor.image,
-            impact_type: monitorImpact,
-          };
-        }
+  // Batch-fetch all incident monitors and resolve full monitor records
+  const rawMonitors = await db.getIncidentMonitorsByIncidentIds(ids);
+  const monitorDetailCache: Record<string, unknown> = {};
+  for (const m of rawMonitors) {
+    if (!monitorDetailCache[m.monitor_tag]) {
+      const monitor = await db.getMonitorByTag(m.monitor_tag);
+      if (monitor) {
+        monitorDetailCache[m.monitor_tag] = {
+          id: monitor.id,
+          tag: monitor.tag,
+          name: monitor.name,
+          image: monitor.image,
+          impact_type: m.monitor_impact,
+        };
       }
-      (incidents[i].monitors as unknown[])[j] = allMonitors[monitorTag];
     }
   }
 
-  //get comments
-  for (let i = 0; i < incidents.length; i++) {
-    incidents[i].comments = await GetIncidentActiveComments(incidents[i].id);
+  const monitorsMap = new Map<number, unknown[]>();
+  for (const m of rawMonitors) {
+    const list = monitorsMap.get(m.incident_id) ?? [];
+    list.push(monitorDetailCache[m.monitor_tag]);
+    monitorsMap.set(m.incident_id, list);
+  }
+
+  const allComments = await db.getActiveIncidentCommentsByIncidentIds(ids);
+  const commentsMap = new Map<number, IncidentCommentRecord[]>();
+  for (const c of allComments) {
+    const list = commentsMap.get(c.incident_id) ?? [];
+    list.push(c);
+    commentsMap.set(c.incident_id, list);
+  }
+
+  for (const incident of incidents) {
+    incident.monitors = monitorsMap.get(incident.id) ?? [];
+    incident.comments = commentsMap.get(incident.id) ?? [];
   }
 
   return incidents;
@@ -191,13 +218,29 @@ export const GetIncidentsPage = async (start: number, open: number): Promise<unk
     monitors?: unknown[];
     comments?: unknown[];
   })[];
-  for (let i = 0; i < incidents.length; i++) {
-    incidents[i].monitors = await GetIncidentMonitors(incidents[i].id);
+
+  if (incidents.length === 0) return incidents;
+
+  const ids = incidents.map((i) => i.id);
+  const allMonitors = await db.getIncidentMonitorsByIncidentIds(ids);
+  const monitorsMap = new Map<number, Array<{ monitor_tag: string; monitor_impact: string | null }>>();
+  for (const m of allMonitors) {
+    const list = monitorsMap.get(m.incident_id) ?? [];
+    list.push({ monitor_tag: m.monitor_tag, monitor_impact: m.monitor_impact });
+    monitorsMap.set(m.incident_id, list);
   }
 
-  //get comments
-  for (let i = 0; i < incidents.length; i++) {
-    incidents[i].comments = await GetIncidentActiveComments(incidents[i].id);
+  const allComments = await db.getActiveIncidentCommentsByIncidentIds(ids);
+  const commentsMap = new Map<number, IncidentCommentRecord[]>();
+  for (const c of allComments) {
+    const list = commentsMap.get(c.incident_id) ?? [];
+    list.push(c);
+    commentsMap.set(c.incident_id, list);
+  }
+
+  for (const incident of incidents) {
+    incident.monitors = monitorsMap.get(incident.id) ?? [];
+    incident.comments = commentsMap.get(incident.id) ?? [];
   }
 
   return incidents;
@@ -353,11 +396,11 @@ export const UpdateIncident = async (incident_id: number, data: IncidentUpdateIn
 
   let updateObject: Partial<IncidentRecord> & { id: number } = {
     id: incident_id,
-    title: data.title || incidentExists.title,
-    start_date_time: data.start_date_time || incidentExists.start_date_time,
-    status: data.status || incidentExists.status,
-    state: data.state || incidentExists.state,
-    end_date_time: data.end_date_time || incidentExists.end_date_time,
+    title: data.title !== undefined ? data.title : incidentExists.title,
+    start_date_time: data.start_date_time !== undefined ? data.start_date_time : incidentExists.start_date_time,
+    status: data.status !== undefined ? data.status : incidentExists.status,
+    state: data.state !== undefined ? data.state : incidentExists.state,
+    end_date_time: data.end_date_time !== undefined ? data.end_date_time : incidentExists.end_date_time,
     is_global: data.is_global !== undefined ? data.is_global : incidentExists.is_global,
   };
 

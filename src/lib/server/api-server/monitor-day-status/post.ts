@@ -42,7 +42,7 @@ export default async function post(req: APIServerRequest): Promise<Response> {
     ) + 60;
 
   const monitors = await GetMonitorsParsed({ tag: body.tag });
-  if (!monitors || monitors.length === 0) {
+  if (!monitors || monitors.length === 0 || monitors[0].is_public !== 1) {
     return error(404, { message: "Monitor not found" });
   }
   const monitor = monitors[0];

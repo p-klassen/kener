@@ -51,25 +51,32 @@ export const GET: RequestHandler = async ({ url }) => {
   }
 
   // Get maintenances
-  let rawMaintenances = await db.getAllMaintenances(filter);
+  const rawMaintenances = await db.getAllMaintenances(filter);
 
-  // If filtering by monitor_tag, filter to only maintenances that include that monitor
-  if (monitorTagParam) {
-    const filteredMaintenances = [];
-    for (const maintenance of rawMaintenances) {
-      const monitors = await db.getMaintenanceMonitors(maintenance.id);
-      const hasMonitor = monitors.some((m) => m.monitor_tag === monitorTagParam);
-      if (hasMonitor) {
-        filteredMaintenances.push(maintenance);
-      }
-    }
-    rawMaintenances = filteredMaintenances;
+  // Fetch all monitors for all maintenances in a single query (avoids N+1)
+  const allMaintenanceIds = rawMaintenances.map((m) => m.id);
+  const allMonitorRows = allMaintenanceIds.length > 0
+    ? await db.getMaintenanceMonitorsByMaintenanceIds(allMaintenanceIds)
+    : [];
+
+  const monitorsByMaintenanceId = new Map<number, typeof allMonitorRows>();
+  for (const row of allMonitorRows) {
+    const arr = monitorsByMaintenanceId.get(row.maintenance_id) || [];
+    arr.push(row);
+    monitorsByMaintenanceId.set(row.maintenance_id, arr);
   }
+
+  // If filtering by monitor_tag, keep only maintenances that include that monitor
+  const filteredMaintenances = monitorTagParam
+    ? rawMaintenances.filter((m) =>
+        (monitorsByMaintenanceId.get(m.id) || []).some((r) => r.monitor_tag === monitorTagParam),
+      )
+    : rawMaintenances;
 
   // Build response with monitors for each maintenance
   const maintenances: MaintenanceResponse[] = [];
-  for (const maintenance of rawMaintenances) {
-    const monitors = await db.getMaintenanceMonitors(maintenance.id);
+  for (const maintenance of filteredMaintenances) {
+    const monitors = monitorsByMaintenanceId.get(maintenance.id) || [];
     maintenances.push({
       id: maintenance.id,
       title: maintenance.title,

@@ -1,4 +1,5 @@
 import { json, type RequestHandler } from "@sveltejs/kit";
+import { Cron } from "croner";
 import db from "$lib/server/db/db";
 import { GetMonitorsParsed } from "$lib/server/controllers/monitorsController";
 import type {
@@ -8,6 +9,17 @@ import type {
   UpdateMonitorResponse,
   BadRequestResponse,
 } from "$lib/types/api";
+
+const VALID_MONITOR_TYPES = ["API", "PING", "TCP", "DNS", "SSL", "SQL", "HEARTBEAT", "GAMEDIG", "GROUP", "GRPC", "NONE"] as const;
+
+function isValidCron(cron: string): boolean {
+  try {
+    new Cron(cron, { maxRuns: 0 });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function formatDateToISO(date: Date | string): string {
   if (date instanceof Date) {
@@ -43,6 +55,28 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
       error: {
         code: "BAD_REQUEST",
         message: "Invalid JSON body",
+      },
+    };
+    return json(errorResponse, { status: 400 });
+  }
+
+  // Validate monitor_type if provided
+  if (body.monitor_type != null && !(VALID_MONITOR_TYPES as readonly string[]).includes(body.monitor_type)) {
+    const errorResponse: BadRequestResponse = {
+      error: {
+        code: "BAD_REQUEST",
+        message: `monitor_type must be one of: ${VALID_MONITOR_TYPES.join(", ")}`,
+      },
+    };
+    return json(errorResponse, { status: 400 });
+  }
+
+  // Validate cron expression if provided
+  if (body.cron !== undefined && body.cron !== null && !isValidCron(body.cron)) {
+    const errorResponse: BadRequestResponse = {
+      error: {
+        code: "BAD_REQUEST",
+        message: "cron is not a valid cron expression",
       },
     };
     return json(errorResponse, { status: 400 });
@@ -84,16 +118,19 @@ export const PATCH: RequestHandler = async ({ locals, request }) => {
     if (body.type_data === null) {
       updateData.type_data = null;
     } else {
-      // Parse existing type_data if it exists
-      let existingTypeData = {};
+      let existingTypeData: Record<string, unknown> = {};
       if (existingMonitor.type_data) {
         try {
-          existingTypeData = existingMonitor.type_data;
-        } catch {
-          existingTypeData = {};
+          existingTypeData =
+            typeof existingMonitor.type_data === "string"
+              ? JSON.parse(existingMonitor.type_data)
+              : (existingMonitor.type_data as Record<string, unknown>);
+        } catch (e) {
+          console.warn(`[monitor PATCH] Failed to parse existing type_data for '${monitorTag}':`, e);
+          // Keep existingTypeData as {} rather than silently corrupting state
+          return json({ error: { code: "INTERNAL_ERROR", message: "Failed to parse existing monitor type_data" } }, { status: 500 });
         }
       }
-      // Merge existing with new data
       const mergedTypeData = { ...existingTypeData, ...body.type_data };
       updateData.type_data = JSON.stringify(mergedTypeData);
     }

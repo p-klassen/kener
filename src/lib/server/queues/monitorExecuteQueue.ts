@@ -162,28 +162,28 @@ const addWorker = () => {
     // default → realtime → incident → maintenance
     // Each level only overrides if it has its own error_message
     for (const timestamp in mergedData) {
-      const ts = parseInt(timestamp);
-      let errorMessage: string | undefined = defaultData[ts]?.error_message;
-      if (realtimeData[ts]?.error_message) {
-        errorMessage = realtimeData[ts].error_message;
+      const innerTs = parseInt(timestamp);
+      let errorMessage: string | undefined = defaultData[innerTs]?.error_message;
+      if (realtimeData[innerTs]?.error_message) {
+        errorMessage = realtimeData[innerTs].error_message;
       }
-      if (incidentData[ts]?.error_message) {
-        errorMessage = incidentData[ts].error_message;
+      if (incidentData[innerTs]?.error_message) {
+        errorMessage = incidentData[innerTs].error_message;
       }
-      if (maintenanceData[ts]?.error_message) {
-        errorMessage = maintenanceData[ts].error_message;
+      if (maintenanceData[innerTs]?.error_message) {
+        errorMessage = maintenanceData[innerTs].error_message;
       }
       if (errorMessage) {
-        mergedData[ts].error_message = errorMessage;
+        mergedData[innerTs].error_message = errorMessage;
       }
     }
 
     // Preserve latency from realtime monitoring
     // Incident/maintenance override status but should keep the actual latency from monitoring
     for (const timestamp in mergedData) {
-      const ts = parseInt(timestamp);
-      if (realtimeData[ts]?.latency !== undefined && realtimeData[ts].latency > 0) {
-        mergedData[ts].latency = realtimeData[ts].latency;
+      const innerTs = parseInt(timestamp);
+      if (realtimeData[innerTs]?.latency !== undefined && realtimeData[innerTs].latency > 0) {
+        mergedData[innerTs].latency = realtimeData[innerTs].latency;
       }
     }
 

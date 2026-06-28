@@ -304,17 +304,10 @@ export async function GetActiveMonitorAlertConfigsWithTriggers(): Promise<Monito
 export async function GetActiveMonitorAlertConfigsByMonitorTag(
   monitorTag: string,
 ): Promise<MonitorAlertConfigWithTriggers[]> {
-  const configs = await db.getActiveMonitorAlertConfigsByMonitorTag(monitorTag);
-  const result: MonitorAlertConfigWithTriggers[] = [];
-
-  for (const config of configs) {
-    const configWithTriggers = await db.getMonitorAlertConfigWithTriggers(config.id);
-    if (configWithTriggers) {
-      result.push(configWithTriggers);
-    }
-  }
-
-  return result;
+  // Fetch all configs with triggers in one join query, then filter to active only.
+  // This avoids an N+1 pattern (one extra query per config).
+  const all = await db.getMonitorAlertConfigsWithTriggersByMonitorTag(monitorTag);
+  return all.filter((c) => c.is_active === "YES");
 }
 
 // ============ Delete Operations ============
@@ -406,14 +399,17 @@ export async function GetMonitorAlertConfigsPaginated(
   filter?: MonitorAlertConfigFilter,
 ): Promise<{ configs: MonitorAlertConfigWithTriggers[]; total: number }> {
   const result = await db.getMonitorAlertConfigsPaginated(page, limit, filter);
-  const configs: MonitorAlertConfigWithTriggers[] = [];
+  if (result.configs.length === 0) return { configs: [], total: result.total };
 
-  for (const config of result.configs) {
-    const configWithTriggers = await db.getMonitorAlertConfigWithTriggers(config.id);
-    if (configWithTriggers) {
-      configs.push(configWithTriggers);
-    }
-  }
+  // Batch-load triggers and monitor_tags for all returned configs in two queries
+  // instead of one getMonitorAlertConfigWithTriggers call per config (N+1).
+  const ids = result.configs.map((c) => c.id);
+  const byId = await db.getTriggersAndTagsForConfigIds(ids);
+
+  const configs: MonitorAlertConfigWithTriggers[] = result.configs.map((config) => {
+    const extra = byId.get(config.id) ?? { triggers: [], monitor_tags: [] };
+    return { ...config, triggers: extra.triggers, monitor_tags: extra.monitor_tags };
+  });
 
   return { configs, total: result.total };
 }

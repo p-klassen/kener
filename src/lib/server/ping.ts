@@ -99,7 +99,7 @@ const Ping = async function (type: string, host: string, timeout: number, count:
   try {
     let res = await ping.promise.probe(host, {
       v6: type === "IP6",
-      timeout: type === "IP6" ? undefined : Math.floor(timeout / 1000),
+      timeout: Math.floor((timeout ?? 10000) / 1000) || 10,
       min_reply: count,
     });
     output.alive = res.alive;

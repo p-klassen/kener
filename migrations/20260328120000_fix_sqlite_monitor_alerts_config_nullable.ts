@@ -81,6 +81,9 @@ export async function up(knex: Knex): Promise<void> {
   }
 }
 
+// NOTE: This down() migration can only restore the first monitor association per alert config.
+// Configs with multiple monitors will lose all but the first association on rollback.
+// This is a known limitation of the SQLite table rebuild approach.
 export async function down(knex: Knex): Promise<void> {
   const dbClient = knex.client.config.client;
   if (dbClient !== "sqlite3" && dbClient !== "better-sqlite3") {

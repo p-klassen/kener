@@ -465,13 +465,8 @@ export const SendInvitationEmail = async (email: string, role_ids: string[], nam
   const normalizedEmail = validateEmailOrThrow(email);
   const normalizedName = validateNameOrThrow(name);
 
-  // Check if user with this email already exists
-  const existingUser = await db.getUserByEmail(normalizedEmail);
-  if (existingUser) {
-    throw new Error(`A user with email ${normalizedEmail} already exists`);
-  }
-
-  //create user with empty password and is_active = 0
+  // Rely on the DB unique constraint as the authoritative duplicate check.
+  // A fast-path pre-check would introduce a TOCTOU race under concurrent requests.
   try {
     await db.insertUser({
       email: normalizedEmail,
@@ -482,9 +477,14 @@ export const SendInvitationEmail = async (email: string, role_ids: string[], nam
       user_type: effectiveUserType,
     });
   } catch (error: unknown) {
-    // Handle database constraint errors
+    // Normalise duplicate-key errors across SQLite, PostgreSQL, and MySQL drivers.
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("UNIQUE constraint failed") || errorMessage.includes("duplicate")) {
+    const isDuplicate =
+      errorMessage.includes("UNIQUE") ||
+      errorMessage.includes("23505") ||
+      errorMessage.includes("ER_DUP_ENTRY") ||
+      errorMessage.toLowerCase().includes("duplicate");
+    if (isDuplicate) {
       throw new Error(`A user with email ${normalizedEmail} already exists`);
     }
     throw error;
