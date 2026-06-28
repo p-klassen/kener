@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Kener API v4",
-    "version": "4.2.12",
-    "description": "OpenAPI specification for Kener self-hosted API v4. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages\n\nNew in v4.1.0: Authentication configuration (OIDC, LDAP) stored under site config keys \"auth.oidc\" and \"auth.ldap\".\n\nNew in v4.2.0: Triggers, Alert Configs, Images (full CRUD with upload), and Export/Import endpoints.\n\nNew in v4.2.4: Subscription notifications are now restricted to public monitors only — private and role-restricted monitors are excluded from all subscriber notifications.\n\nNew in v4.2.5: Bug fixes — embed theme isolation, badge locale picker, subscriber export/import, version display in admin badge preview.\n\nNew in v4.2.6: Security and bug fixes — OIDC id_token validation enforced, BullMQ retry mechanism restored, privilege escalation prevention in import, OTP expiry enforced, UTC timestamp corrections, regex injection fix, N+1 query elimination, SSL/gRPC resource leak fixes, frontend bug fixes.\n\nNew in v4.2.7: Project hygiene — session logging infrastructure, git workflow rules, .gitignore cleanup.\n\nNew in v4.2.8: Code cleanup — dbimpl.ts binding boilerplate replaced with generic bindAll helper (-468 lines), maintenance notification blocks deduplicated, subscription event-type logic extracted into shared helper."
+    "version": "4.2.13",
+    "description": "OpenAPI specification for Kener self-hosted API v4.2.x. All endpoints use Bearer authentication unless explicitly public. Example request URL: GET https://your-kener.com/api/v4/pages\n\nNew in v4.1.0: Authentication configuration (OIDC, LDAP) stored under site config keys \"auth.oidc\" and \"auth.ldap\".\n\nNew in v4.2.0: Triggers, Alert Configs, Images (full CRUD with upload), and Export/Import endpoints.\n\nNew in v4.2.4: Subscription notifications are now restricted to public monitors only — private and role-restricted monitors are excluded from all subscriber notifications.\n\nNew in v4.2.5: Bug fixes — embed theme isolation, badge locale picker, subscriber export/import, version display in admin badge preview.\n\nNew in v4.2.6: Security and bug fixes — OIDC id_token validation enforced, BullMQ retry mechanism restored, privilege escalation prevention in import, OTP expiry enforced, UTC timestamp corrections, regex injection fix, N+1 query elimination, SSL/gRPC resource leak fixes, frontend bug fixes.\n\nNew in v4.2.7: Project hygiene — session logging infrastructure, git workflow rules, .gitignore cleanup.\n\nNew in v4.2.8: Code cleanup — dbimpl.ts binding boilerplate replaced with generic bindAll helper (-468 lines), maintenance notification blocks deduplicated, subscription event-type logic extracted into shared helper."
   },
   "servers": [
     {
@@ -125,7 +125,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "post": {
         "tags": [
@@ -171,7 +172,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/monitors/{monitor_tag}": {
@@ -211,7 +213,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "patch": {
         "tags": [
@@ -260,7 +263,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/monitors/{monitor_tag}/data": {
@@ -322,7 +326,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "patch": {
         "tags": [
@@ -369,7 +374,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/monitors/{monitor_tag}/data/{timestamp}": {
@@ -415,7 +421,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "patch": {
         "tags": [
@@ -458,7 +465,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/incidents": {
@@ -517,7 +525,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "post": {
         "tags": [
@@ -560,7 +569,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/incidents/{incident_id}": {
@@ -600,7 +610,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "patch": {
         "tags": [
@@ -649,7 +660,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "delete": {
         "tags": [
@@ -674,7 +686,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/incidents/{incident_id}/comments": {
@@ -717,7 +730,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "post": {
         "tags": [
@@ -763,7 +777,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/incidents/{incident_id}/comments/{comment_id}": {
@@ -809,7 +824,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "patch": {
         "tags": [
@@ -858,7 +874,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "delete": {
         "tags": [
@@ -886,7 +903,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/pages": {
@@ -921,7 +939,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "post": {
         "tags": [
@@ -964,7 +983,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/pages/{page_path}": {
@@ -1004,7 +1024,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "patch": {
         "tags": [
@@ -1050,7 +1071,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       },
       "delete": {
         "tags": [
@@ -1075,7 +1097,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/site": {
@@ -1110,7 +1133,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/site/{config_key}": {
@@ -1146,7 +1170,8 @@
             "$ref": "#/components/responses/NotFound"
           }
         },
-        "description": "\n\nNew config keys in v4.1.0:\n- `auth.oidc`: OIDC/OpenID Connect authentication configuration\n- `auth.ldap`: LDAP/Active Directory authentication configuration"
+        "description": "\n\nNew config keys in v4.1.0:\n- `auth.oidc`: OIDC/OpenID Connect authentication configuration\n- `auth.ldap`: LDAP/Active Directory authentication configuration",
+        "x-new-in": "4.2.0"
       },
       "patch": {
         "tags": [
@@ -1190,7 +1215,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.0"
       }
     },
     "/api/v4/maintenances": {
@@ -1245,7 +1271,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "post": {
         "tags": [
@@ -1291,7 +1318,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/maintenances/{maintenance_id}": {
@@ -1331,7 +1359,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "patch": {
         "tags": [
@@ -1380,7 +1409,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "delete": {
         "tags": [
@@ -1405,7 +1435,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/maintenances/events": {
@@ -1509,7 +1540,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/maintenances/{maintenance_id}/events": {
@@ -1581,7 +1613,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/maintenances/{maintenance_id}/events/{event_id}": {
@@ -1624,7 +1657,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "patch": {
         "tags": [
@@ -1673,7 +1707,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "delete": {
         "tags": [
@@ -1698,7 +1733,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/triggers": {
@@ -1733,7 +1769,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "post": {
         "tags": [
@@ -1779,7 +1816,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/triggers/{trigger_id}": {
@@ -1819,7 +1857,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "patch": {
         "tags": [
@@ -1869,7 +1908,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "delete": {
         "tags": [
@@ -1887,7 +1927,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/monitors/{monitor_tag}/alert-configs": {
@@ -1933,7 +1974,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "post": {
         "tags": [
@@ -1982,7 +2024,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/monitors/{monitor_tag}/alert-configs/{alert_config_id}": {
@@ -2025,7 +2068,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "patch": {
         "tags": [
@@ -2074,7 +2118,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "delete": {
         "tags": [
@@ -2092,7 +2137,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/images": {
@@ -2128,7 +2174,8 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "post": {
         "tags": [
@@ -2184,7 +2231,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/images/{image_id}": {
@@ -2224,7 +2272,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       },
       "delete": {
         "tags": [
@@ -2242,7 +2291,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/export": {
@@ -2290,7 +2340,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     },
     "/api/v4/import": {
@@ -2332,7 +2383,8 @@
           "500": {
             "$ref": "#/components/responses/InternalServerError"
           }
-        }
+        },
+        "x-new-in": "4.2.6"
       }
     }
   },
