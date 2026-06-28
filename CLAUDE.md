@@ -49,8 +49,40 @@ Kener is an open-source status page application built with **SvelteKit 2.x (Svel
 
 ## Git instructions
 1. **Always ask if you should commit all pending changes** Never just commit and push on your own without explicitly being told to.
-2. **Always update the version number before commit/push** The version number is separated into four numbers <major-version>.<minor-version>.<patch-version>. Always updatem the patch version number before commiting changes and pushing them to the repo. Major and minor version numbers are only update if you were explicitly told to do so.
-3. **Build fresh dock image with latest verstion** Everytime you commit and push the changes under a new version, automatically buily a new docker image an restart the local container with that new image. Don't forget to use the "Build instructions for Docker image" above.
+2. **Always update the version number before commit/push** The version number is separated into four numbers <major-version>.<minor-version>.<patch-version>. Always update the patch version number before committing changes and pushing them to the repo. Major and minor version numbers are only updated if you were explicitly told to do so.
+3. **Build fresh docker image with latest version** Every time you commit and push the changes under a new version, automatically build a new docker image and restart the local container with that new image. Don't forget to use the "Build instructions for Docker image" above.
+
+## Local container update workflow
+
+**Critical:** Never use `docker stop && docker rm && docker run` to update the local container — this risks mounting volumes at the wrong path and losing all data.
+
+The correct update command after a new image has been built and pulled:
+
+```bash
+# Stop the old container, then recreate with identical config:
+docker stop kener-dev && docker rm kener-dev
+docker run -d \
+  --name kener-dev \
+  --network kener_default \
+  -p 3000:3000 \
+  -v kener_dev_db:/app/database \
+  -e REDIS_URL=redis://kener-redis-dev:6379 \
+  -e KENER_SECRET_KEY=dev-secret-key-for-local-testing-only \
+  -e ORIGIN=http://localhost:3000 \
+  -e NODE_ENV=production \
+  -e PORT=3000 \
+  -e BODY_SIZE_LIMIT=3M \
+  -e TZ=UTC \
+  harbor.service.wobcom.de/wobcom/kener-wobcom:latest
+```
+
+**Key facts about the local dev setup:**
+- SQLite DB lives at `/app/database` inside the container (NOT `/app/data`)
+- Volume `kener_dev_db` must always be mounted at `/app/database`
+- Redis runs as a separate container `kener-redis-dev` in the `kener_default` network
+- On first start with an empty volume, Kener shows the setup wizard — create the admin user there
+
+**For production** use `docker compose pull && docker compose up -d` which handles volume persistence automatically via the definitions in `docker-compose.yml`.
 
 ## Development Commands
 
