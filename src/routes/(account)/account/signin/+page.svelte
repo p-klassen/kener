@@ -18,6 +18,7 @@
   let { data, form }: PageProps = $props();
   const isAdminAccountCreated: boolean = $derived(data.isAdminAccountCreated);
   const isSetupComplete: boolean = $derived(data.isSetupComplete);
+  const envVarsSet: boolean = $derived(data.envVarsSet);
   const authActionPath = $derived(!isAdminAccountCreated ? "?/signup" : "?/login");
   const emailValue = $derived(form?.values && "email" in form.values ? form.values.email : "");
   const nameValue = $derived(form?.values && "name" in form.values ? form.values.name : "");
@@ -55,7 +56,7 @@
       </Card.Description>
     </Card.Header>
     <Card.Content>
-      {#if !isSetupComplete}
+      {#if !envVarsSet}
         <Alert.Root variant="destructive">
           <AlertCircleIcon />
           <Alert.Title>{$t("account.signin.setup_incomplete_title")}</Alert.Title>

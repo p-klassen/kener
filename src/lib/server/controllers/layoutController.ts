@@ -16,6 +16,7 @@ import type { EventDisplaySettings, GlobalPageVisibilitySettings, SiteDateTimeFo
 export interface LayoutServerData {
   isMobile: boolean;
   isSetupComplete: boolean;
+  envVarsSet: boolean;
   isAdminAccountCreated: boolean;
   loggedInUser: UserRecordPublic | null;
   selectedLang: string;
@@ -122,6 +123,7 @@ export async function GetLayoutServerData(cookies: Cookies, request: Request): P
   return {
     isMobile,
     isSetupComplete,
+    envVarsSet: !!(process.env.KENER_SECRET_KEY && process.env.ORIGIN && process.env.REDIS_URL),
     isAdminAccountCreated: userCounts ? Number(userCounts.count) > 0 : false,
     loggedInUser,
     selectedLang,
