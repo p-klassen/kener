@@ -35,8 +35,7 @@ const seedSiteData = {
     },
   ],
   nav: [
-    { name: "Documentation", url: "https://kener.ing/docs", iconURL: "" },
-    { name: "GitHub", iconURL: "", url: "https://github.com/rajnandan1/kener" },
+    { name: "Documentation", url: "/docs", iconURL: "" },
     { name: "Login", iconURL: "", url: "/account/signin" },
   ],
   hero: {

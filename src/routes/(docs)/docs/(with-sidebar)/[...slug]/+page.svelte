@@ -150,17 +150,15 @@
   <title>{data.title} - Documentation</title>
   <meta name="description" content={data.description || `Documentation for ${data.title}`} />
   <meta property="article:author" content="https://github.com/rajnandan1" />
-  <link rel="canonical" href={`https://kener.ing/docs/${data.slug}`} />
   <meta property="og:title" content="{data.title} - Documentation" />
   <meta property="og:description" content={data.description || `Documentation for ${data.title}`} />
   <meta property="og:type" content="article" />
-  <meta property="og:url" content={`https://kener.ing/docs/${data.slug}`} />
-  <meta property="og:logo" content="https://kener.ing/logo96.png" />
-  <meta property="og:image" content="https://kener.ing/og.jpg" />
+  <meta property="og:logo" content="/favicon.png" />
+  <meta property="og:image" content="/og.png" />
   <meta name="twitter:title" content="{data.title} - Documentation" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:description" content={data.description || `Documentation for ${data.title}`} />
-  <meta name="twitter:image" content="https://kener.ing/og.jpg" />
+  <meta name="twitter:image" content="/og.png" />
   {@html `<script type="application/ld+json">${JSON.stringify({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -169,7 +167,7 @@
         "@type": "ListItem",
         position: 1,
         name: "Documentation",
-        item: "https://kener.ing/docs"
+        item: "/docs"
       },
       ...(data.group
         ? [
@@ -184,7 +182,7 @@
         "@type": "ListItem",
         position: data.group ? 3 : 2,
         name: data.title,
-        item: `https://kener.ing/docs/${data.slug}`
+        item: `/docs/${data.slug}`
       }
     ]
   })}</script>`}

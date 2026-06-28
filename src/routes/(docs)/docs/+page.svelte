@@ -249,15 +249,13 @@
     content="open source status page, docker status page, self-hosted status page, uptime monitor, incident management, status page tool, free status page, kener, status page docker compose, open source uptime monitoring"
   />
   <link rel="icon" href={data.config.favicon} />
-  <link rel="canonical" href="https://kener.ing/docs" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://kener.ing/docs" />
   <meta property="og:title" content="{data.config.name} - Open Source Status Page | Self-Hosted with Docker" />
   <meta
     property="og:description"
     content="Free, open-source status page you can self-host with Docker. Monitor 11 service types, manage incidents, schedule maintenance, and notify subscribers. Deploy in under 2 minutes with Docker Compose."
   />
-  <meta property="og:image" content="https://kener.ing/og.jpg" />
+  <meta property="og:image" content="/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta
@@ -272,7 +270,7 @@
     name="twitter:description"
     content="Free, self-hosted status page with Docker support. Monitor APIs, DNS, SSL, and more. Incident management, maintenance scheduling, and real-time notifications out of the box."
   />
-  <meta name="twitter:image" content="https://kener.ing/og.jpg" />
+  <meta name="twitter:image" content="/og.png" />
   {@html `<script type="application/ld+json">${JSON.stringify([
     {
       "@context": "https://schema.org",
@@ -282,7 +280,6 @@
       operatingSystem: "Linux, macOS, Windows, Docker",
       description:
         "Kener is a free, open-source status page system and uptime monitor. Self-host with Docker or deploy to Railway and Zeabur. Supports 11 monitor types including API, Ping, TCP, DNS, SSL, SQL, gRPC, and more.",
-      url: "https://kener.ing",
       downloadUrl: "https://github.com/rajnandan1/kener",
       softwareVersion: "latest",
       license: "https://opensource.org/licenses/MIT",

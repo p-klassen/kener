@@ -1,5 +1,5 @@
 const kenerAPITypeData = {
-  url: "https://kener.ing",
+  url: "https://example.com",
   method: "GET",
   headers: [],
   body: "",
@@ -18,7 +18,7 @@ let seedMonitorData = [
     tag: "earth",
     name: "Earth - Planet 3",
     description: "Earth is the 3rd planet in our solar system and it is the most majestic one. ",
-    image: "https://kener.ing/earth.png",
+    image: "",
     cron: "* * * * *",
     default_status: "UP",
     status: "ACTIVE",
@@ -35,10 +35,9 @@ let seedMonitorData = [
   },
   {
     tag: "kener",
-    name: "Kener.ing",
-    description:
-      "Kener is a sleek and lightweight status page system built with SvelteKit and NodeJS. It’s not here to replace heavyweights like Datadog or Atlassian but rather to offer a simple, modern, and hassle-free way to set up a great-looking status page with minimal effort.",
-    image: "https://kener.ing/logo96.png",
+    name: "Example Monitor",
+    description: "Replace this with your own monitor.",
+    image: "",
     cron: "* * * * *",
     default_status: "UP",
     status: "ACTIVE",

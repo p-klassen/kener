@@ -15,7 +15,7 @@ const render = ScalarApiReference({
   proxyUrl: "https://proxy.scalar.com",
   customCss: `
     section.introduction-section {
-      background-image: url("https://kener.ing/logo96.png");
+      background-image: url("/favicon.png");
       background-repeat: no-repeat;
       background-position: left 0px top 20px;
       background-size: 48px 48px;
@@ -26,14 +26,14 @@ const render = ScalarApiReference({
     description: "Kener free open source status page API Reference",
     ogDescription: "Kener free open source status page API Reference",
     ogTitle: "Kener API Reference",
-    ogImage: "https://kener.ing/og.jpg",
+    ogImage: "/og.png",
 
     twitterCard: "summary_large_image",
     twitterTitle: "Kener API Reference",
     twitterDescription: "Kener free open source status page API Reference",
-    twitterImage: "https://kener.ing/og.jpg",
+    twitterImage: "/og.png",
   },
-  favicon: "https://kener.ing/logo96.png",
+  favicon: "/favicon.png",
 });
 export const GET: RequestHandler = () => {
   return render();

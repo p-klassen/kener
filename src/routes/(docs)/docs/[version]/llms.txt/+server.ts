@@ -1,7 +1,7 @@
 import { error, type RequestHandler } from "@sveltejs/kit";
 import { getDocsVersionBySlug, getVersionDocsLlmEntries } from "../../docs-utils.server";
 
-const LLM_BASE_DOMAIN = "https://kener.ing";
+const LLM_BASE_DOMAIN = process.env.ORIGIN || "";
 
 export const GET: RequestHandler = ({ params }) => {
   const versionSlug = params.version;

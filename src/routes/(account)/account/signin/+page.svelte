@@ -70,7 +70,7 @@
               variant="link"
               size="sm"
               class="text-destructive w-full justify-start underline"
-              href="https://kener.ing/docs/v4/setup/environment-variables"
+              href="/docs/v4/setup/environment-variables"
             >
               {$t("account.signin.go_to_docs")}
             </Button>

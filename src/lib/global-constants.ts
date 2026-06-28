@@ -69,7 +69,7 @@ export default {
   STATUS: "STATUS",
   LATENCY: "LATENCY",
   UPTIME: "UPTIME",
-  DOCS_URL: "https://kener.ing/docs",
+  DOCS_URL: "/docs",
   MAX_UPLOAD_BYTES: 2 * 1024 * 1024, // 2MB
   MAX_IMAGE_DIMENSION: 4096,
   MAX_INPUT_PIXELS: 4096 * 4096,

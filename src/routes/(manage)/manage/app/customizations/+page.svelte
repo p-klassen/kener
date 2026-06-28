@@ -1370,8 +1370,7 @@ import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
           Add custom CSS to further customize the appearance of your status page. Do not include &lt;style&gt; tags.
           Learn more in the
           <a
-            href="https://kener.ing/docs/v4/guides/custom-js-css-guide"
-            target="_blank"
+            href="/docs/v4/guides/custom-js-css-guide"
             class="text-foreground underline underline-offset-4"
           >
             documentation

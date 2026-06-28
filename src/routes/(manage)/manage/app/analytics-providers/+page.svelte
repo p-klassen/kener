@@ -306,11 +306,8 @@
   <div>
     {$t("manage.analytics.intro")}
     <a
-      href="https://kener.ing/docs/v4/analytics"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="text-primary ml-1 underline underline-offset-2">{$t("manage.analytics.learn_more")}</a
-    >.
+      href="/docs/v4/analytics"
+      class="text-primary ml-1 underline underline-offset-2">{$t("manage.analytics.learn_more")}</a>.
   </div>
   {#if loading}
     <div class="flex items-center justify-center py-8">
