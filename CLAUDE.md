@@ -43,7 +43,7 @@ Kener is an open-source status page application built with **SvelteKit 2.x (Svel
 ## Build instructions for Docker image
 
 1. **Always build multiarch** The docker image must always be multiarch
-2. **Always include docs** Always pass `--build-arg WITH_DOCS=true` — the docs are self-hosted and internal links in the UI depend on them being present. Make sure, that the docs are always up to date to the current app version and include the documentation on how to use it as administrator and as a user.
+2. **Always include docs** Always pass `--build-arg WITH_DOCS=true` — the docs are self-hosted and internal links in the UI depend on them being present. Make sure, that the docs are always up to date to the current app version and include the documentation on how to use it as administrator and as a user. Also make sure that the separate API-Reference is up-to-date, hat the current version number and that all API endpoints exist and work. Everytime you add or modify features of the app you must make sure that it is documented properly in the docs and the API-Reference.
 3. **Proper tagging** The latest image must always have the `kener-wobcom:latest` tag, additionally there will be a second tag `kener-wobcom:<version-number>`, the version number is the same as the version number of the project itself.
 4. **Always have latest image locally** After a new image build you must always pull the latest image to the local Docker daemon.
 5. **Always push latest image to remote registry** After a new image build you must always push the latest image with both tags (mentioned in 3.) to `harbor.service.wobcom.de/wobcom/kener-wobcom:latest` and `harbor.service.wobcom.de/wobcom/kener-wobcom:<version-number>`
