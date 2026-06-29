@@ -38,6 +38,9 @@ export const createWorker = <T = unknown, R = unknown>(
     connection: redisIOConnection() as ConnectionOptions,
     prefix: "kener",
     concurrency: 5,
+    // Extend lock beyond BullMQ's 30s default to cover slow monitor checks
+    // (DNS, SSL, TCP, gRPC can approach 30s under load)
+    lockDuration: 120000,
     ...options,
   };
   return new Worker<T, R>(queue.name, processor, opts);

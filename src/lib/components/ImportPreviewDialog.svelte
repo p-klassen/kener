@@ -50,6 +50,8 @@
       overwrite_site_data: overwriteToggles["site_data"] ?? true,
       overwrite_auth: overwriteToggles["auth"] ?? true,
       overwrite_groups: overwriteToggles["groups"] ?? true,
+      overwrite_email_templates: overwriteToggles["email_templates"] ?? true,
+      overwrite_alert_configs: overwriteToggles["alert_configs"] ?? true,
     };
   }
 

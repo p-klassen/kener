@@ -51,11 +51,13 @@ export type ImportOptions = {
   overwrite_site_data: boolean;
   overwrite_auth: boolean;
   overwrite_groups: boolean;
+  overwrite_email_templates: boolean;
+  overwrite_alert_configs: boolean;
 };
 
-// "everything" scope label: exports configuration only (monitors, pages, triggers, images,
-// site data, auth config, users, groups, roles, subscribers).
-// NOTE: incidents, maintenances, and alert configs are NOT included.
+// "everything" scope exports: monitors, pages, triggers, images, site data, auth config,
+// email templates, alert configs, users, groups, roles, subscribers.
+// NOTE: incidents and maintenances are NOT included (operational data, not configuration).
 
 type ExportedImage = {
   id: string;
@@ -156,6 +158,26 @@ interface ExportedRole {
   permissions: string[];
 }
 
+interface ExportedEmailTemplate {
+  template_id: string;
+  template_subject: string | null;
+  template_html_body: string | null;
+  template_text_body: string | null;
+}
+
+interface ExportedAlertConfig {
+  alert_for: string;
+  alert_value: string;
+  failure_threshold: number;
+  success_threshold: number;
+  alert_description: string | null;
+  create_incident: string;
+  is_active: string;
+  severity: string;
+  trigger_names: string[];
+  monitor_tags: string[];
+}
+
 export interface ExportPayload {
   exported_at: string;
   scope: ExportScope;
@@ -166,6 +188,8 @@ export interface ExportPayload {
     pages: ExportedPage[];
     triggers: ExportedTrigger[];
     images: ExportedImage[];
+    email_templates?: ExportedEmailTemplate[];
+    alert_configs?: ExportedAlertConfig[];
     auth?: {
       oidc: Omit<OidcConfig, "client_secret">;
       ldap: Omit<LdapConfig, "bind_password">;
@@ -193,15 +217,18 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
       throw new Error("Image export exceeds 50MB limit. Export images separately.");
     }
 
-    const [siteData, monitors, pages, triggers, images, oidcConfig, ldapConfig] = await Promise.all([
-      db.getAllSiteData(),
-      db.getMonitors({}),
-      db.getAllPages(),
-      db.getTriggers({}),
-      db.getAllImagesWithData(),
-      GetOidcConfig(),
-      GetLdapConfig(),
-    ]);
+    const [siteData, monitors, pages, triggers, images, oidcConfig, ldapConfig, emailTemplates, alertConfigs] =
+      await Promise.all([
+        db.getAllSiteData(),
+        db.getMonitors({}),
+        db.getAllPages(),
+        db.getTriggers({}),
+        db.getAllImagesWithData(),
+        GetOidcConfig(),
+        GetLdapConfig(),
+        db.getAllEmailTemplates(),
+        db.getMonitorAlertConfigs({}),
+      ]);
 
     const { client_secret: _cs, ...oidcSafe } = oidcConfig;
     const { bind_password: _bp, ...ldapSafe } = ldapConfig;
@@ -292,6 +319,32 @@ export async function exportData(scope: ExportScope): Promise<ExportPayload> {
         trigger_meta: t.trigger_meta,
       })),
       auth: { oidc: oidcSafe, ldap: ldapSafe },
+      email_templates: emailTemplates.map((t) => ({
+        template_id: t.template_id,
+        template_subject: t.template_subject ?? null,
+        template_html_body: t.template_html_body ?? null,
+        template_text_body: t.template_text_body ?? null,
+      })),
+      alert_configs: await (async () => {
+        if (alertConfigs.length === 0) return [];
+        const ids = alertConfigs.map((c) => c.id);
+        const enriched = await db.getTriggersAndTagsForConfigIds(ids);
+        return alertConfigs.map((c) => {
+          const extra = enriched.get(c.id) ?? { triggers: [], monitor_tags: [] };
+          return {
+            alert_for: c.alert_for,
+            alert_value: c.alert_value,
+            failure_threshold: c.failure_threshold,
+            success_threshold: c.success_threshold,
+            alert_description: c.alert_description ?? null,
+            create_incident: c.create_incident,
+            is_active: c.is_active,
+            severity: c.severity,
+            trigger_names: extra.triggers.map((t: { name: string }) => t.name),
+            monitor_tags: extra.monitor_tags,
+          };
+        });
+      })(),
     };
   }
 
@@ -573,6 +626,74 @@ export async function previewImport(rawPayload: ExportPayload): Promise<ImportPr
         problems: [],
       });
     }
+
+    const email_templates = payload.config.email_templates ?? [];
+    if (email_templates.length > 0) {
+      const existingIds = await db
+        .knex("general_email_templates")
+        .select("template_id")
+        .then((rows: { template_id: string }[]) => new Set(rows.map((r) => r.template_id)));
+      const overwrite_count = email_templates.filter((t) => existingIds.has(t.template_id)).length;
+      entities.push({
+        key: "email_templates",
+        label: "Email Templates",
+        total: email_templates.length,
+        new_count: email_templates.length - overwrite_count,
+        overwrite_count,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems: [],
+      });
+    }
+
+    const alert_configs = payload.config.alert_configs ?? [];
+    if (alert_configs.length > 0) {
+      const dbTriggerNames = await db
+        .knex("triggers")
+        .select("name")
+        .then((rows: { name: string }[]) => new Set(rows.map((r) => r.name)));
+      const importedTriggerNames = new Set((payload.config.triggers ?? []).map((t) => t.name));
+      const allTriggerNames = new Set([...dbTriggerNames, ...importedTriggerNames]);
+      const dbMonitorTags = await db
+        .knex("monitors")
+        .select("tag")
+        .then((rows: { tag: string }[]) => new Set(rows.map((r) => r.tag)));
+      const importedMonitorTags = new Set((payload.config.monitors ?? []).map((m) => m.tag));
+      const allMonitorTags = new Set([...dbMonitorTags, ...importedMonitorTags]);
+      const problems: ImportProblem[] = [];
+      for (const ac of alert_configs) {
+        for (const name of ac.trigger_names) {
+          if (!allTriggerNames.has(name)) {
+            problems.push({
+              identifier: `${ac.alert_for}:${ac.alert_value}`,
+              description: `References unknown trigger: "${name}"`,
+              severity: "warning",
+            });
+          }
+        }
+        for (const tag of ac.monitor_tags) {
+          if (!allMonitorTags.has(tag)) {
+            problems.push({
+              identifier: `${ac.alert_for}:${ac.alert_value}`,
+              description: `References unknown monitor: "${tag}"`,
+              severity: "warning",
+            });
+          }
+        }
+      }
+      entities.push({
+        key: "alert_configs",
+        label: "Alert Configurations",
+        total: alert_configs.length,
+        new_count: alert_configs.length,
+        overwrite_count: 0,
+        skip_count: 0,
+        can_toggle_overwrite: true,
+        overwrite_default: true,
+        problems,
+      });
+    }
   }
 
   if (payload.users_groups_roles) {
@@ -690,6 +811,8 @@ export async function importData(
     overwrite_site_data: options?.overwrite_site_data ?? true,
     overwrite_auth: options?.overwrite_auth ?? true,
     overwrite_groups: options?.overwrite_groups ?? true,
+    overwrite_email_templates: options?.overwrite_email_templates ?? true,
+    overwrite_alert_configs: options?.overwrite_alert_configs ?? true,
   };
 
   const imported: Record<string, number> = {};
@@ -915,6 +1038,75 @@ export async function importData(
         });
       }
       imported.auth_config = 1;
+    }
+
+    // Email templates — upsert by template_id
+    const emailTemplates = payload.config.email_templates ?? [];
+    if (emailTemplates.length > 0 && opts.overwrite_email_templates) {
+      let emailTemplatesImported = 0;
+      for (const t of emailTemplates) {
+        await db.knex("general_email_templates")
+          .insert({
+            template_id: t.template_id,
+            template_subject: t.template_subject ?? null,
+            template_html_body: t.template_html_body ?? null,
+            template_text_body: t.template_text_body ?? null,
+          })
+          .onConflict("template_id")
+          .merge(["template_subject", "template_html_body", "template_text_body"]);
+        emailTemplatesImported++;
+      }
+      imported.email_templates = emailTemplatesImported;
+    } else if (emailTemplates.length > 0) {
+      imported.email_templates_skipped = emailTemplates.length;
+    }
+
+    // Alert configs — always insert as new rows (no natural dedup key); resolve triggers by name
+    const alertConfigs = payload.config.alert_configs ?? [];
+    if (alertConfigs.length > 0 && opts.overwrite_alert_configs) {
+      let alertConfigsImported = 0;
+      const allTriggers = await db.knex("triggers").select("id", "name");
+      const triggerIdByName = new Map<string, number>(
+        allTriggers.map((t: { id: number; name: string }) => [t.name, t.id]),
+      );
+      for (const ac of alertConfigs) {
+        const [newId] = await db.knex("monitor_alerts_config")
+          .insert({
+            alert_for: ac.alert_for,
+            alert_value: ac.alert_value,
+            failure_threshold: ac.failure_threshold,
+            success_threshold: ac.success_threshold,
+            alert_description: ac.alert_description ?? null,
+            create_incident: ac.create_incident,
+            is_active: ac.is_active,
+            severity: ac.severity,
+            created_at: db.knex.fn.now(),
+            updated_at: db.knex.fn.now(),
+          })
+          .returning("id");
+        const configId = typeof newId === "object" ? (newId as { id: number }).id : (newId as number);
+        // Link triggers by resolving names to IDs in the target system
+        for (const name of ac.trigger_names) {
+          const triggerId = triggerIdByName.get(name);
+          if (triggerId !== undefined) {
+            await db.knex("monitor_alerts_config_triggers")
+              .insert({ monitor_alerts_id: configId, trigger_id: triggerId })
+              .onConflict(["monitor_alerts_id", "trigger_id"])
+              .ignore();
+          }
+        }
+        // Link monitors
+        for (const tag of ac.monitor_tags) {
+          await db.knex("monitor_alerts_config_monitors")
+            .insert({ monitor_alerts_id: configId, monitor_tag: tag })
+            .onConflict(["monitor_alerts_id", "monitor_tag"])
+            .ignore();
+        }
+        alertConfigsImported++;
+      }
+      imported.alert_configs = alertConfigsImported;
+    } else if (alertConfigs.length > 0) {
+      imported.alert_configs_skipped = alertConfigs.length;
     }
   }
 
