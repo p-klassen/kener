@@ -20,7 +20,8 @@ const readonlyRoles = [
 ];
 
 const allPermissionIds = permissions.map((p) => p.id);
-const readPermissionIds = allPermissionIds.filter((id) => id.endsWith(".read"));
+// users.read is intentionally excluded from Member: members must not enumerate all users/emails.
+const readPermissionIds = allPermissionIds.filter((id) => id.endsWith(".read") && id !== "users.read");
 
 const rolePermissions: Record<string, string[]> = {
   admin: allPermissionIds,
