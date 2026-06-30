@@ -59,8 +59,8 @@
                     data-sveltekit-preload-data="off"
                     href={clientResolver(resolve, item.url)}
                     class="{navigationMenuTriggerStyle()} hover:border-border border border-transparent bg-transparent text-xs hover:bg-transparent"
-                    target={item.openInNewTab ? "_blank" : undefined}
-                    rel={item.openInNewTab ? "noopener noreferrer" : undefined}
+                    target={(item.openInNewTab ?? item.url.startsWith("http")) ? "_blank" : undefined}
+                    rel={(item.openInNewTab ?? item.url.startsWith("http")) ? "noopener noreferrer" : undefined}
                     style="border-radius: var(--radius-3xl)"
                     onclick={() => trackNavClick(item)}
                   >
@@ -103,8 +103,8 @@
                 size="sm"
                 href={clientResolver(resolve, item.url)}
                 class="w-full justify-start rounded-full text-xs"
-                target={item.openInNewTab ? "_blank" : undefined}
-                rel={item.openInNewTab ? "noopener noreferrer" : undefined}
+                target={(item.openInNewTab ?? item.url.startsWith("http")) ? "_blank" : undefined}
+                rel={(item.openInNewTab ?? item.url.startsWith("http")) ? "noopener noreferrer" : undefined}
                 onclick={() => trackNavClick(item)}
               >
                 {#if item.iconURL}

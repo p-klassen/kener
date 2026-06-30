@@ -317,6 +317,7 @@ export interface ApiKeyRecord {
   hashed_key: string;
   masked_key: string;
   status: string;
+  user_id: number | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -326,6 +327,7 @@ export interface ApiKeyRecordInsert {
   hashed_key: string;
   masked_key: string;
   status?: string;
+  user_id?: number | null;
 }
 
 // ============ incidents table ============

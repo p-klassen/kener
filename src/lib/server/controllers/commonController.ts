@@ -150,7 +150,7 @@ export const ForgotPasswordJWT = async (data: object): Promise<string> => {
 export const GenerateToken = async (data: object): Promise<string> => {
   try {
     const token = jwt.sign(data, getJwtSecret(), {
-      expiresIn: "1y",
+      expiresIn: "24h",
     } as jwt.SignOptions);
     return token;
   } catch (err) {
@@ -177,7 +177,7 @@ export const CookieConfig = (): {
   return {
     name: "kener-user",
     secure: isSecuredDomain,
-    maxAge: 365 * 24 * 60 * 60, // 1 year in seconds
+    maxAge: 24 * 60 * 60, // 24 hours in seconds
     httpOnly: true,
     sameSite: "lax",
     path: cookiePath,

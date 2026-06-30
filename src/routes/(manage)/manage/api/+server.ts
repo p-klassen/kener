@@ -345,7 +345,7 @@ export async function POST({ request, cookies }) {
     } else if (action == "getAPIKeys") {
       resp = await GetAllAPIKeys();
     } else if (action == "createNewApiKey") {
-      resp = await CreateNewAPIKey(data);
+      resp = await CreateNewAPIKey({ ...data, user_id: userDB.id });
     } else if (action == "updateApiKeyStatus") {
       resp = await UpdateApiKeyStatus(data);
     } else if (action == "deleteApiKey") {
@@ -1076,20 +1076,44 @@ export async function POST({ request, cookies }) {
       await DeleteGroup(data.id);
       resp = { success: true };
     } else if (action == "getGroupMembers") {
-      resp = await GetGroupMembers(data.groupId);
+      if (!data.groupId || isNaN(Number(data.groupId))) {
+        throw new Error("groupId must be a valid number");
+      }
+      resp = await GetGroupMembers(Number(data.groupId));
     } else if (action == "addGroupMember") {
-      await AddGroupMember(data.groupId, data.userId);
+      if (!data.groupId || isNaN(Number(data.groupId))) {
+        throw new Error("groupId must be a valid number");
+      }
+      if (!data.userId || isNaN(Number(data.userId))) {
+        throw new Error("userId must be a valid number");
+      }
+      await AddGroupMember(Number(data.groupId), Number(data.userId));
       resp = { success: true };
     } else if (action == "removeGroupMember") {
-      await RemoveGroupMember(data.groupId, data.userId);
+      if (!data.groupId || isNaN(Number(data.groupId))) {
+        throw new Error("groupId must be a valid number");
+      }
+      if (!data.userId || isNaN(Number(data.userId))) {
+        throw new Error("userId must be a valid number");
+      }
+      await RemoveGroupMember(Number(data.groupId), Number(data.userId));
       resp = { success: true };
     } else if (action == "getGroupRoles") {
-      resp = await GetGroupRoles(data.groupId);
+      if (!data.groupId || isNaN(Number(data.groupId))) {
+        throw new Error("groupId must be a valid number");
+      }
+      resp = await GetGroupRoles(Number(data.groupId));
     } else if (action == "addGroupRole") {
-      await AddGroupRole(data.groupId, data.roleId);
+      if (!data.groupId || isNaN(Number(data.groupId))) {
+        throw new Error("groupId must be a valid number");
+      }
+      await AddGroupRole(Number(data.groupId), data.roleId);
       resp = { success: true };
     } else if (action == "removeGroupRole") {
-      await RemoveGroupRole(data.groupId, data.roleId);
+      if (!data.groupId || isNaN(Number(data.groupId))) {
+        throw new Error("groupId must be a valid number");
+      }
+      await RemoveGroupRole(Number(data.groupId), data.roleId);
       resp = { success: true };
     } else if (action == "getRolePages") {
       resp = await GetRolePages(data.roleId);
@@ -1174,8 +1198,14 @@ export async function POST({ request, cookies }) {
     } else if (action == "exportData") {
       resp = await exportData(data.scope);
     } else if (action == "previewImport") {
+      if (!data.payload) {
+        throw new Error("payload is required");
+      }
       resp = await previewImport(data.payload);
     } else if (action == "importData") {
+      if (!data.payload) {
+        throw new Error("payload is required");
+      }
       resp = await importData(data.payload, data.options);
     }
   } catch (error: unknown) {
@@ -1207,6 +1237,15 @@ async function storeSiteData(data: { [x: string]: any }) {
       let element = data[key];
       if (key === "socialPreviewImage" && (element === null || element === undefined)) {
         element = "";
+      }
+      // Strip dangerous HTML from footerHTML (admin-only field; defense-in-depth against stored XSS)
+      if (key === "footerHTML" && typeof element === "string") {
+        element = element
+          .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+          .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, "")
+          .replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi, "")
+          .replace(/<embed\b[^>]*>/gi, "")
+          .replace(/\bon\w+\s*=/gi, "data-removed-");
       }
       await InsertKeyValue(key, element);
     }

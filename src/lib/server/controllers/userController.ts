@@ -18,8 +18,12 @@ interface ManualUserUpdateInput {
   updateType: string;
   role_ids?: string[];
   is_active?: number;
+  /** @deprecated Use newPassword instead */
   password?: string;
+  /** @deprecated Use newPasswordConfirm instead */
   passwordPlain?: string;
+  newPassword?: string;
+  newPasswordConfirm?: string;
   user_type?: "user" | "subscriber";
 }
 interface PasswordUpdateInput {
@@ -377,11 +381,15 @@ export const ManualUpdateUserData = async (forUserId: number, data: ManualUserUp
     }
     return await db.updateUserIsActive(forUser.id, data.is_active);
   } else if (data.updateType == "password") {
-    if (!data.password || !data.passwordPlain) throw new Error("Password is required");
+    // Accept both new (newPassword/newPasswordConfirm) and legacy (password/passwordPlain) field names
+    const plainPassword = data.newPassword || data.password;
+    const plainPasswordConfirm = data.newPasswordConfirm || data.passwordPlain;
+    if (!plainPassword || !plainPasswordConfirm) throw new Error("newPassword and newPasswordConfirm are required");
+    if (plainPassword !== plainPasswordConfirm) throw new Error("Passwords do not match");
     return await UpdatePassword({
       userID: forUser.id,
-      newPassword: data.password,
-      newPlainPassword: data.passwordPlain,
+      newPassword: plainPassword,
+      newPlainPassword: plainPasswordConfirm,
     });
   } else if (data.updateType == "user_type") {
     if (!data.user_type || !["user", "subscriber"].includes(data.user_type)) {

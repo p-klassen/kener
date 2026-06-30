@@ -61,10 +61,22 @@ function validateMonitorTag(tag: string): void {
   if (!trimmed) {
     throw new Error("Monitor tag is required");
   }
+  if (trimmed.length > 100) {
+    throw new Error("Monitor tag must not exceed 100 characters");
+  }
   if (!isValidMonitorTag(trimmed)) {
     throw new Error(
       "Monitor tag must be URL-friendly: only lowercase letters, numbers, hyphens, and underscores. Must start and end with a letter or number.",
     );
+  }
+}
+
+function validateMonitorFields(monitor: MonitorInput): void {
+  if (monitor.name && monitor.name.length > 255) {
+    throw new Error("Monitor name must not exceed 255 characters");
+  }
+  if (monitor.description && monitor.description.length > 2000) {
+    throw new Error("Monitor description must not exceed 2000 characters");
   }
 }
 
@@ -195,6 +207,7 @@ export const GetMonitorsParsed = async (query: MonitorFilter): Promise<Array<Mon
 
 export const CreateUpdateMonitor = async (monitor: MonitorInput): Promise<number | number[]> => {
   let monitorData = { ...monitor };
+  validateMonitorFields(monitorData);
   if (monitorData.id) {
     return await db.updateMonitor(monitorData as MonitorRecord);
   } else {
@@ -209,6 +222,7 @@ export const CreateMonitor = async (monitor: MonitorInput): Promise<number[]> =>
     throw new Error("monitor id must be empty or 0");
   }
   validateMonitorTag(monitorData.tag);
+  validateMonitorFields(monitorData);
   return await db.insertMonitor(monitorData);
 };
 
@@ -571,6 +585,7 @@ export const GetBadge = async (badgeType: BadgeType, params: BadgeParams): Promi
       const monitors = await GetMonitorsParsed({ tag, status: "ACTIVE", is_hidden: "NO" });
       if (monitors.length === 0) {
         return new Response(ErrorSvg, {
+          status: 404,
           headers: { "Content-Type": "image/svg+xml" },
         });
       }
@@ -668,6 +683,7 @@ export const GetBadge = async (badgeType: BadgeType, params: BadgeParams): Promi
       const monitors = await GetMonitorsParsed({ tag });
       if (monitors.length === 0) {
         return new Response(ErrorSvg, {
+          status: 404,
           headers: { "Content-Type": "image/svg+xml" },
         });
       }

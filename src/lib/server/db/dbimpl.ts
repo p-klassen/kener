@@ -249,6 +249,7 @@ class DbImpl {
 
   // ============ Maintenances ============
   createMaintenance!: MaintenancesRepository["createMaintenance"];
+  createMaintenanceWithMonitors!: MaintenancesRepository["createMaintenanceWithMonitors"];
   getMaintenanceById!: MaintenancesRepository["getMaintenanceById"];
   getMaintenancesByIds!: MaintenancesRepository["getMaintenancesByIds"];
   getAllMaintenances!: MaintenancesRepository["getAllMaintenances"];
@@ -489,8 +490,8 @@ class DbImpl {
       // WAL mode: readers don't block writers; reduces lock contention between
       // the dev-mode scheduler process and the SvelteKit server process.
       await this._knex.raw("PRAGMA journal_mode = WAL");
-      // Retry for up to 5 s when another process holds a write lock.
-      await this._knex.raw("PRAGMA busy_timeout = 5000");
+      // Retry for up to 30 s when another process holds a write lock.
+      await this._knex.raw("PRAGMA busy_timeout = 30000");
     }
   }
 

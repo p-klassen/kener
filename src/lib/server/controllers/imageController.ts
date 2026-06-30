@@ -22,15 +22,21 @@ export interface ImageUploadData {
   prefix?: string; // prefix for the ID (e.g., "logo_", "favicon_")
 }
 
+function sanitizeFileName(name: string | undefined): string | null {
+  if (!name) return null;
+  // Strip path separators and null bytes; keep only safe filename characters
+  return name.replace(/[/\\?%*:|"<>\x00-\x1f]/g, "_").slice(0, 255) || null;
+}
+
 export async function uploadImage(data: ImageUploadData): Promise<{ id: string; url: string }> {
   const {
     base64,
-    fileName,
     maxWidth = 256,
     maxHeight = 256,
     forceDimensions = false,
     prefix = "img_",
   } = data;
+  const fileName = sanitizeFileName(data.fileName);
   let mimeType = data.mimeType;
 
   if (!base64) {

@@ -3,6 +3,39 @@ export function IsValidURL(url: string): boolean {
   return regex.test(url);
 }
 
+// Checks if a string looks like a private/loopback IPv4 address.
+function isPrivateIPv4(host: string): boolean {
+  // Match pure IPv4 literals
+  const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!ipv4) return false;
+  const [, a, b, c] = ipv4.map(Number);
+  return (
+    a === 10 ||                                              // 10.0.0.0/8
+    (a === 172 && b >= 16 && b <= 31) ||                    // 172.16.0.0/12
+    (a === 192 && b === 168) ||                              // 192.168.0.0/16
+    a === 127 ||                                             // 127.0.0.0/8 (loopback)
+    (a === 169 && b === 254) ||                              // 169.254.0.0/16 (link-local)
+    a === 0                                                  // 0.0.0.0/8
+  );
+}
+
+// Use this for HTTP monitor URLs to prevent SSRF via private IP literals.
+// Hostnames (not raw IPs) are allowed — DNS-based SSRF requires a separate DNS rebinding defense.
+// Set env KENER_ALLOW_PRIVATE_MONITOR_URLS=true to disable this check (e.g. for internal monitoring).
+export function IsPublicMonitorURL(url: string): boolean {
+  if (!IsValidURL(url)) return false;
+  if (process.env.KENER_ALLOW_PRIVATE_MONITOR_URLS === "true") return true;
+  try {
+    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const host = parsed.hostname.toLowerCase();
+    if (host === "localhost" || host === "::1" || host === "0:0:0:0:0:0:0:1") return false;
+    if (isPrivateIPv4(host)) return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
+
 export function IsValidGHObject(data: string): boolean {
   let parsed: Record<string, unknown>;
   try {

@@ -8,6 +8,7 @@ import https from "https";
 import vm from "vm";
 import { performance } from "node:perf_hooks";
 import type { ApiMonitor, EvalResponse, MonitoringResult } from "../types/monitor.js";
+import { IsPublicMonitorURL } from "../controllers/validators.js";
 
 class ApiCall {
   monitor: ApiMonitor;
@@ -62,6 +63,16 @@ class ApiCall {
       if (!!headers && typeof headers === "string") {
         headers = ReplaceAllOccurrences(headers, secret.find, secret.replace);
       }
+    }
+
+    // Block SSRF via private/loopback IP literals after secret substitution
+    if (url && !IsPublicMonitorURL(url)) {
+      return {
+        status: GC.DOWN,
+        latency: 0,
+        type: GC.ERROR,
+        error_message: "Monitor URL targets a private or loopback address which is not allowed",
+      };
     }
 
     if (!!headers && typeof headers === "string") {

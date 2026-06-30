@@ -45,6 +45,52 @@ export class MaintenancesRepository extends BaseRepository {
     }
   }
 
+  async createMaintenanceWithMonitors(
+    data: MaintenanceRecordInsert,
+    monitors: Array<{ monitor_tag: string; monitor_impact: string }>,
+  ): Promise<MaintenanceRecord> {
+    return await this.knex.transaction(async (trx) => {
+      const dbType = GetDbType();
+      const insertData = {
+        title: data.title,
+        description: data.description || null,
+        start_date_time: data.start_date_time,
+        rrule: data.rrule,
+        duration_seconds: data.duration_seconds,
+        status: data.status || GC.ACTIVE,
+        is_global: data.is_global || "YES",
+        created_at: trx.fn.now(),
+        updated_at: trx.fn.now(),
+      };
+
+      let maintenance: MaintenanceRecord;
+      if (dbType === "postgresql") {
+        const [m] = await trx("maintenances").insert(insertData).returning("*");
+        maintenance = m;
+      } else {
+        const result = await trx("maintenances").insert(insertData);
+        const id = result[0];
+        maintenance = (await trx("maintenances").where("id", id).first())!;
+      }
+
+      if (monitors.length > 0) {
+        const monitorData = monitors.map((m) => ({
+          maintenance_id: maintenance.id,
+          monitor_tag: m.monitor_tag,
+          monitor_impact: m.monitor_impact,
+          created_at: trx.fn.now(),
+          updated_at: trx.fn.now(),
+        }));
+        await trx("maintenance_monitors")
+          .insert(monitorData)
+          .onConflict(["maintenance_id", "monitor_tag"])
+          .merge(["monitor_impact", "updated_at"]);
+      }
+
+      return maintenance;
+    });
+  }
+
   async getMaintenanceById(id: number): Promise<MaintenanceRecord | undefined> {
     return await this.knex("maintenances").where("id", id).first();
   }

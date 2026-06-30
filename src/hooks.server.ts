@@ -1,12 +1,62 @@
 import { json, redirect, type Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
 import { VerifyAPIKey } from "$lib/server/controllers/apiController";
-import { GetLoggedInSession } from "$lib/server/controllers/userController";
+import { GetLoggedInSession, GetUserPermissions } from "$lib/server/controllers/userController";
 import serverResolve from "$lib/server/resolver";
 import db from "$lib/server/db/db";
 import type { UnauthorizedResponse, NotFoundResponse } from "$lib/types/api";
 import { GetMonitorsParsed } from "$lib/server/controllers/monitorsController";
 import { checkRateLimit, getClientIp } from "$lib/server/rateLimit.js";
+
+// Maps (pathPattern, method) → required permission.
+// Patterns are matched in order; first match wins.
+// null means "any authenticated key may access".
+type ApiPermissionRule = {
+  pattern: RegExp;
+  methods: string[] | "*";
+  readPermission: string | null;
+  writePermission: string | null;
+};
+
+const API_V4_PERMISSION_RULES: ApiPermissionRule[] = [
+  // Export / Import
+  { pattern: /^\/api\/v4\/export(\/.*)?$/, methods: ["GET"], readPermission: "settings.read", writePermission: null },
+  { pattern: /^\/api\/v4\/import(\/.*)?$/, methods: ["POST"], readPermission: null, writePermission: "settings.write" },
+  // Images
+  { pattern: /^\/api\/v4\/images(\/.*)?$/, methods: ["POST", "DELETE"], readPermission: null, writePermission: "images.write" },
+  // Site settings
+  { pattern: /^\/api\/v4\/site(\/.*)?$/, methods: ["GET"], readPermission: "settings.read", writePermission: null },
+  { pattern: /^\/api\/v4\/site(\/.*)?$/, methods: ["PATCH", "PUT", "POST", "DELETE"], readPermission: null, writePermission: "settings.write" },
+  // Monitors
+  { pattern: /^\/api\/v4\/monitors\/[^/]+\/alert-configs(\/.*)?$/, methods: ["GET"], readPermission: "alerts.read", writePermission: null },
+  { pattern: /^\/api\/v4\/monitors\/[^/]+\/alert-configs(\/.*)?$/, methods: ["POST", "PATCH", "PUT", "DELETE"], readPermission: null, writePermission: "alerts.write" },
+  { pattern: /^\/api\/v4\/monitors(\/.*)?$/, methods: ["GET"], readPermission: "monitors.read", writePermission: null },
+  { pattern: /^\/api\/v4\/monitors(\/.*)?$/, methods: ["POST", "PATCH", "PUT", "DELETE"], readPermission: null, writePermission: "monitors.write" },
+  // Incidents
+  { pattern: /^\/api\/v4\/incidents(\/.*)?$/, methods: ["GET"], readPermission: "incidents.read", writePermission: null },
+  { pattern: /^\/api\/v4\/incidents(\/.*)?$/, methods: ["POST", "PATCH", "PUT", "DELETE"], readPermission: null, writePermission: "incidents.write" },
+  // Maintenances
+  { pattern: /^\/api\/v4\/maintenances(\/.*)?$/, methods: ["GET"], readPermission: "maintenances.read", writePermission: null },
+  { pattern: /^\/api\/v4\/maintenances(\/.*)?$/, methods: ["POST", "PATCH", "PUT", "DELETE"], readPermission: null, writePermission: "maintenances.write" },
+  // Pages
+  { pattern: /^\/api\/v4\/pages(\/.*)?$/, methods: ["GET"], readPermission: "pages.read", writePermission: null },
+  { pattern: /^\/api\/v4\/pages(\/.*)?$/, methods: ["POST", "PATCH", "PUT", "DELETE"], readPermission: null, writePermission: "pages.write" },
+  // Triggers
+  { pattern: /^\/api\/v4\/triggers(\/.*)?$/, methods: ["GET"], readPermission: "triggers.read", writePermission: null },
+  { pattern: /^\/api\/v4\/triggers(\/.*)?$/, methods: ["POST", "PATCH", "PUT", "DELETE"], readPermission: null, writePermission: "triggers.write" },
+];
+
+function getRequiredPermission(pathname: string, method: string): string | null | undefined {
+  for (const rule of API_V4_PERMISSION_RULES) {
+    if (!rule.pattern.test(pathname)) continue;
+    const methodMatches = rule.methods === "*" || rule.methods.includes(method.toUpperCase());
+    if (!methodMatches) continue;
+    // Return whichever side is relevant (read for GETs, write for mutations)
+    return method.toUpperCase() === "GET" ? rule.readPermission : rule.writePermission;
+  }
+  // No rule matched — no permission restriction (fallback for unversioned or unknown paths)
+  return undefined;
+}
 
 const API_PATH_PREFIX = "/api/";
 
@@ -135,8 +185,8 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
       return json(errorResponse, { status: 401 });
     }
 
-    const isValidKey = await VerifyAPIKey(token);
-    if (!isValidKey) {
+    const keyRecord = await VerifyAPIKey(token);
+    if (!keyRecord) {
       // Rate-limit failed API key attempts to prevent brute-force enumeration
       const ip = getClientIp(event.request);
       const rl = await checkRateLimit("api-auth", ip, { windowMs: 15 * 60 * 1000, maxRequests: 10 });
@@ -150,6 +200,39 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
         },
       };
       return json(errorResponse, { status: 401 });
+    }
+
+    // Per-key rate limit: 1000 requests per minute (prevents key abuse / scraping)
+    const keyRateLimit = await checkRateLimit("api-key", keyRecord.hashed_key, {
+      windowMs: 60 * 1000,
+      maxRequests: 1000,
+    });
+    if (!keyRateLimit.allowed) {
+      return json(
+        { error: { code: "TOO_MANY_REQUESTS", message: "API key rate limit exceeded. Try again later." } },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((keyRateLimit.resetAt - Date.now()) / 1000)),
+            "X-RateLimit-Remaining": "0",
+          },
+        }
+      );
+    }
+
+    // RBAC: enforce per-endpoint permissions based on the key owner's role.
+    // Keys with no user_id (created before user-linking was added) retain full access for backward compatibility.
+    if (keyRecord.user_id != null) {
+      const requiredPermission = getRequiredPermission(pathname, event.request.method);
+      if (requiredPermission !== undefined && requiredPermission !== null) {
+        const userPermissions = await GetUserPermissions(keyRecord.user_id);
+        if (!userPermissions.has(requiredPermission)) {
+          return json(
+            { error: { code: "FORBIDDEN", message: `This API key lacks the required permission: ${requiredPermission}` } },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // Validate monitor tag exists for /api/(vX/)?monitors/:monitor_tag/* routes
@@ -278,6 +361,27 @@ const apiAuthHandle: Handle = async ({ event, resolve }) => {
   return response;
 };
 
+const securityHeadersHandle: Handle = async ({ event, resolve }) => {
+  const response = await resolve(event);
+  const { pathname } = event.url;
+
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';"
+  );
+
+  // Allow embedding only for /embed/* routes (badges, widgets)
+  if (!pathname.startsWith("/embed")) {
+    response.headers.set("X-Frame-Options", "DENY");
+  }
+
+  return response;
+};
+
 const mustChangePasswordHandle: Handle = async ({ event, resolve }) => {
   if (event.url.pathname.startsWith("/manage")) {
     const user = await GetLoggedInSession(event.cookies);
@@ -288,4 +392,4 @@ const mustChangePasswordHandle: Handle = async ({ event, resolve }) => {
   return resolve(event);
 };
 
-export const handle = sequence(csrfHandle, mustChangePasswordHandle, apiAuthHandle);
+export const handle = sequence(csrfHandle, mustChangePasswordHandle, apiAuthHandle, securityHeadersHandle);

@@ -1,10 +1,12 @@
 import db from "../db/db.js";
 import crypto from "crypto";
+import type { ApiKeyRecord } from "../types/db.js";
 // synchronous, returns string directly
 import { MaskString, CreateHash } from "./commonController.js";
 
 interface ApiKeyInput {
   name: string;
+  user_id?: number | null;
 }
 interface ApiKeyStatusInput {
   id: number;
@@ -36,6 +38,7 @@ export const CreateNewAPIKey = async (data: ApiKeyInput): Promise<{ apiKey: stri
     name: data.name,
     hashed_key: hashed_key,
     masked_key: MaskString(apiKey),
+    user_id: data.user_id ?? null,
   });
 
   return {
@@ -60,13 +63,11 @@ export const DeleteApiKey = async (data: ApiKeyDeleteInput): Promise<number> => 
   return await db.deleteApiKey(Number(data.id));
 };
 
-export const VerifyAPIKey = async (apiKey: string): Promise<boolean> => {
+export const VerifyAPIKey = async (apiKey: string): Promise<ApiKeyRecord | null> => {
   const hashed_key = CreateHash(apiKey);
-  // Check if the hash exists in the database
   const record = await db.getApiKeyByHashedKey(hashed_key);
-
-  if (!!record) {
-    return record.status == "ACTIVE";
-  } // Adjust this for your DB query
-  return false;
+  if (record && record.status === "ACTIVE") {
+    return record;
+  }
+  return null;
 };

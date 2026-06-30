@@ -274,23 +274,20 @@ export const CreateMaintenance = async (data: CreateMaintenanceInput): Promise<{
     throw new Error("Duration must be greater than 0");
   }
 
-  // Create the maintenance record
-  const maintenance = await db.createMaintenance({
-    title: data.title,
-    description: data.description || null,
-    start_date_time: data.start_date_time,
-    rrule: data.rrule,
-    duration_seconds: data.duration_seconds,
-    status: "ACTIVE",
-    is_global: data.is_global || "YES",
-  });
+  const maintenance = await db.createMaintenanceWithMonitors(
+    {
+      title: data.title,
+      description: data.description || null,
+      start_date_time: data.start_date_time,
+      rrule: data.rrule,
+      duration_seconds: data.duration_seconds,
+      status: "ACTIVE",
+      is_global: data.is_global || "YES",
+    },
+    data.monitors || [],
+  );
 
-  // Add monitors with their status to the maintenance if provided
-  if (data.monitors && data.monitors.length > 0) {
-    await db.addMonitorsToMaintenanceWithStatus(maintenance.id, data.monitors);
-  }
-
-  // Generate initial events
+  // Generate initial events after the transaction (non-critical for atomicity)
   await GenerateMaintenanceEvents(maintenance.id, data.start_date_time, data.rrule, data.duration_seconds, 1);
 
   return {

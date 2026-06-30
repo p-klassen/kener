@@ -38,6 +38,10 @@ export async function GetGroupMembers(groupId: number): Promise<UserRecordPublic
 }
 
 export async function AddGroupMember(groupId: number, userId: number): Promise<void> {
+  const group = await db.getGroupById(groupId);
+  if (!group) throw new Error(`Group with id '${groupId}' not found`);
+  const user = await db.getUserById(userId);
+  if (!user) throw new Error(`User with id '${userId}' not found`);
   await db.addGroupMember(groupId, userId);
 }
 
